@@ -43,7 +43,7 @@ cudarrays_link(stencil)
 cudarrays_link(vecadd)
 cudarrays_link(default)
 
-set(COMMON_SRC kernel.hpp common.hpp)
+set(COMMON_SRC common.hpp)
 
 add_executable(alloc alloc.cpp ${COMMON_SRC} ${LIB_INCLUDE})
 target_link_libraries(alloc ${CMAKE_IMPORT_LIBRARY_PREFIX}cudarrays${CMAKE_IMPORT_LIBRARY_SUFFIX} ${CUDA_LIBRARIES})

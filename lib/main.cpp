@@ -48,7 +48,7 @@ void init_lib()
     MAX_GPUS = getenv<unsigned>("CUDARRAYS_GPUS", 0);
 
     // VM alignment used by the CUDA driver
-    size_t CUDA_VM_ALIGN = getenv<size_t>("CUDARRAYS_VM_ALIGN", 1 * 1024 * 1024);
+    CUDA_VM_ALIGN = getenv<size_t>("CUDARRAYS_VM_ALIGN", 1 * 1024 * 1024);
 
     // Page size to be emulated in VM based allocators
     size_t PAGE_ALIGN = getenv<size_t>("CUDARRAYS_PAGE_ALIGN", 4 * 1024);
