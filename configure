@@ -1,0 +1,62 @@
+#!/bin/bash
+
+CMAKE=cmake
+CMAKE_HOME=`dirname $0`
+SCRIPT_NAME=`basename $0`
+
+BUILD_TYPE="Release"
+
+for i in $@
+do
+    echo $i
+    case $i in
+    --enable-debug)
+        BUILD_TYPE="Debug"
+        ;;
+    --enable-debug-cuda)
+        BUILD_TYPE="Debug"
+        CMAKE_ARGS="${CMAKE_ARGS} -DCUDA_DEBUG=ON"
+        ;;
+    --enable-static)
+        CMAKE_ARGS="${CMAKE_ARGS} -DMAKE_STATIC=ON"
+        ;;
+    --enable-tests)
+        CMAKE_ARGS="${CMAKE_ARGS} -DMAKE_TESTS=ON"
+        ;;
+    --with-cuda=*)
+        cuda_path=`echo $i | sed 's/[-a-zA-Z0-9]*=//'`
+        CMAKE_ARGS="${CMAKE_ARGS} -DCUDA_PATH=${cuda_path}"
+        ;;
+    --enable-installer)
+        CMAKE_ARGS="${CMAKE_ARGS} -DMAKE_INSTALLER=ON"
+        ;;
+    --with-installer=*)
+        installer=`echo $i | sed 's/[-a-zA-Z0-9]*=//'`
+        CMAKE_ARGS="${CMAKE_ARGS} -DMAKE_INSTALLER=ON -DINSTALLER=${installer}"
+        ;;
+    --enable-doc)
+        CMAKE_ARGS="${CMAKE_ARGS} -DMAKE_DOC=ON"
+        ;;
+    --with-gcc=*)
+        compiler=`echo $i | sed 's/[-a-zA-Z0-9]*=//'`
+        echo "Setting compiler: ${compiler}"
+        CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_CXX_COMPILER=${compiler} -DCMAKE_C_COMPILER=${compiler/\+\+/cc}"
+        ;;
+    --with-clang=*)
+        compiler=`echo $i | sed 's/[-a-zA-Z0-9]*=//'`
+        echo "Setting compiler: ${compiler}"
+        CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_CXX_COMPILER=${compiler} -DCMAKE_C_COMPILER=${compiler/\+\+/}"
+    ;;
+        --prefix=*)
+        prefix=`echo $i | sed 's/[-a-zA-Z0-9]*=//'`
+        CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_INSTALL_PREFIX=${prefix}"
+        ;;
+    esac
+done
+
+GENERATOR="CodeBlocks - Unix Makefiles"
+
+CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_BUILD_TYPE=${BUILD_TYPE}"
+echo "$0 $*" > ${SCRIPT_NAME}.log
+echo "${CMAKE} ${CMAKE_ARGS}" -G"${GENERATOR}" ${CMAKE_HOME} >> ${SCRIPT_NAME}.log
+${CMAKE} ${CMAKE_ARGS} -G"${GENERATOR}" ${CMAKE_HOME}
