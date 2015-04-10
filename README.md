@@ -2,7 +2,7 @@
 C++ programming framework for multi-GPU CUDA applications.
 
 ## Example: vector addition
-```
+```Cuda
 #include <iostream>
 #include <cudarrays/types.hpp>
 
