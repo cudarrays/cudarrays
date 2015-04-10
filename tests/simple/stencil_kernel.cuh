@@ -29,7 +29,7 @@
 #ifndef _KERNEL_STENCIL_H_
 #define _KERNEL_STENCIL_H_
 
-#include <cudarrays/dynarray.hpp>
+#include <cudarrays/types.hpp>
 #include <cudarrays/gpu.cuh>
 
 using namespace cudarrays;
@@ -41,8 +41,8 @@ static const int STENCIL_BLOCK_Y = 8;
 template <typename StorageB, typename StorageA>
 __global__
 void
-stencil_kernel(dynarray<float, 2, false, layout::rmo, StorageB> B,
-               dynarray<float, 2, true, layout::rmo, StorageA> A)
+stencil_kernel( matrix_ref<float, layout::rmo, StorageB> B,
+               matrix_cref<float, layout::rmo, StorageA> A)
 {
     int tx = threadIdx.x;
     int ty = threadIdx.y;

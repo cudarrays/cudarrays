@@ -29,7 +29,7 @@
 #ifndef _KERNEL_MATRIXMUL_H_
 #define _KERNEL_MATRIXMUL_H_
 
-#include <cudarrays/dynarray.hpp>
+#include <cudarrays/types.hpp>
 #include <cudarrays/gpu.cuh>
 
 static const size_t         MATRIXMUL_TILE_N = 16;
@@ -40,9 +40,9 @@ using namespace cudarrays;
 template <typename StorageC, typename StorageA, typename StorageB>
 __global__
 void
-matrixmul_kernel(dynarray<float, 2, false, layout::cmo, StorageC> C,
-                 dynarray<float, 2, true, layout::cmo, StorageA> A,
-                 dynarray<float, 2, true, layout::rmo, StorageB> B)
+matrixmul_kernel( matrix_ref<float, layout::cmo, StorageC> C,
+                 matrix_cref<float, layout::cmo, StorageA> A,
+                 matrix_cref<float, layout::rmo, StorageB> B)
 {
     int tx = threadIdx.x;
     int ty = threadIdx.y;
@@ -50,7 +50,7 @@ matrixmul_kernel(dynarray<float, 2, false, layout::cmo, StorageC> C,
     int bx = blockIdx.x;
     int by = blockIdx.y;
 
-    // Partial results 
+    // Partial results
     float partial[MATRIXMUL_TILE_N];
     for (int i = 0; i < MATRIXMUL_TILE_N; i++) partial[i] = 0.0f;
 

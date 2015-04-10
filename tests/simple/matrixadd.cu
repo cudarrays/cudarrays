@@ -59,9 +59,9 @@ launch_test_matrixadd(compute_conf<3> gpus, std::array<int, 3> infoC,
     static const array_size_t ELEMS_X = MATRIXADD_ELEMS[2];
 
     using array3D_matrixadd = float [ELEMS_Z][ELEMS_Y][ELEMS_X];
-    using my_arrayA = dynarray<float, 3, false, layout::rmo, StorageA>;
-    using my_arrayB = dynarray<float, 3, false, layout::rmo, StorageB>;
-    using my_arrayC = dynarray<float, 3, false, layout::rmo, StorageC>;
+    using my_arrayA = volume<float, layout::rmo, StorageA>;
+    using my_arrayB = volume<float, layout::rmo, StorageB>;
+    using my_arrayC = volume<float, layout::rmo, StorageC>;
 
     my_arrayA A({ELEMS_Z, ELEMS_Y, ELEMS_X});
     my_arrayB B({ELEMS_Z, ELEMS_Y, ELEMS_X});

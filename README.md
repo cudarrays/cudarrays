@@ -9,9 +9,9 @@ C++ programming framework for multi-GPU CUDA applications.
 using namespace cudarrays;
 
 __global__ void
-vecadd_kernel(      vector<float> C,
-              const_vector<float> A,
-              const_vector<float> B)
+vecadd_kernel( vector_ref<float> C,
+              vector_cref<float> A,
+              vector_cref<float> B)
 {
     unsigned idx = blockIdx.x * blockDim.x + threadIdx.x;
     C(idx) = A(idx) + B(idx);

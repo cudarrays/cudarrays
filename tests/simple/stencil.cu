@@ -61,8 +61,8 @@ launch_test_stencil(compute_conf<2> gpus, mapping2D infoB,
     static const array_size_t TOTAL_ELEMS_X = ELEMS_X + 2 * STENCIL;
 
     using array2D_stencil = float [TOTAL_ELEMS_Y][TOTAL_ELEMS_X];
-    using my_arrayA = dynarray<float, 2, false, layout::rmo, StorageA>;
-    using my_arrayB = dynarray<float, 2, false, layout::rmo, StorageB>;
+    using my_arrayA = matrix<float, layout::rmo, StorageA>;
+    using my_arrayB = matrix<float, layout::rmo, StorageB>;
 
     my_arrayA A{{TOTAL_ELEMS_Y, TOTAL_ELEMS_X}};
     my_arrayB B{{TOTAL_ELEMS_Y, TOTAL_ELEMS_X}};

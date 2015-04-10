@@ -26,15 +26,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. */
 
-#include <cudarrays/dynarray.hpp>
+#include <cudarrays/types.hpp>
 #include <cudarrays/gpu.cuh>
 
 using namespace cudarrays;
 
 template <typename StorageOut, typename StorageIn>
 __global__ void
-saxpy_kernel(dynarray<float, 1, false, layout::rmo, StorageOut> B,
-             dynarray<float, 1, true,  layout::rmo, StorageIn> A,
+saxpy_kernel( vector_ref<float, StorageOut> B,
+             vector_cref<float, StorageIn> A,
              float c)
 {
     int tx = threadIdx.x;

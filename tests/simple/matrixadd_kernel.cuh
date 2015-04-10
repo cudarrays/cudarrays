@@ -29,7 +29,7 @@
 #ifndef _KERNEl_MATRIXADD_H_
 #define _KERNEl_MATRIXADD_H_
 
-#include <cudarrays/dynarray.hpp>
+#include <cudarrays/types.hpp>
 #include <cudarrays/gpu.cuh>
 
 using namespace cudarrays;
@@ -37,9 +37,9 @@ using namespace cudarrays;
 template <typename StorageC, typename StorageA, typename StorageB>
 __global__
 void
-matrixadd_kernel(dynarray<float, 3, false, layout::rmo, StorageC> C,
-                 dynarray<float, 3, true, layout::rmo, StorageA> A,
-                 dynarray<float, 3, true, layout::rmo, StorageB> B)
+matrixadd_kernel( volume_ref<float, layout::rmo, StorageC> C,
+                 volume_cref<float, layout::rmo, StorageA> A,
+                 volume_cref<float, layout::rmo, StorageB> B)
 {
     int tx = threadIdx.x;
     int ty = threadIdx.y;

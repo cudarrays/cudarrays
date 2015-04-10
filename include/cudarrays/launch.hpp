@@ -159,9 +159,9 @@ struct argument_manager {
         // Not coherent. Do nothing
     }
 
-    template <typename T, unsigned Dims, bool _Const, typename StorageType, typename PartConf>
+    template <typename T, unsigned Dims, typename StorageType, typename PartConf, template <typename> class CoherencePolicy>
     static void
-    set_coherent_arg(dynarray<T, Dims, _Const, StorageType, PartConf> &arg, bool Const)
+    set_coherent_arg(dynarray<T, Dims, StorageType, PartConf, CoherencePolicy> &arg, bool Const)
     {
         // Store dynarray arguments in the vector of coherent objects
         CoherentParams.push_back(coherence_info{&arg, Const});

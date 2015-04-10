@@ -51,7 +51,7 @@
 
 namespace cudarrays {
 
-template <typename T, unsigned Dims, bool Const = false,
+template <typename T, unsigned Dims,
           typename StorageType = layout::rmo,
           typename PartConf = tag_auto::none,
           template <typename> class CoherencePolicy = default_coherence>
@@ -94,23 +94,16 @@ public:
                        this->get_host_storage().size());
     }
 
-    template <bool Const2>
     __host__
-    explicit dynarray(const dynarray<T, Dims, Const2, StorageType, PartConf> &a) :
+    explicit dynarray(const dynarray &a) :
         storage_(a.storage_),
         coherencePolicy_(a.coherencePolicy_)
     {
-        static_assert((Const == Const2) || (!Const2 && Const),
-                      "Cannot initialize non-const array from const array");
     }
 
-    template <bool Const2>
     __host__
-    dynarray &operator=(const dynarray<T, Dims, Const2, StorageType, PartConf> &a)
+    dynarray &operator=(const dynarray &a)
     {
-        static_assert((Const == Const2) || (!Const2 && Const),
-                      "Cannot initialize non-const array from const array");
-
         if (&a != this) {
             storage_         = a.storage_;
             coherencePolicy_ = a.coherencePolicy_;
@@ -125,19 +118,16 @@ public:
         unregister_range(this->get_host_storage().get_base_addr());
     }
 
-    // Come on NVIDIA, add support for C++11...
     __array_index__
     T &operator()(array_index_t idx)
     {
-        T &ret = storage_.access_pos(0, 0, idx);
-        return ret;
+        return storage_.access_pos(0, 0, idx);
     }
 
     __array_index__
     const T &operator()(array_index_t idx) const
     {
-        T &ret = storage_.access_pos(0, 0, idx);
-        return ret;
+        return storage_.access_pos(0, 0, idx);
     }
 
     __array_index__
@@ -356,13 +346,215 @@ private:
     coherence_policy_type coherencePolicy_;
 };
 
+template <typename Array>
+class dynarray_ref {
+    using dynarray_type = Array;
+    dynarray_ref() = delete;
+#ifdef __CUDA_ARCH__
+    // Use the whole object to avoid extra indirection on the GPU. Kernel launch performs the conversion
+    dynarray_type array_;
+#else
+public:
+    dynarray_ref(dynarray_type &a) :
+        array_(a)
+    {}
+
+private:
+    dynarray_type &array_;
+#endif
+public:
+    using host_storage_type = typename dynarray_type::host_storage_type;
+
+    using      value_type = typename dynarray_type::value_type;
+    using difference_type = typename dynarray_type::difference_type;
+
+    using coherence_policy_type = typename dynarray_type::coherence_policy_type;
+
+    static constexpr unsigned dimensions = dynarray_type::dimensions;
+
+    // Forward calls to the parent array
+    __array_index__
+    value_type &operator()(array_index_t idx)
+    {
+        return array_(idx);
+    }
+
+    __array_index__
+    const value_type &operator()(array_index_t idx) const
+    {
+        return array_(idx);
+    }
+
+    __array_index__
+    value_type &operator()(array_index_t idx1, array_index_t idx2)
+    {
+        return array_(idx1, idx2);
+    }
+
+    __array_index__
+    const value_type &operator()(array_index_t idx1, array_index_t idx2) const
+    {
+        return array_(idx1, idx2);
+    }
+
+    __array_index__
+    value_type &operator()(array_index_t idx1, array_index_t idx2, array_index_t idx3)
+    {
+        return array_(idx1, idx2, idx3);
+    }
+
+    __array_index__
+    const value_type &operator()(array_index_t idx1, array_index_t idx2, array_index_t idx3) const
+    {
+        return array_(idx1, idx2, idx3);
+    }
+
+    inline __host__ __device__
+    array_size_t get_elems() const
+    {
+        return array_.get_elems();
+    }
+
+    inline __host__ __device__
+    array_size_t get_elems_align() const
+    {
+        return array_.get_elems_align();
+    }
+
+    template <unsigned Orig>
+    __array_bounds__
+    array_size_t get_dim() const
+    {
+        return array_.get_dim<Orig>();
+    }
+
+    template <unsigned Orig>
+    __array_bounds__
+    array_size_t get_dim_align() const
+    {
+        return array_.get_dim_align<Orig>();
+    }
+
+    __array_bounds__
+    array_size_t get_dim(unsigned dim) const
+    {
+        return array_.get_dim(dim);
+    }
+
+    __array_bounds__
+    array_size_t get_dim_align(unsigned dim) const
+    {
+        return array_.get_dim_align(dim);
+    }
+
+    void
+    set_current_gpu(unsigned idx)
+    {
+        array_.set_current_gpu(idx);
+    }
+
+    coherence_policy_type &get_coherence_policy()
+    {
+        return array_.get_coherence_policy();
+    }
+
+    host_storage_type &get_host_storage()
+    {
+        return array_.get_host_storage();
+    }
+};
+
+template <typename Array>
+class dynarray_cref {
+    using dynarray_type = Array;
+    dynarray_cref() = delete;
+#ifdef __CUDA_ARCH__
+    // Use the whole object to avoid extra indirection on the GPU. Kernel launch performs the conversion
+    dynarray_type array_;
+#else
+public:
+    dynarray_cref(const dynarray_type &a) :
+        array_(a)
+    {}
+
+private:
+    const dynarray_type &array_;
+#endif
+public:
+    using host_storage_type = typename dynarray_type::host_storage_type;
+
+    using      value_type = typename dynarray_type::value_type;
+    using difference_type = typename dynarray_type::difference_type;
+
+    using coherence_policy_type = typename dynarray_type::coherence_policy_type;
+
+    static constexpr unsigned dimensions = dynarray_type::dimensions;
+
+    // Forward calls to constant methods only
+    __array_index__
+    const value_type &operator()(array_index_t idx) const
+    {
+        return array_(idx);
+    }
+
+    __array_index__
+    const value_type &operator()(array_index_t idx1, array_index_t idx2) const
+    {
+        return array_(idx1, idx2);
+    }
+
+    __array_index__
+    const value_type &operator()(array_index_t idx1, array_index_t idx2, array_index_t idx3) const
+    {
+        return array_(idx1, idx2, idx3);
+    }
+
+    inline __host__ __device__
+    array_size_t get_elems() const
+    {
+        return array_.get_elems();
+    }
+
+    inline __host__ __device__
+    array_size_t get_elems_align() const
+    {
+        return array_.get_elems_align();
+    }
+
+    template <unsigned Orig>
+    __array_bounds__
+    array_size_t get_dim() const
+    {
+        return array_.get_dim<Orig>();
+    }
+
+    template <unsigned Orig>
+    __array_bounds__
+    array_size_t get_dim_align() const
+    {
+        return array_.get_dim_align<Orig>();
+    }
+
+    __array_bounds__
+    array_size_t get_dim(unsigned dim) const
+    {
+        return array_.get_dim(dim);
+    }
+
+    __array_bounds__
+    array_size_t get_dim_align(unsigned dim) const
+    {
+        return array_.get_dim_align(dim);
+    }
+};
+
 }
 
 namespace std {
-template <typename T, unsigned Dims, bool ConstFrom, bool ConstTo, typename StorageType, class PartConf>
-struct is_convertible<cudarrays::dynarray<T, Dims, ConstFrom,  StorageType, PartConf>,
-                      cudarrays::dynarray<T, Dims, ConstTo, StorageType, PartConf> > {
-    static constexpr bool value = (ConstFrom == ConstTo) || (!ConstFrom && ConstTo);
+template <typename T, unsigned Dims, typename StorageType, class PartConf, template <typename> class CoherencePolicy>
+struct is_convertible<cudarrays::dynarray<T, Dims, StorageType, PartConf, CoherencePolicy>,
+                      cudarrays::dynarray_ref<cudarrays::dynarray<T, Dims, StorageType, PartConf, CoherencePolicy>>> {
+    static constexpr bool value = true;
 
     using value_type = bool;
     using       type = std::integral_constant<bool, value>;
@@ -373,10 +565,24 @@ struct is_convertible<cudarrays::dynarray<T, Dims, ConstFrom,  StorageType, Part
     }
 };
 
-template <typename T, unsigned Dims, bool Const, typename StorageType, typename PartConf>
+template <typename T, unsigned Dims, typename StorageType, class PartConf, template <typename> class CoherencePolicy>
+struct is_convertible<cudarrays::dynarray<T, Dims, StorageType, PartConf, CoherencePolicy>,
+                      cudarrays::dynarray_cref<cudarrays::dynarray<T, Dims, StorageType, PartConf, CoherencePolicy>>> {
+    static constexpr bool value = true;
+
+    using value_type = bool;
+    using       type = std::integral_constant<bool, value>;
+
+    operator bool()
+    {
+        return value;
+    }
+};
+
+template <typename Array>
 struct
-is_const< cudarrays::dynarray<T, Dims, Const, StorageType, PartConf> > {
-    static constexpr bool value = Const;
+is_const<cudarrays::dynarray_ref<Array>> {
+    static constexpr bool value = false;
 
     using value_type = bool;
     using       type = std::integral_constant<bool, value>;
@@ -386,6 +592,21 @@ is_const< cudarrays::dynarray<T, Dims, Const, StorageType, PartConf> > {
         return value;
     }
 };
+
+template <typename Array>
+struct
+is_const<cudarrays::dynarray_cref<Array>> {
+    static constexpr bool value = true;
+
+    using value_type = bool;
+    using       type = std::integral_constant<bool, value>;
+
+    operator bool()
+    {
+        return value;
+    }
+};
+
 }
 
 #endif // CUDARRAYS_DYNARRAY_HPP_

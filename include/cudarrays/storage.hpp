@@ -849,6 +849,13 @@ public:
     }
 
     inline __host__ __device__
+    const host_storage_type &
+    get_host_storage() const
+    {
+        return hostStorage_;
+    }
+
+    inline __host__ __device__
     host_storage_type &
     get_host_storage()
     {

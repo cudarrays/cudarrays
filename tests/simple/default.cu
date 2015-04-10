@@ -47,8 +47,8 @@ array_size_t SAXPY_ELEMS[1] = { 1024 * 1024 };
 using mapping1D = std::array<int, 1>;
 
 __global__ void
-saxpy_kernel(      vector<float> B,
-             const_vector<float> A,
+saxpy_kernel( vector_ref<float> B,
+             vector_cref<float> A,
              float c)
 {
     int tx = threadIdx.x;

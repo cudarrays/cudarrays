@@ -34,9 +34,9 @@ using namespace cudarrays;
 
 template <typename StorageOut, typename StorageIn>
 __global__ void
-vecadd_kernel(      vector<float, StorageOut> C,
-              const_vector<float, StorageIn> A,
-              const_vector<float, StorageIn> B)
+vecadd_kernel( vector_ref<float, StorageOut> C,
+              vector_cref<float, StorageIn> A,
+              vector_cref<float, StorageIn> B)
 {
     int tx = threadIdx.x;
 

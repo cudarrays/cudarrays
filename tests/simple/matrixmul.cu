@@ -57,9 +57,9 @@ launch_test_matrixmul(compute_conf<2> gpus, std::array<int, 2> infoC,
     static const array_size_t ELEMS = matrixmul_ELEMS[INPUTSET];
 
     using array2D_matrixmul = float [ELEMS][ELEMS];
-    using my_arrayA = dynarray<float, 2, false, layout::cmo, StorageA>;
-    using my_arrayB = dynarray<float, 2, false, layout::rmo, StorageB>;
-    using my_arrayC = dynarray<float, 2, false, layout::cmo, StorageC>;
+    using my_arrayA = matrix<float, layout::cmo, StorageA>;
+    using my_arrayB = matrix<float, layout::rmo, StorageB>;
+    using my_arrayC = matrix<float, layout::cmo, StorageC>;
 
     my_arrayA A{{ELEMS, ELEMS}};
     my_arrayB B{{ELEMS, ELEMS}};
