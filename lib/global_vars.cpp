@@ -27,7 +27,7 @@
  * THE SOFTWARE. */
 
 #include <cstdlib>
-#include <stddef.h>
+#include <cstddef>
 
 #include "cudarrays/common.hpp"
 #include "cudarrays/storage.hpp"

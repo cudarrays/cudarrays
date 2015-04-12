@@ -27,11 +27,11 @@
  * THE SOFTWARE. */
 
 #pragma once
-#ifndef CUDARRAYS_INDEXING_HPP_
-#define CUDARRAYS_INDEXING_HPP_
+#ifndef CUDARRAYS_DETAIL_DYNARRAY_INDEXING_HPP_
+#define CUDARRAYS_DETAIL_DYNARRAY_INDEXING_HPP_
 
-#include "common.hpp"
-#include "utils.hpp"
+#include "../../common.hpp"
+#include "../../utils.hpp"
 
 namespace cudarrays {
 

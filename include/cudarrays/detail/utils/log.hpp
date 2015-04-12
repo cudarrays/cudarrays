@@ -27,15 +27,16 @@
  * THE SOFTWARE. */
 
 #pragma once
-#ifndef CUDARRAYS_LOG_HPP_
-#define CUDARRAYS_LOG_HPP_
+#ifndef CUDARRAYS_DETAIL_UTILS_LOG_HPP_
+#define CUDARRAYS_DETAIL_UTILS_LOG_HPP_
 
 #include <cstdio>
 #include <string>
 
-namespace cudarrays {
+#include "../../common.hpp"
 
-namespace internal {
+namespace detail {
+namespace cudarrays {
     template <typename... Args>
     static void
     print(FILE *out, std::string msg, Args &&...args)
@@ -59,8 +60,9 @@ namespace internal {
         fatal(_msg, "");
     }
 }
+}
 
-extern bool OPTION_DEBUG;
+namespace cudarrays {
 
 template <typename... Args>
 static void
@@ -68,7 +70,7 @@ DEBUG(std::string msg, Args &&...args)
 {
     if (!OPTION_DEBUG) return;
 
-    internal::print(stdout, msg, args...);
+    detail::cudarrays::print(stdout, msg, std::forward<Args...>(args...));
 }
 
 static void
@@ -78,18 +80,17 @@ DEBUG(std::string _msg)
 }
 
 #define FATAL(...) do {                             \
-    cudarrays::internal::print(stderr, "%s:%d\n", __FILE__, __LINE__); \
-    cudarrays::internal::fatal(__VA_ARGS__);       \
+    detail::cudarrays::print(stderr, "%s:%d\n", __FILE__, __LINE__); \
+    detail::cudarrays::fatal(__VA_ARGS__);       \
     } while (0)
 
 
-#define ASSERT(c) do {                                             \
-        if (!(c)) {                                                \
-            fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);        \
-            cudarrays::internal::fatal("Condition '"#c"' failed"); \
-        }                                                          \
+#define ASSERT(c) do {                                           \
+        if (!(c)) {                                              \
+            fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);      \
+            detail::cudarrays::fatal("Condition '"#c"' failed"); \
+        }                                                        \
     } while (0)
-
 }
 
 #endif

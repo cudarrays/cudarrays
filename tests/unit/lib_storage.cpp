@@ -58,8 +58,8 @@ using extents = std::array<cudarrays::array_size_t, Dims>;
 
 #define do_host_alloc(P)                                                              \
 {                                                                                     \
-    using my_array = cudarrays::array_storage<float, 3, P::final_impl,                \
-                                              cudarrays::part_none<3>::type>;         \
+    using my_array = cudarrays::dynarray_storage<float, 3, P::final_impl,             \
+                                                 cudarrays::part_none<3>::type>;      \
                                                                                       \
     static const cudarrays::array_size_t Z = 3;                                       \
     static const cudarrays::array_size_t Y = 5;                                       \

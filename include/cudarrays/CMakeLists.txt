@@ -9,15 +9,15 @@ set(CUDARRAYS_HEADERS array.hpp
                       detail/dynarray/storage_reshape-block_cyclic.hpp
                       detail/dynarray/storage_replicated.hpp
                       detail/dynarray/storage_vm.hpp
+                      detail/dynarray/indexing.hpp
+                      detail/utils/log.hpp
                       dynarray.hpp
                       env.hpp
                       gpu.cuh
-                      indexing.hpp
                       integral_iterator.hpp
                       iterator.hpp
                       launch.hpp
                       launch_cpu.hpp
-                      log.hpp
                       memory.hpp
                       trace.hpp
                       types.hpp

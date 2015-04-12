@@ -39,9 +39,9 @@
 #include <sstream>
 
 #include "compiler.hpp"
-#include "log.hpp"
-
 #include "integral_iterator.hpp"
+
+#include "detail/utils/log.hpp"
 
 namespace std {
 

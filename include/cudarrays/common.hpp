@@ -37,16 +37,10 @@
 #include <functional>
 
 #include <cassert>
+#include <cstdint>
 #include <cstdlib>
 
-#include <cstdint>
-
-#include "utils.hpp"
-
-using namespace utils;
-
 #include "compiler.hpp"
-#include "log.hpp"
 
 namespace cudarrays {
 
@@ -62,6 +56,7 @@ extern unsigned MAX_GPUS;
 extern unsigned PEER_GPUS;
 
 extern array_size_t CUDA_VM_ALIGN;
+extern bool OPTION_DEBUG;
 
 template <typename T>
 static inline array_size_t

@@ -32,15 +32,15 @@
 
 #include <memory>
 
-#include "../../storage.hpp"
+#include "base.hpp"
 
 namespace cudarrays {
 
 template <typename T, unsigned Dims, typename PartConf>
-class array_storage<T, Dims, REPLICATED, PartConf> :
-    public array_storage_base<T, Dims>
+class dynarray_storage<T, Dims, REPLICATED, PartConf> :
+    public dynarray_base<T, Dims>
 {
-    using base_storage_type = array_storage_base<T, Dims>;
+    using base_storage_type = dynarray_base<T, Dims>;
     using  dim_manager_type = typename base_storage_type::dim_manager_type;
     using      extents_type = typename base_storage_type::extents_type;
 
@@ -85,7 +85,7 @@ private:
 
 public:
     __host__
-    array_storage(const extents_type &extents,
+    dynarray_storage(const extents_type &extents,
                   const align_t &align) :
         base_storage_type(extents, align),
         dataDev_(nullptr),
@@ -94,7 +94,7 @@ public:
     }
 
     __host__
-    virtual ~array_storage()
+    virtual ~dynarray_storage()
     {
         if (hostInfo_ != nullptr) {
             // Free GPU memory

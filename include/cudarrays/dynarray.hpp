@@ -62,7 +62,7 @@ public:
     using     permuter_type = utils::permuter<Dims, reorder_conf_type>;
 
     using        storage_type =
-        array_storage<T, Dims, PartConf::final_impl,
+        dynarray_storage<T, Dims, PartConf::final_impl,
                       typename reorder_gather_static< // User-provided reordering
                           Dims,
                           bool,

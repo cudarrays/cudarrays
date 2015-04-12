@@ -31,8 +31,9 @@
 #define CUDARRAYS_DETAIL_DYNARRAY_STORAGE_VM_HPP_
 
 #include "../../log.hpp"
-#include "../../storage.hpp"
 #include "../../utils.hpp"
+
+#include "base.hpp"
 
 using namespace utils;
 
@@ -214,10 +215,10 @@ private:
 };
 
 template <typename T, unsigned Dims, typename PartConf>
-class array_storage<T, Dims, VM, PartConf> :
-    public array_storage_base<T, Dims>
+class dynarray_storage<T, Dims, VM, PartConf> :
+    public dynarray_base<T, Dims>
 {
-    using base_storage_type = array_storage_base<T, Dims>;
+    using base_storage_type = dynarray_base<T, Dims>;
     using  dim_manager_type = typename base_storage_type::dim_manager_type;
     using      extents_type = typename base_storage_type::extents_type;
 
@@ -314,7 +315,7 @@ public:
     }
 
     __host__
-    array_storage(const extents_type &extents,
+    dynarray_storage(const extents_type &extents,
                   const align_t &align) :
         base_storage_type(extents, align),
         dataDev_(NULL),
@@ -323,7 +324,7 @@ public:
     }
 
     __host__
-    array_storage(const array_storage &other) :
+    dynarray_storage(const dynarray_storage &other) :
         dim_manager_type(other),
         dataDev_(other.dataDev_),
         hostInfo_(other.hostInfo_)
@@ -331,7 +332,7 @@ public:
     }
 
     __host__
-    virtual ~array_storage()
+    virtual ~dynarray_storage()
     {
 #ifndef __CUDA_ARCH__
         if (dataDev_ != NULL) {
