@@ -30,10 +30,6 @@
 #ifndef CUDARRAYS_DIST_STORAGE_RESHAPE_BLOCK_HPP_
 #define CUDARRAYS_DIST_STORAGE_RESHAPE_BLOCK_HPP_
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
-#include <driver_functions.h>
-
 #include "log.hpp"
 #include "storage.hpp"
 

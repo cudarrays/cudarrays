@@ -31,10 +31,7 @@
 #define CUDARRAYS_LAUNCH_CPU_HPP_
 
 #include <vector>
-
 #include <cxxabi.h>
-
-#include <cuda_runtime_api.h>
 
 #include "common.hpp"
 #include "dynarray.hpp"

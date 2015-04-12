@@ -30,10 +30,6 @@
 #ifndef CUDARRAYS_DIST_STORAGE_VM_HPP_
 #define CUDARRAYS_DIST_STORAGE_VM_HPP_
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
-#include <driver_functions.h>
-
 #include "common.hpp"
 #include "log.hpp"
 #include "storage.hpp"

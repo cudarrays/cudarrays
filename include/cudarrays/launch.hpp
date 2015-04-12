@@ -30,8 +30,6 @@
 #ifndef CUDARRAYS_LAUNCH_HPP_
 #define CUDARRAYS_LAUNCH_HPP_
 
-#include <cuda_runtime_api.h>
-
 #include <fstream>
 #include <future>
 #include <sstream>

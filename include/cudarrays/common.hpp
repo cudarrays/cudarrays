@@ -30,12 +30,16 @@
 #ifndef CUDARRAYS_COMMON_HPP_
 #define CUDARRAYS_COMMON_HPP_
 
+#include <cuda.h>
+#include <cuda_runtime_api.h>
+#include <driver_functions.h>
+
 #include <functional>
 
 #include <cassert>
 #include <cstdlib>
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "utils.hpp"
 

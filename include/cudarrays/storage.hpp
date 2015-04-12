@@ -33,18 +33,15 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
+#include <array>
 #include <functional>
+#include <type_traits>
 
 #include "common.hpp"
 #include "compiler.hpp"
 
 #include "coherence.hpp"
 #include "indexing.hpp"
-
-#include <cuda_runtime_api.h>
-
-#include <array>
-#include <type_traits>
 
 namespace cudarrays {
 

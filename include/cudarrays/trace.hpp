@@ -30,9 +30,9 @@
 #ifndef CUDARRAYS_TRACE_HPP_
 #define CUDARRAYS_TRACE_HPP_
 
-#include <cassert>
-
 #include <cuda_runtime_api.h>
+
+#include <cassert>
 
 #define WARP_SHIFT 5
 
