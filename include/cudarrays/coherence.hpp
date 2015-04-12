@@ -33,6 +33,8 @@
 #include "common.hpp"
 #include "memory.hpp"
 
+#include "detail/utils/log.hpp"
+
 namespace cudarrays {
 
 class coherence_policy {

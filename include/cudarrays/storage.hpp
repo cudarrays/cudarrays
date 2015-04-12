@@ -40,6 +40,7 @@
 #include "coherence.hpp"
 #include "common.hpp"
 #include "compiler.hpp"
+#include "utils.hpp"
 
 namespace cudarrays {
 
@@ -392,7 +393,7 @@ struct compute_mapping {
 
     unsigned get_array_part_dims() const
     {
-        return count_if(info, [](int m) { return m != DimInvalid; });
+        return utils::count_if(info, [](int m) { return m != DimInvalid; });
     }
 
     bool is_array_dim_part(unsigned dim) const
@@ -422,7 +423,7 @@ helper_distribution_get_gpu_grid(const compute_conf<DimsComp> &comp)
     std::array<unsigned, DimsComp> gpuGrid;
 
     // Check if we can map the arrayPartitionGrid on the GPUs
-    std::vector<unsigned> factorsGpus = get_factors(comp.procs);
+    std::vector<unsigned> factorsGpus = utils::get_factors(comp.procs);
     std::sort(factorsGpus.begin(), factorsGpus.end(), std::greater<unsigned>());
 
 #if 0
@@ -489,7 +490,7 @@ helper_distribution_get_local_dims(const std::array<array_size_t, Dims> &dims,
     // Compute the array grid and the local sizes
     for (unsigned i : utils::make_range(Dims)) {
         // TODO: REPLICATION
-        ret[i] = div_ceil(dims[i], arrayGrid[i]);
+        ret[i] = utils::div_ceil(dims[i], arrayGrid[i]);
     }
 
     return ret;
@@ -502,9 +503,9 @@ helper_distribution_get_local_elems(const std::array<array_size_t, Dims> &dims,
 {
     array_size_t ret;
 
-    ret = accumulate(dims, 1, std::multiplies<array_size_t>());
+    ret = utils::accumulate(dims, 1, std::multiplies<array_size_t>());
     // ... adjusting the tile size to VM SIZE
-    ret = round_next(ret, boundary);
+    ret = utils::round_next(ret, boundary);
 
     return ret;
 }

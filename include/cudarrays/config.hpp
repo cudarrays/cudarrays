@@ -26,8 +26,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. */
 
+#pragma once
+#ifndef CUDARRAYS_CONFIG_HPP_
+#define CUDARRAYS_CONFIG_HPP_
+
+#include <cstdint>
+
 namespace cudarrays {
+#ifdef LONG_INDEX
+using array_index_t = int64_t;
+using array_size_t = uint64_t;
+#else
+using array_index_t = int32_t;
+using array_size_t = uint32_t;
+#endif
+
 namespace config {
-bool OPTION_DEBUG = false;
+extern bool OPTION_DEBUG;
+
+extern unsigned MAX_GPUS;
+extern unsigned PEER_GPUS;
+
+extern array_size_t CUDA_VM_ALIGN;
+extern array_size_t PAGE_ALIGN;
+extern array_size_t PAGES_PER_ARENA;
+
+template <typename T>
+static inline array_size_t
+CUDA_VM_ALIGN_ELEMS()
+{
+    return CUDA_VM_ALIGN/sizeof(T);
+}
+
 }
 }
+
+#endif

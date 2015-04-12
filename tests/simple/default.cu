@@ -62,7 +62,7 @@ saxpy_kernel( vector_ref<float> B,
 bool
 launch_test_saxpy(compute_conf<1> gpus)
 {
-    if (gpus.procs > MAX_GPUS) return false;
+    if (gpus.procs > config::MAX_GPUS) return false;
 
     static const auto ELEMS = SAXPY_ELEMS[INPUTSET];
 

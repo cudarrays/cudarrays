@@ -30,7 +30,7 @@
 #ifndef CUDARRAYS_DETAIL_DYNARRAY_STORAGE_RESHAPE_BLOCK_HPP_
 #define CUDARRAYS_DETAIL_DYNARRAY_STORAGE_RESHAPE_BLOCK_HPP_
 
-#include "../../log.hpp"
+#include "../../detail/utils/log.hpp"
 
 #include "base.hpp"
 
@@ -73,7 +73,7 @@ class dynarray_storage<T, Dims, RESHAPE_BLOCK, PartConf> :
 
                     DEBUG("Reshape> in: %u,%u,%u -> %u", pZ, pY, pX, idx);
 
-                    unsigned gpu = (idx >= PEER_GPUS)? 0 : idx;
+                    unsigned gpu = (idx >= config::PEER_GPUS)? 0 : idx;
                     // Set the device where data is allocated
                     CUDA_CALL(cudaSetDevice(gpu));
                     // Perform memory allocation
@@ -117,7 +117,7 @@ public:
         if ((1 << compPartDims) > mapping.comp.procs)
             FATAL("Not enough GPUs (%u), to partition %u", mapping.comp.procs, arrayPartDims);
 #endif
-        std::array<array_size_t, Dims> dims = make_array(this->get_dim_manager().sizes_);
+        std::array<array_size_t, Dims> dims = utils::make_array(this->get_dim_manager().sizes_);
 
         // Distribute the partition uniformly across GPUs
         // 1- Compute GPU grid
@@ -127,37 +127,37 @@ public:
         hostInfo_->arrayPartitionGrid = arrayPartitionGrid;
         // 3- Compute dimensions of each tile
         std::array<array_size_t, Dims> localDims = helper_distribution_get_local_dims(dims, arrayPartitionGrid);
-        copy(localDims, localDims_);
+        utils::copy(localDims, localDims_);
         // 4- Compute local offsets for the indexing functions
         std::array<array_size_t, Dims - 1> localOffs = helper_distribution_get_local_offs(localDims);
-        copy(localOffs, localOffs_);
+        utils::copy(localOffs, localOffs_);
         // 5- Compute elements of each tile
-        array_size_t elemsLocal = helper_distribution_get_local_elems(localDims, CUDA_VM_ALIGN_ELEMS<T>());
+        array_size_t elemsLocal = helper_distribution_get_local_elems(localDims, config::CUDA_VM_ALIGN_ELEMS<T>());
         hostInfo_->elemsLocal = elemsLocal;
         // 6- Compute the inter-GPU array offsets for each dimension (iterate from lowest-order dimension)
         std::array<array_size_t, Dims> gpuOffs = helper_distribution_get_intergpu_offs(elemsLocal, arrayPartitionGrid, arrayDimToCompDim);
-        copy(gpuOffs, gpuOffs_);
+        utils::copy(gpuOffs, gpuOffs_);
         // 7- Compute the GPU grid offsets (iterate from lowest-order dimension)
         std::array<unsigned, DimsComp> gpuGridOffs = helper_distribution_gpu_get_offs(gpuGrid);
         // 8- Compute the array to GPU mapping needed for the allocation based on the grid offsets
         std::array<unsigned, Dims> arrayDimToGpus = helper_distribution_get_array_dim_to_gpus(gpuGridOffs, arrayDimToCompDim);
-        copy(arrayDimToGpus, hostInfo_->arrayDimToGpus);
+        utils::copy(arrayDimToGpus, hostInfo_->arrayDimToGpus);
 
         DEBUG("Reshape> BASE INFO");
-        DEBUG("Reshape> - array dims: %s", to_string(dims).c_str());
+        DEBUG("Reshape> - array dims: %s", utils::to_string(dims).c_str());
         DEBUG("Reshape> - comp  dims: %u", DimsComp);
-        DEBUG("Reshape> - comp -> array: %s", to_string(arrayDimToCompDim).c_str());
+        DEBUG("Reshape> - comp -> array: %s", utils::to_string(arrayDimToCompDim).c_str());
 
         DEBUG("Reshape> PARTITIONING");
         DEBUG("Reshape> - gpus: %u", mapping.comp.procs);
-        DEBUG("Reshape> - comp  part: %s (%u)", to_string(mapping.comp.info).c_str(), mapping.comp.get_part_dims());
-        DEBUG("Reshape> - comp  grid: %s", to_string(gpuGrid).c_str());
-        DEBUG("Reshape> - array grid: %s", to_string(hostInfo_->arrayPartitionGrid).c_str());
-        DEBUG("Reshape> - local elems: %s (%zd)", to_string(localDims_).c_str(), size_t(hostInfo_->elemsLocal));
-        DEBUG("Reshape> - local offs: %s", to_string(localOffs_).c_str());
+        DEBUG("Reshape> - comp  part: %s (%u)", utils::to_string(mapping.comp.info).c_str(), mapping.comp.get_part_dims());
+        DEBUG("Reshape> - comp  grid: %s", utils::to_string(gpuGrid).c_str());
+        DEBUG("Reshape> - array grid: %s", utils::to_string(hostInfo_->arrayPartitionGrid).c_str());
+        DEBUG("Reshape> - local elems: %s (%zd)", utils::to_string(localDims_).c_str(), size_t(hostInfo_->elemsLocal));
+        DEBUG("Reshape> - local offs: %s", utils::to_string(localOffs_).c_str());
 
-        DEBUG("Reshape> - array grid offsets: %s", to_string(hostInfo_->arrayDimToGpus).c_str());
-        DEBUG("Reshape> - gpu   grid offsets: %s", to_string(gpuOffs_).c_str());
+        DEBUG("Reshape> - array grid offsets: %s", utils::to_string(hostInfo_->arrayDimToGpus).c_str());
+        DEBUG("Reshape> - gpu   grid offsets: %s", utils::to_string(gpuOffs_).c_str());
     }
 
     template <unsigned DimsComp>

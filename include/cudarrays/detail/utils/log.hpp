@@ -32,6 +32,7 @@
 
 #include <cstdio>
 #include <string>
+#include <utility>
 
 #include "../../common.hpp"
 
@@ -68,9 +69,9 @@ template <typename... Args>
 static void
 DEBUG(std::string msg, Args &&...args)
 {
-    if (!OPTION_DEBUG) return;
+    if (!config::OPTION_DEBUG) return;
 
-    detail::cudarrays::print(stdout, msg, std::forward<Args...>(args...));
+    detail::cudarrays::print(stdout, msg, std::forward<Args>(args)...);
 }
 
 static void

@@ -345,7 +345,7 @@ public:
 
     inline bool operator==(myiterator it) const
     {
-        return parent_type::parent_ == it.parent_ && equal(parent_type::idx_, it.idx_);
+        return parent_type::parent_ == it.parent_ && utils::equal(parent_type::idx_, it.idx_);
     }
 
     inline bool operator!=(myiterator it) const

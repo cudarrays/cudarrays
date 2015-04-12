@@ -35,6 +35,7 @@
 
 namespace cudarrays {
 
+namespace config {
 bool OPTION_DEBUG;
 
 unsigned MAX_GPUS;
@@ -44,6 +45,7 @@ array_size_t CUDA_VM_ALIGN;
 
 array_size_t PAGE_ALIGN;
 array_size_t PAGES_PER_ARENA;
+}
 
 #if defined(CUDARRAYS_TRACE_BLOCK) || defined(CUDARRAYS_TRACE_WARP)
 __attribute__((weak))

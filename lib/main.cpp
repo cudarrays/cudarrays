@@ -36,28 +36,30 @@
 #include "cudarrays/env.hpp"
 #include "cudarrays/memory.hpp"
 
+#include "cudarrays/detail/utils/log.hpp"
+
 namespace cudarrays {
 
 // __attribute__((constructor(65535)))
 void init_lib()
 {
     // Initialize logging
-    OPTION_DEBUG = getenv<bool>("CUDARRAYS_DEBUG", false);
+    config::OPTION_DEBUG = getenv<bool>("CUDARRAYS_DEBUG", false);
 
     // Get gpus from environment variable
-    MAX_GPUS = getenv<unsigned>("CUDARRAYS_GPUS", 0);
+    config::MAX_GPUS = getenv<unsigned>("CUDARRAYS_GPUS", 0);
 
     // VM alignment used by the CUDA driver
-    CUDA_VM_ALIGN = getenv<size_t>("CUDARRAYS_VM_ALIGN", 1 * 1024 * 1024);
+    config::CUDA_VM_ALIGN = getenv<array_size_t>("CUDARRAYS_VM_ALIGN", 1 * 1024 * 1024);
 
     // Page size to be emulated in VM based allocators
-    size_t PAGE_ALIGN = getenv<size_t>("CUDARRAYS_PAGE_ALIGN", 4 * 1024);
+    config::PAGE_ALIGN = getenv<array_size_t>("CUDARRAYS_PAGE_ALIGN", 4 * 1024);
 
-    auto PAGES_PER_ARENA = CUDA_VM_ALIGN / PAGE_ALIGN;
+    config::PAGES_PER_ARENA = config::CUDA_VM_ALIGN / config::PAGE_ALIGN;
 
     DEBUG("Inizializing CUDArrays");
-    if (MAX_GPUS != 0)
-        DEBUG("- Max GPUS: %zd", MAX_GPUS);
+    if (config::MAX_GPUS != 0)
+        DEBUG("- Max GPUS: %zd", config::MAX_GPUS);
     else
         DEBUG("- Max GPUS: autodetect");
 
@@ -97,7 +99,7 @@ void init_lib()
         printf("GPU %u: Increasing stack size to %zd\n", d1, value * 2);
 #endif
 
-        PEER_GPUS = std::max(PEER_GPUS, peers);
+        config::PEER_GPUS = std::max(config::PEER_GPUS, peers);
     }
 
     // WARM-UP
@@ -122,12 +124,12 @@ void init_lib()
         }
     }
 
-    if (MAX_GPUS == 0)
-        MAX_GPUS = PEER_GPUS;
+    if (config::MAX_GPUS == 0)
+        config::MAX_GPUS = config::PEER_GPUS;
 
     handler_sigsegv_overload();
 
-    DEBUG("- Peer GPUS: %zd", PEER_GPUS);
+    DEBUG("- Peer GPUS: %zd", config::PEER_GPUS);
 
     // Merge information provided by the compiler
     cudarrays_compiler_register_info__();

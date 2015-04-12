@@ -30,7 +30,7 @@
 #ifndef CUDARRAYS_DETAIL_DYNARRAY_STORAGE_RESHAPE_BLOCK_CYCLIC_HPP_
 #define CUDARRAYS_DETAIL_DYNARRAY_STORAGE_RESHAPE_BLOCK_CYCLIC_HPP_
 
-#include "../../log.hpp"
+#include "../../detail/utils/log.hpp"
 
 #include "base.hpp"
 
@@ -75,7 +75,7 @@ class dynarray_storage<T, Dims, RESHAPE_BLOCK_CYCLIC, PartConf> :
 
                     DEBUG("Reshape> in: %u,%u,%u -> %u", pZ, pY, pX, idx);
 
-                    unsigned gpu = (idx >= PEER_GPUS)? 0 : idx;
+                    unsigned gpu = (idx >= config::PEER_GPUS)? 0 : idx;
                     // Set the device where data is allocated
                     CUDA_CALL(cudaSetDevice(gpu));
                     // Perform memory allocation
@@ -106,7 +106,7 @@ public:
         for (unsigned i = 0; i < Dims; ++i) {
             hostInfo_->mapping[i] = DimsComp - (mapping.info[i] + 1);
         }
-        DEBUG("Reshape> ALLOC: mapping: %s", to_string(hostInfo_->mapping, Dims).c_str());
+        DEBUG("Reshape> ALLOC: mapping: %s", utils::to_string(hostInfo_->mapping, Dims).c_str());
 
         // Count partitioned dimensions in array and computation
         unsigned arrayPartDims = mapping.get_array_part_dims();
@@ -140,7 +140,7 @@ public:
         }
 
         // Adjust to VM SIZE
-        static const array_size_t CUDA_VM_ALIGN_ELEMS = CUDA_VM_ALIGN/sizeof(T);
+        static const array_size_t CUDA_VM_ALIGN_ELEMS = config::CUDA_VM_ALIGN/sizeof(T);
         hostInfo_->elemsLocal = round_next(hostInfo_->elemsLocal, CUDA_VM_ALIGN_ELEMS);
 
         array_size_t prevLocalOff = 1;
@@ -161,14 +161,14 @@ public:
         }
 
         DEBUG("Reshape> ALLOC: gpus: %u", mapping.comp.procs);
-        DEBUG("Reshape> ALLOC: comp  part: %s (%u)", to_string(mapping.comp.info).c_str(), compPartDims);
-        DEBUG("Reshape> ALLOC: comp  grid: %s", to_string(hostInfo_->gpuGrid, hostInfo_->compDims).c_str());
-        DEBUG("Reshape> ALLOC: array grid: %s", to_string(hostInfo_->arrayPartitionGrid, Dims).c_str());
-        DEBUG("Reshape> ALLOC: local elems: %s (%zd)", to_string(hostInfo_->localDims_, Dims).c_str(), size_t(hostInfo_->elemsLocal));
-        DEBUG("Reshape> ALLOC: local offs: %s", to_string(localOffs_, Dims - 1).c_str());
+        DEBUG("Reshape> ALLOC: comp  part: %s (%u)", utils::to_string(mapping.comp.info).c_str(), compPartDims);
+        DEBUG("Reshape> ALLOC: comp  grid: %s", utils::to_string(hostInfo_->gpuGrid, hostInfo_->compDims).c_str());
+        DEBUG("Reshape> ALLOC: array grid: %s", utils::to_string(hostInfo_->arrayPartitionGrid, Dims).c_str());
+        DEBUG("Reshape> ALLOC: local elems: %s (%zd)", utils::to_string(hostInfo_->localDims_, Dims).c_str(), size_t(hostInfo_->elemsLocal));
+        DEBUG("Reshape> ALLOC: local offs: %s", utils::to_string(localOffs_, Dims - 1).c_str());
 
-        DEBUG("Reshape> ALLOC: grid offsets: %s", to_string(hostInfo_->arrayDimToGpus, Dims).c_str());
-        DEBUG("Reshape> ALLOC: gpu offsets: %s", to_string(gpuOffs_, Dims).c_str());
+        DEBUG("Reshape> ALLOC: grid offsets: %s", utils::to_string(hostInfo_->arrayDimToGpus, Dims).c_str());
+        DEBUG("Reshape> ALLOC: gpu offsets: %s", utils::to_string(gpuOffs_, Dims).c_str());
     }
 
     template <unsigned DimsComp>
@@ -179,7 +179,7 @@ public:
         for (unsigned i = 0; i < Dims; ++i) {
             hostInfo_->mapping[i] = DimsComp - (mapping.info[i] + 1);
         }
-        DEBUG("Reshape> ALLOC: mapping: %s", to_string(hostInfo_->mapping, Dims).c_str());
+        DEBUG("Reshape> ALLOC: mapping: %s", utils::to_string(hostInfo_->mapping, Dims).c_str());
 
         // Count partitioned dimensions in array and computation
         unsigned arrayPartDims = mapping.get_array_part_dims();
@@ -240,7 +240,7 @@ public:
         }
 
         // Adjust to VM SIZE
-        array_size_t CUDA_VM_ALIGN_ELEMS = CUDA_VM_ALIGN/sizeof(T);
+        array_size_t CUDA_VM_ALIGN_ELEMS = config::CUDA_VM_ALIGN/sizeof(T);
         hostInfo_->elemsLocal = round_next(hostInfo_->elemsLocal, CUDA_VM_ALIGN_ELEMS);
 
         array_size_t off = 1;
@@ -284,16 +284,16 @@ public:
                 hostInfo_->arrayDimToGpus[i] = 0;
         }
 
-        // DEBUG("Reshape> ALLOC: factors: %s", to_string(factorsGPUs).c_str());
+        // DEBUG("Reshape> ALLOC: factors: %s", utils::to_string(factorsGPUs).c_str());
         DEBUG("Reshape> ALLOC: gpus: %u", mapping.comp.procs);
-        DEBUG("Reshape> ALLOC: comp  part: %s (%u)", to_string(mapping.comp.info).c_str(), compPartDims);
-        DEBUG("Reshape> ALLOC: comp  grid: %s", to_string(hostInfo_->gpuGrid, hostInfo_->compDims).c_str());
-        DEBUG("Reshape> ALLOC: array grid: %s", to_string(hostInfo_->arrayPartitionGrid, Dims).c_str());
-        DEBUG("Reshape> ALLOC: local elems: %s (%zd)", to_string(hostInfo_->localDims_, Dims).c_str(), size_t(hostInfo_->elemsLocal));
-        DEBUG("Reshape> ALLOC: local offs: %s", to_string(localOffs_, Dims - 1).c_str());
+        DEBUG("Reshape> ALLOC: comp  part: %s (%u)", utils::to_string(mapping.comp.info).c_str(), compPartDims);
+        DEBUG("Reshape> ALLOC: comp  grid: %s", utils::to_string(hostInfo_->gpuGrid, hostInfo_->compDims).c_str());
+        DEBUG("Reshape> ALLOC: array grid: %s", utils::to_string(hostInfo_->arrayPartitionGrid, Dims).c_str());
+        DEBUG("Reshape> ALLOC: local elems: %s (%zd)", utils::to_string(hostInfo_->localDims_, Dims).c_str(), size_t(hostInfo_->elemsLocal));
+        DEBUG("Reshape> ALLOC: local offs: %s", utils::to_string(localOffs_, Dims - 1).c_str());
 
-        DEBUG("Reshape> ALLOC: grid offsets: %s", to_string(hostInfo_->arrayDimToGpus, Dims).c_str());
-        DEBUG("Reshape> ALLOC: gpu offsets: %s", to_string(gpuOffs_, Dims).c_str());
+        DEBUG("Reshape> ALLOC: grid offsets: %s", utils::to_string(hostInfo_->arrayDimToGpus, Dims).c_str());
+        DEBUG("Reshape> ALLOC: gpu offsets: %s", utils::to_string(gpuOffs_, Dims).c_str());
     }
 
     template <unsigned DimsComp>

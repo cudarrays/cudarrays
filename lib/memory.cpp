@@ -37,6 +37,8 @@
 #include "cudarrays/common.hpp"
 #include "cudarrays/memory.hpp"
 
+#include "cudarrays/detail/utils/log.hpp"
+
 namespace cudarrays {
 
 typedef char * myptr;

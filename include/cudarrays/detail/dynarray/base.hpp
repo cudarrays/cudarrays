@@ -75,11 +75,11 @@ private:
         offset_ = 0;
         if (align.alignment > 1) {
             if (align.position > align.alignment) {
-                offset_ = round_next(align.position, align.alignment) - align.position;
+                offset_ = utils::round_next(align.position, align.alignment) - align.position;
             } else if (align.position > 0) {
                 offset_ = align.alignment - align.position;
             }
-            sizesAlign_[Dims - 1] = round_next(extents[Dims - 1] + offset_, align.alignment);
+            sizesAlign_[Dims - 1] = utils::round_next(extents[Dims - 1] + offset_, align.alignment);
         } else {
             sizesAlign_[Dims - 1] = extents[Dims - 1];
         }
@@ -90,7 +90,7 @@ private:
             nextOffAlign *= sizesAlign_[i];
 
             if (offAlignImpl[i - 1] > 0) {
-                nextOffAlign = round_next(nextOffAlign, offAlignImpl[i - 1]);
+                nextOffAlign = utils::round_next(nextOffAlign, offAlignImpl[i - 1]);
             }
 
             offsAlign_[i - 1] = nextOffAlign;

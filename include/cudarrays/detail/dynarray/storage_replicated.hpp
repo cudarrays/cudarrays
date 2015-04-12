@@ -52,7 +52,7 @@ private:
     {
         DEBUG("Replicated> ALLOC begin");
         for (unsigned idx : gpus) {
-            unsigned gpu = (idx >= PEER_GPUS)? 0 : idx;
+            unsigned gpu = (idx >= config::PEER_GPUS)? 0 : idx;
 
             CUDA_CALL(cudaSetDevice(gpu));
             CUDA_CALL(cudaMalloc((void **) &hostInfo_->allocsDev[idx], elems * sizeof(T)));
@@ -74,7 +74,7 @@ private:
 
         storage_host_info(unsigned _gpus) :
             gpus(_gpus),
-            allocsDev(MAX_GPUS)
+            allocsDev(config::MAX_GPUS)
         {
             std::fill(allocsDev.begin(),
                       allocsDev.end(), (T *)nullptr);
@@ -98,7 +98,7 @@ public:
     {
         if (hostInfo_ != nullptr) {
             // Free GPU memory
-            for (unsigned gpu : utils::make_range(MAX_GPUS)) {
+            for (unsigned gpu : utils::make_range(config::MAX_GPUS)) {
                 if (hostInfo_->allocsDev[gpu] != nullptr) {
                     DEBUG("Replicated> ALLOC freeing %u : %p", gpu, hostInfo_->allocsDev[gpu] - this->get_dim_manager().get_offset());
                     // Update offset
@@ -207,7 +207,7 @@ public:
     {
         if (this->get_ngpus()) {
             // Request copy-to-device
-            for (unsigned idx : utils::make_range(MAX_GPUS)) {
+            for (unsigned idx : utils::make_range(config::MAX_GPUS)) {
                 if (hostInfo_->allocsDev[idx] != nullptr) {
                     DEBUG("Replicated> gpu %u > to host: %p", idx, hostInfo_->allocsDev[idx] - this->get_dim_manager().get_offset());
                     CUDA_CALL(cudaMemcpy(this->get_host_storage().get_base_addr(),
@@ -225,7 +225,7 @@ public:
                       merged.get());
 
             // Request copy-to-device
-            for (unsigned idx : utils::make_range(MAX_GPUS)) {
+            for (unsigned idx : utils::make_range(config::MAX_GPUS)) {
                 if (hostInfo_->allocsDev[idx] != nullptr) {
                     CUDA_CALL(cudaMemcpy(tmp.get(),
                                          hostInfo_->allocsDev[idx] - this->get_dim_manager().get_offset(),
@@ -253,7 +253,7 @@ public:
     void to_device()
     {
         // Request copy-to-device
-        for (unsigned idx : utils::make_range(MAX_GPUS)) {
+        for (unsigned idx : utils::make_range(config::MAX_GPUS)) {
             if (hostInfo_->allocsDev[idx] != nullptr) {
                 DEBUG("Replicated> Index %u > to dev: %p", idx, hostInfo_->allocsDev[idx] - this->get_dim_manager().get_offset());
                 CUDA_CALL(cudaMemcpy(hostInfo_->allocsDev[idx] - this->get_dim_manager().get_offset(),

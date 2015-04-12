@@ -341,11 +341,11 @@ protected:
         transposeXY_(transposeXY)
     {
         if (gpuConf.procs == 0) {
-            gpus_ = PEER_GPUS;
+            gpus_ = config::PEER_GPUS;
         } else {
-            gpus_ = std::min(gpuConf.procs, PEER_GPUS);
+            gpus_ = std::min(gpuConf.procs, config::PEER_GPUS);
         }
-        if (gpuConf.procs > PEER_GPUS) {
+        if (gpuConf.procs > config::PEER_GPUS) {
             printf("WARNING: # requested GPUs > # installed GPUs\n");
         }
 
