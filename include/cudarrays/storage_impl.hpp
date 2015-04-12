@@ -30,12 +30,12 @@
 #ifndef CUDARRAYS_STORAGE_IMPL_HPP_
 #define CUDARRAYS_STORAGE_IMPL_HPP_
 
-#include "dist_storage_reshape-block.hpp"
-#include "dist_storage_reshape-cyclic.hpp"
-#include "dist_storage_reshape-block_cyclic.hpp"
-#include "dist_storage_replicated.hpp"
+#include "detail/dynarray/storage_reshape-block.hpp"
+#include "detail/dynarray/storage_reshape-cyclic.hpp"
+#include "detail/dynarray/storage_reshape-block_cyclic.hpp"
+#include "detail/dynarray/storage_replicated.hpp"
 
-#include "dist_storage_vm.hpp"
+#include "detail/dynarray/storage_vm.hpp"
 
 #endif
 

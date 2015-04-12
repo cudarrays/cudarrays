@@ -27,11 +27,11 @@
  * THE SOFTWARE. */
 
 #pragma once
-#ifndef CUDARRAYS_DIST_STORAGE_RESHAPE_BLOCK_CYCLIC_HPP_
-#define CUDARRAYS_DIST_STORAGE_RESHAPE_BLOCK_CYCLIC_HPP_
+#ifndef CUDARRAYS_DETAIL_DYNARRAY_STORAGE_RESHAPE_BLOCK_CYCLIC_HPP_
+#define CUDARRAYS_DETAIL_DYNARRAY_STORAGE_RESHAPE_BLOCK_CYCLIC_HPP_
 
-#include "log.hpp"
-#include "storage.hpp"
+#include "../../log.hpp"
+#include "../../storage.hpp"
 
 namespace cudarrays {
 

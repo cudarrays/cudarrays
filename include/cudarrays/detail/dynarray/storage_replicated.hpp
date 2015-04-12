@@ -27,12 +27,12 @@
  * THE SOFTWARE. */
 
 #pragma once
-#ifndef CUDARRAYS_DIST_STORAGE_REPLICATED_HPP_
-#define CUDARRAYS_DIST_STORAGE_REPLICATED_HPP_
+#ifndef CUDARRAYS_DETAIL_DYNARRAY_STORAGE_REPLICATED_HPP_
+#define CUDARRAYS_DETAIL_DYNARRAY_STORAGE_REPLICATED_HPP_
 
 #include <memory>
 
-#include "storage.hpp"
+#include "../../storage.hpp"
 
 namespace cudarrays {
 

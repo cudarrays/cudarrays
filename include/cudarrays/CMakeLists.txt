@@ -4,11 +4,11 @@ set(CUDARRAYS_HEADERS array.hpp
                       compiler.hpp
                       storage.hpp
                       storage_impl.hpp
-                      dist_storage_reshape-block.hpp
-                      dist_storage_reshape-cyclic.hpp
-                      dist_storage_reshape-block_cyclic.hpp
-                      dist_storage_replicated.hpp
-                      dist_storage_vm.hpp
+                      detail/dynarray/storage_reshape-block.hpp
+                      detail/dynarray/storage_reshape-cyclic.hpp
+                      detail/dynarray/storage_reshape-block_cyclic.hpp
+                      detail/dynarray/storage_replicated.hpp
+                      detail/dynarray/storage_vm.hpp
                       dynarray.hpp
                       env.hpp
                       gpu.cuh

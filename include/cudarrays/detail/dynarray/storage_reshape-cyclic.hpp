@@ -27,16 +27,16 @@
  * THE SOFTWARE. */
 
 #pragma once
-#ifndef CUDARRAYS_DIST_STORAGE_RESHAPE_BLOCK_HPP_
-#define CUDARRAYS_DIST_STORAGE_RESHAPE_BLOCK_HPP_
+#ifndef CUDARRAYS_DETAIL_DYNARRAY_STORAGE_RESHAPE_CYCLIC_HPP_
+#define CUDARRAYS_DETAIL_DYNARRAY_STORAGE_RESHAPE_CYCLIC_HPP_
 
-#include "log.hpp"
-#include "storage.hpp"
+#include "../../log.hpp"
+#include "../../storage.hpp"
 
 namespace cudarrays {
 
 template <typename T, unsigned Dims, typename PartConf>
-class array_storage<T, Dims, RESHAPE_BLOCK, PartConf> :
+class array_storage<T, Dims, RESHAPE_CYCLIC, PartConf> :
     public array_storage_base<T, Dims>
 {
     using base_storage_type = array_storage_base<T, Dims>;
@@ -52,9 +52,9 @@ class array_storage<T, Dims, RESHAPE_BLOCK, PartConf> :
         CUDA_CALL(cudaSetDevice(0));
 
         // Array grid layout
-        unsigned partZ = (Dims > 2)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxZ]: 1;
-        unsigned partY = (Dims > 1)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxY]: 1;
-        unsigned partX =             hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxX];
+        unsigned partZ = (Dims > 2)? arrayPartitionGrid_[dim_manager_type::DimIdxZ]: 1;
+        unsigned partY = (Dims > 1)? arrayPartitionGrid_[dim_manager_type::DimIdxY]: 1;
+        unsigned partX =             arrayPartitionGrid_[dim_manager_type::DimIdxX];
         // Array-to-GPU translation
         unsigned gpuDimForArrayZ = (Dims > 2)? hostInfo_->arrayDimToGpus[dim_manager_type::DimIdxZ]: 1;
         unsigned gpuDimForArrayY = (Dims > 1)? hostInfo_->arrayDimToGpus[dim_manager_type::DimIdxY]: 1;
@@ -96,8 +96,71 @@ class array_storage<T, Dims, RESHAPE_BLOCK, PartConf> :
 
 public:
     template <unsigned DimsComp>
-    __host__
-    void compute_distribution_internal(const compute_mapping<DimsComp, Dims> &mapping)
+    __host__ void
+    compute_distribution_internal_single(const compute_mapping<DimsComp, Dims> &mapping)
+    {
+        std::array<int, Dims> arrayDimToCompDim;
+        std::array<unsigned, DimsComp> gpuGrid;
+
+        // Register the mapping
+        arrayDimToCompDim = mapping.get_array_to_comp();
+
+        // Count partitioned dimensions in array and computation
+        if (mapping.get_array_part_dims() > mapping.comp.get_part_dims())
+            FATAL("Not enough partitioned comp dims: %u, to partition %u array dims",
+                  mapping.comp.get_part_dims(),
+                  mapping.get_array_part_dims());
+
+#if 0
+        // Check the minumum number of arrayPartitionGrid
+        if ((1 << compPartDims) > mapping.comp.procs)
+            FATAL("Not enough GPUs (%u), to partition %u", mapping.comp.procs, arrayPartDims);
+#endif
+        std::array<array_size_t, Dims> dims = make_array(this->get_dim_manager().sizes_);
+
+        // Distribute the partition uniformly across GPUs
+        // 1- Compute GPU grid
+        fill(gpuGrid, 1);
+        // 2- Compute array partitioning grid
+        fill(arrayPartitionGrid_, 1);
+        // 3- Compute dimensions of each tile
+        std::array<array_size_t, Dims> localDims = helper_distribution_get_local_dims(dims, make_array(arrayPartitionGrid_));
+        copy(localDims, hostInfo_->localDims_);
+        // 4- Compute local offsets for the indexing functions
+        std::array<array_size_t, Dims - 1> localOffs = helper_distribution_get_local_offs(localDims);
+        copy(localOffs, localOffs_);
+        // 5- Compute elements of each tile
+        array_size_t elemsLocal = helper_distribution_get_local_elems(localDims, CUDA_VM_ALIGN_ELEMS<T>());
+        hostInfo_->elemsLocal = elemsLocal;
+        // 6- Compute the inter-GPU array offsets for each dimension (iterate from lowest-order dimension)
+        std::array<array_size_t, Dims> gpuOffs = helper_distribution_get_intergpu_offs(elemsLocal, make_array(arrayPartitionGrid_), arrayDimToCompDim);
+        copy(gpuOffs, gpuOffs_);
+        // 7- Compute the GPU grid offsets (iterate from lowest-order dimension)
+        std::array<unsigned, DimsComp> gpuGridOffs = helper_distribution_gpu_get_offs(gpuGrid);
+        // 8- Compute the array to GPU mapping needed for the allocation based on the grid offsets
+        std::array<unsigned, Dims> arrayDimToGpus = helper_distribution_get_array_dim_to_gpus(gpuGridOffs, arrayDimToCompDim);
+        copy(arrayDimToGpus, hostInfo_->arrayDimToGpus);
+
+        DEBUG("Reshape> BASE INFO");
+        DEBUG("Reshape> - array dims: %s", to_string(dims).c_str());
+        DEBUG("Reshape> - comp  dims: %u", DimsComp);
+        DEBUG("Reshape> - comp -> array: %s", to_string(arrayDimToCompDim).c_str());
+
+        DEBUG("Reshape> PARTITIONING");
+        DEBUG("Reshape> - gpus: %u", mapping.comp.procs);
+        DEBUG("Reshape> - comp  part: %s (%u)", to_string(mapping.comp.info).c_str(), mapping.comp.get_part_dims());
+        DEBUG("Reshape> - comp  grid: %s", to_string(gpuGrid).c_str());
+        DEBUG("Reshape> - array grid: %s", to_string(arrayPartitionGrid_).c_str());
+        DEBUG("Reshape> - local elems: %s (%zd)", to_string(hostInfo_->localDims_).c_str(), size_t(hostInfo_->elemsLocal));
+        DEBUG("Reshape> - local offs: %s", to_string(localOffs_).c_str());
+
+        DEBUG("Reshape> - array grid offsets: %s", to_string(hostInfo_->arrayDimToGpus).c_str());
+        DEBUG("Reshape> - gpu   grid offsets: %s", to_string(gpuOffs_).c_str());
+    }
+
+    template <unsigned DimsComp>
+    __host__ void
+    compute_distribution_internal(const compute_mapping<DimsComp, Dims> &mapping)
     {
         std::array<int, Dims> arrayDimToCompDim;
         std::array<unsigned, DimsComp> gpuGrid;
@@ -123,10 +186,10 @@ public:
         gpuGrid = helper_distribution_get_gpu_grid(mapping.comp);
         // 2- Compute array partitioning grid
         std::array<unsigned, Dims> arrayPartitionGrid = helper_distribution_get_array_grid(gpuGrid, arrayDimToCompDim);
-        hostInfo_->arrayPartitionGrid = arrayPartitionGrid;
+        copy(arrayPartitionGrid, arrayPartitionGrid_);
         // 3- Compute dimensions of each tile
         std::array<array_size_t, Dims> localDims = helper_distribution_get_local_dims(dims, arrayPartitionGrid);
-        copy(localDims, localDims_);
+        copy(localDims, hostInfo_->localDims_);
         // 4- Compute local offsets for the indexing functions
         std::array<array_size_t, Dims - 1> localOffs = helper_distribution_get_local_offs(localDims);
         copy(localOffs, localOffs_);
@@ -151,8 +214,8 @@ public:
         DEBUG("Reshape> - gpus: %u", mapping.comp.procs);
         DEBUG("Reshape> - comp  part: %s (%u)", to_string(mapping.comp.info).c_str(), mapping.comp.get_part_dims());
         DEBUG("Reshape> - comp  grid: %s", to_string(gpuGrid).c_str());
-        DEBUG("Reshape> - array grid: %s", to_string(hostInfo_->arrayPartitionGrid).c_str());
-        DEBUG("Reshape> - local elems: %s (%zd)", to_string(localDims_).c_str(), size_t(hostInfo_->elemsLocal));
+        DEBUG("Reshape> - array grid: %s", to_string(arrayPartitionGrid_).c_str());
+        DEBUG("Reshape> - local elems: %s (%zd)", to_string(hostInfo_->localDims_).c_str(), size_t(hostInfo_->elemsLocal));
         DEBUG("Reshape> - local offs: %s", to_string(localOffs_).c_str());
 
         DEBUG("Reshape> - array grid offsets: %s", to_string(hostInfo_->arrayDimToGpus).c_str());
@@ -188,8 +251,12 @@ public:
 
             hostInfo_ = new storage_host_info(mapping.comp.procs);
 
-            compute_distribution_internal(mapping);
-
+            if (mapping.comp.procs == 1)
+                compute_distribution_internal_single(mapping);
+            else {
+                FATAL("Not implemented yet");
+                compute_distribution_internal(mapping);
+            }
             alloc();
 
             ret = true;
@@ -210,7 +277,7 @@ public:
 private:
     T *dataDev_;
 
-    array_size_t localDims_[Dims];
+    array_size_t arrayPartitionGrid_[Dims];
     array_size_t localOffs_[Dims - 1];
     array_size_t gpuOffs_[Dims];
 
@@ -218,8 +285,9 @@ private:
         unsigned gpus;
 
         array_size_t elemsLocal;
-        std::array<unsigned, Dims> arrayPartitionGrid;
         std::array<unsigned, Dims> arrayDimToGpus;
+
+        std::array<array_size_t, Dims> localDims_;
 
         storage_host_info(unsigned _gpus) :
             gpus(_gpus)
@@ -260,9 +328,9 @@ public:
     {
         T *unaligned = this->get_host_storage().get_addr();
 
-        unsigned partZ = (Dims > 2)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxZ]: 1;
-        unsigned partY = (Dims > 1)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxY]: 1;
-        unsigned partX =             hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxX];
+        unsigned partZ = (Dims > 2)? arrayPartitionGrid_[dim_manager_type::DimIdxZ]: 1;
+        unsigned partY = (Dims > 1)? arrayPartitionGrid_[dim_manager_type::DimIdxY]: 1;
+        unsigned partX =             arrayPartitionGrid_[dim_manager_type::DimIdxX];
 
         cudaMemcpy3DParms myParms = {0};
         myParms.dstPtr = make_cudaPitchedPtr(unaligned,
@@ -273,15 +341,15 @@ public:
         for (unsigned pZ : utils::make_range(partZ)) {
             for (unsigned pY : utils::make_range(partY)) {
                 for (unsigned pX : utils::make_range(partX)) {
-                    array_index_t localZ = Dims > 2? this->localDims_[dim_manager_type::DimIdxZ]: 1;
-                    array_index_t localY = Dims > 1? this->localDims_[dim_manager_type::DimIdxY]: 1;
-                    array_index_t localX =           this->localDims_[dim_manager_type::DimIdxX];
+                    array_index_t localZ = Dims > 2? hostInfo_->localDims_[dim_manager_type::DimIdxZ]: 1;
+                    array_index_t localY = Dims > 1? hostInfo_->localDims_[dim_manager_type::DimIdxY]: 1;
+                    array_index_t localX =           hostInfo_->localDims_[dim_manager_type::DimIdxX];
 
                     array_index_t blockOff = pZ * (Dims > 2? gpuOffs_[dim_manager_type::DimIdxZ]: 0) +
                                              pY * (Dims > 1? gpuOffs_[dim_manager_type::DimIdxY]: 0) +
                                              pX *            gpuOffs_[dim_manager_type::DimIdxX];
 
-                    DEBUG("TO_HOST: Extent: (%u %u %u)", sizeof(T) * localDims_[dim_manager_type::DimIdxX],
+                    DEBUG("TO_HOST: Extent: (%u %u %u)", sizeof(T) * hostInfo_->localDims_[dim_manager_type::DimIdxX],
                                                          localY,
                                                          localZ);
 
@@ -296,9 +364,9 @@ public:
                                                             pX *            gpuOffs_[dim_manager_type::DimIdxX]);
 
                     myParms.srcPtr = make_cudaPitchedPtr(dataDev_ + blockOff,
-                                                         sizeof(T) * localDims_[dim_manager_type::DimIdxX],
-                                                                     localDims_[dim_manager_type::DimIdxX],
-                                                         Dims > 1?   localDims_[dim_manager_type::DimIdxY]: 1);
+                                                         sizeof(T) * hostInfo_->localDims_[dim_manager_type::DimIdxX],
+                                                                     hostInfo_->localDims_[dim_manager_type::DimIdxX],
+                                                         Dims > 1?   hostInfo_->localDims_[dim_manager_type::DimIdxY]: 1);
 
                     // We copy the whole chunk
                     myParms.srcPos = make_cudaPos(0, 0, 0);
@@ -334,9 +402,9 @@ public:
     {
         T *unaligned = this->get_host_storage().get_addr();
 
-        unsigned partZ = (Dims > 2)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxZ]: 1;
-        unsigned partY = (Dims > 1)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxY]: 1;
-        unsigned partX =             hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxX];
+        unsigned partZ = (Dims > 2)? arrayPartitionGrid_[dim_manager_type::DimIdxZ]: 1;
+        unsigned partY = (Dims > 1)? arrayPartitionGrid_[dim_manager_type::DimIdxY]: 1;
+        unsigned partX =             arrayPartitionGrid_[dim_manager_type::DimIdxX];
 
         cudaMemcpy3DParms myParms = {0};
         myParms.srcPtr = make_cudaPitchedPtr(unaligned,
@@ -347,9 +415,9 @@ public:
         for (unsigned pZ : utils::make_range(partZ)) {
             for (unsigned pY : utils::make_range(partY)) {
                 for (unsigned pX : utils::make_range(partX)) {
-                    array_index_t localZ = (Dims > 2)? this->localDims_[dim_manager_type::DimIdxZ]: 1;
-                    array_index_t localY = (Dims > 1)? this->localDims_[dim_manager_type::DimIdxY]: 1;
-                    array_index_t localX =             this->localDims_[dim_manager_type::DimIdxX];
+                    array_index_t localZ = Dims > 2? hostInfo_->localDims_[dim_manager_type::DimIdxZ]: 1;
+                    array_index_t localY = Dims > 1? hostInfo_->localDims_[dim_manager_type::DimIdxY]: 1;
+                    array_index_t localX =           hostInfo_->localDims_[dim_manager_type::DimIdxX];
 
                     array_index_t blockOff = pZ * (Dims > 2? gpuOffs_[dim_manager_type::DimIdxZ]: 0) +
                                              pY * (Dims > 1? gpuOffs_[dim_manager_type::DimIdxY]: 0) +
@@ -366,9 +434,9 @@ public:
                                                               pX * localX);
 
                     myParms.dstPtr = make_cudaPitchedPtr(dataDev_ + blockOff,
-                                                         sizeof(T) * localDims_[dim_manager_type::DimIdxX],
-                                                                     localDims_[dim_manager_type::DimIdxX],
-                                                         Dims > 1?   localDims_[dim_manager_type::DimIdxY]: 1);
+                                                         sizeof(T) * hostInfo_->localDims_[dim_manager_type::DimIdxX],
+                                                                     hostInfo_->localDims_[dim_manager_type::DimIdxX],
+                                                         Dims > 1?   hostInfo_->localDims_[dim_manager_type::DimIdxY]: 1);
 
                     // We copy the whole chunk
                     myParms.dstPos = make_cudaPos(0, 0, 0);
@@ -423,9 +491,10 @@ public:
                                         idx1, idx2, idx3);
         return this->get_host_storage().get_addr()[off];
 #else
-        using my_indexer = index_block<PartConf>;
+        using my_indexer = index_cyclic<PartConf>;
         array_index_t off;
-        off = my_indexer::access_pos(localOffs_, localDims_,
+        off = my_indexer::access_pos(localOffs_,
+                                     arrayPartitionGrid_,
                                      gpuOffs_,
                                      idx1, idx2, idx3);
         return this->dataDev_[off];
@@ -442,17 +511,18 @@ public:
                                         idx1, idx2, idx3);
         return this->get_host_storage().get_addr()[off];
 #else
-        using my_indexer = index_block<PartConf>;
+        using my_indexer = index_cyclic<PartConf>;
         array_index_t off;
-        off = my_indexer::access_pos(localOffs_, localDims_,
+        off = my_indexer::access_pos(localOffs_,
+                                     arrayPartitionGrid_,
                                      gpuOffs_,
                                      idx1, idx2, idx3);
         return this->dataDev_[off];
- #endif
+#endif
     }
 
 private:
-    CUDARRAYS_TESTED(lib_storage_test, host_reshape_block)
+    CUDARRAYS_TESTED(lib_storage_test, host_reshape_cyclic)
 };
 
 }

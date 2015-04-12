@@ -29,7 +29,7 @@
 #include "common.hpp"
 
 #include "cudarrays/storage.hpp"
-#include "cudarrays/dist_storage_vm.hpp"
+#include "cudarrays/detail/dynarray/storage_vm.hpp"
 
 #include "gtest/gtest.h"
 
