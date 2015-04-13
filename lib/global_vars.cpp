@@ -54,3 +54,5 @@ __attribute__((weak))
 void *trace_end_buffer__ = NULL;
 #endif
 }
+
+/* vim:set ft=cpp backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab: */

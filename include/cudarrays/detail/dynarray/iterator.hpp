@@ -440,4 +440,4 @@ public:
 
 #endif // CUDARRAYS_ITERATOR_HPP_
 
-/* im:set ft=cpp backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab: */
+/* vim:set ft=cpp backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab: */

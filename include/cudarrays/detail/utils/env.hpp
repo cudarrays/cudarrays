@@ -154,3 +154,5 @@ static T1 getenv(const std::string &name, T1 default_value)
 }
 
 #endif
+
+/* vim:set ft=cpp backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab: */

@@ -38,3 +38,5 @@
 #include "detail/utils/stl.hpp"
 
 #endif // CUDARRAYS_UTIL_HPP_
+
+/* vim:set ft=cpp backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab: */

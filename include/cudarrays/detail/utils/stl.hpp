@@ -31,6 +31,7 @@
 #define CUDARRAYS_DETAIL_UTILS_STL_HPP_
 
 #include <algorithm>
+#include <array>
 #include <sstream>
 #include <utility>
 
@@ -153,7 +154,8 @@ to_string(const std::array<T, Dims> &array)
     return to_string(array.data(), Dims);
 }
 
-
 }
 
 #endif
+
+/* vim:set ft=cpp backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab: */

@@ -116,3 +116,5 @@ compiler_get_array_info(const void *fun, unsigned arrayArgIdx)
 }
 
 }
+
+/* vim:set ft=cpp backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab: */
