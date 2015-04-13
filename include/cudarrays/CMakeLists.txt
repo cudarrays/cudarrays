@@ -5,6 +5,7 @@ set(CUDARRAYS_HEADERS array.hpp
                       compiler.hpp
                       storage.hpp
                       storage_impl.hpp
+                      detail/dynarray/helpers.hpp
                       detail/dynarray/indexing.hpp
                       detail/dynarray/iterator.hpp
                       detail/dynarray/storage_reshape-block.hpp

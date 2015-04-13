@@ -33,6 +33,7 @@
 #include "../../utils.hpp"
 
 #include "base.hpp"
+#include "helpers.hpp"
 
 namespace cudarrays {
 

@@ -351,7 +351,7 @@ protected:
 
         init_streams(gpus_);
 
-        unsigned partDims = std::count(gpuConf.info.begin(), gpuConf.info.end(), true);
+        unsigned partDims = utils::count(gpuConf.info, true);
 
         auto factorsGPUs = get_factors(gpuConf.procs);
         if (gpuConf.procs == 1) {
