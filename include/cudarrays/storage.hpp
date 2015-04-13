@@ -336,13 +336,7 @@ struct compute_conf {
     std::array<bool, Dims> info;
     unsigned procs;
 
-    compute_conf(const std::array<bool, Dims> &_info, unsigned _procs = 0) :
-        info(_info),
-        procs(_procs)
-    {
-    }
-
-    compute_conf(compute c, unsigned _procs) :
+    compute_conf(compute c, unsigned _procs = 0) :
         procs(_procs)
     {
         info = compute_part_helper<Dims>::make_array(c);

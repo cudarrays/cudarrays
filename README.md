@@ -5,6 +5,7 @@ C++ programming framework for multi-GPU CUDA applications.
 ```Cuda
 #include <iostream>
 #include <cudarrays/types.hpp>
+#include <cudarrays/launch.hpp>
 
 using namespace cudarrays;
 
@@ -33,7 +34,7 @@ int main()
     cuda_conf conf{ELEMS / 512, 512};
     // Launch vecadd kernel. The kernel is executed on all GPUs.
     // The computation grid is decomposed on its X dimension.
-    bool status = launch(vecadd_kernel, conf, {compute::x})(C, A, B);
+    bool status = launch(vecadd_kernel, conf, compute_conf<1>{compute::x})(C, A, B);
 
     for (unsigned i = 0; i < ELEMS; ++i) {
         std::cout << C(i) << " ";
@@ -42,4 +43,5 @@ int main()
 
     return 0;
 }
+
 ```

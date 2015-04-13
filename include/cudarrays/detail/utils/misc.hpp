@@ -53,19 +53,14 @@ struct generate_static_detail<T, 0, FillValue, S, Generated...> {
     using type = S<Generated...>;
 };
 
-template <typename T, T FillValue, template <T...> class S>
-struct generate_static_detail<T, 0, FillValue, S> {
-    using type = S<>;
-};
-
 template <typename T, unsigned Size, T FillValue, template <T...> class S>
 struct generate_static {
-    using type = generate_static_detail<T, Size - 1, FillValue, S, FillValue>;
+    using type = typename generate_static_detail<T, Size - 1, FillValue, S, FillValue>::type;
 };
 
 template <typename T, T FillValue, template <T...> class S>
 struct generate_static<T, 0, FillValue, S> {
-    using type = generate_static_detail<T, 0, FillValue, S>;
+    using type = typename generate_static_detail<T, 0, FillValue, S>::type;
 };
 
 template <typename T, unsigned Size, T FillValue, template <T...> class S, T... Rest>
