@@ -103,6 +103,22 @@ accumulate(const C &cont, T &&init, BinaryOperation &&op) -> decltype(std::accum
     return std::accumulate(std::begin(cont), std::end(cont), std::forward<T>(init), std::forward<BinaryOperation>(op));
 }
 
+template <typename C>
+static inline
+auto
+sort(C &cont) -> decltype(std::sort(std::begin(cont), std::end(cont)))
+{
+    return std::sort(std::begin(cont), std::end(cont));
+}
+
+template <typename C, typename Compare>
+static inline
+auto
+sort(C &cont, Compare &&op) -> decltype(std::sort(std::begin(cont), std::end(cont), std::forward<Compare>(op)))
+{
+    return std::sort(std::begin(cont), std::end(cont), std::forward<Compare>(op));
+}
+
 template <typename T>
 std::string
 to_string(T *array, unsigned dims)

@@ -357,7 +357,7 @@ protected:
         if (gpuConf.procs == 1) {
             factorsGPUs.push_back(1);
         }
-        std::sort(factorsGPUs.begin(), factorsGPUs.end(), std::greater<unsigned>());
+        utils::sort(factorsGPUs, std::greater<unsigned>());
 
         unsigned j = 0;
         for (unsigned i : utils::make_range(Dims)) {

@@ -424,7 +424,7 @@ helper_distribution_get_gpu_grid(const compute_conf<DimsComp> &comp)
 
     // Check if we can map the arrayPartitionGrid on the GPUs
     std::vector<unsigned> factorsGpus = utils::get_factors(comp.procs);
-    std::sort(factorsGpus.begin(), factorsGpus.end(), std::greater<unsigned>());
+    utils::sort(factorsGpus, std::greater<unsigned>());
 
 #if 0
     if (factorsGPUs.size() < compPartDims)
