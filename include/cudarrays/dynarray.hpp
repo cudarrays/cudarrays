@@ -80,10 +80,8 @@ public:
 
     static constexpr unsigned dimensions = Dims;
 
-    using extents_type = std::array<array_size_t, Dims>;
-
     __host__
-    explicit dynarray(const extents_type &extents,
+    explicit dynarray(const extents<Dims> &extents,
                       const align_t &align = align_t{0, 0},
                       coherence_policy_type coherence = coherence_policy_type()) :
         storage_(permuter_type::reorder(extents), align),

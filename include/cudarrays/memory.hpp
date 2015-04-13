@@ -30,7 +30,11 @@
 #ifndef CUDARRAYS_MEMORY_HPP_
 #define CUDARRAYS_MEMORY_HPP_
 
+#include <functional>
+
 namespace cudarrays {
+
+using handler_fn = std::function<bool (bool)>;
 
 void register_range(void *addr, size_t count);
 void unregister_range(void *addr);

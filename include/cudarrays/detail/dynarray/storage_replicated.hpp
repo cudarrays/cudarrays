@@ -44,7 +44,6 @@ class dynarray_storage<T, Dims, REPLICATED, PartConf> :
 {
     using base_storage_type = dynarray_base<T, Dims>;
     using  dim_manager_type = typename base_storage_type::dim_manager_type;
-    using      extents_type = typename base_storage_type::extents_type;
 
     using indexer_type = linearizer<Dims>;
 
@@ -87,9 +86,9 @@ private:
 
 public:
     __host__
-    dynarray_storage(const extents_type &extents,
-                  const align_t &align) :
-        base_storage_type(extents, align),
+    dynarray_storage(const extents<Dims> &ext,
+                     const align_t &align) :
+        base_storage_type(ext, align),
         dataDev_(nullptr),
         hostInfo_(nullptr)
     {

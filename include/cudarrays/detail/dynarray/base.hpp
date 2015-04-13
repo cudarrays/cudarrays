@@ -30,15 +30,36 @@
 #ifndef CUDARRAYS_DETAIL_DYNARRAY_BASE_HPP_
 #define CUDARRAYS_DETAIL_DYNARRAY_BASE_HPP_
 
+#include "../../common.hpp"
 #include "../../storage.hpp"
 
 #include "indexing.hpp"
 
 namespace cudarrays {
 
+template <unsigned Dims>
+using extents = std::array<array_size_t, Dims>;
+
+template <typename... T>
+auto make_extents(T... values) -> extents<sizeof...(T)>
+{
+    return extents<sizeof...(T)>{array_size_t(values)...};
+}
+
+struct align_t {
+    array_size_t alignment;
+    array_size_t position;
+
+    explicit align_t(array_size_t _alignment = 0,
+                     array_index_t _position = 0) :
+        alignment(_alignment),
+        position(_position)
+    {
+    }
+};
+
 template <typename T, unsigned Dims>
 class dim_manager {
-    using extents_type = std::array<array_size_t, Dims> ;
 public:
     static constexpr unsigned FirstDim = 3 - Dims;
 
@@ -57,7 +78,7 @@ private:
     array_size_t elemsAlign_;
 
     __host__ void
-    init(const extents_type &extents,
+    init(const extents<Dims> &extents,
          align_t align,
          const std::array<array_size_t, Dims - 1> &offAlignImpl)
     {
@@ -105,7 +126,7 @@ private:
 
 public:
     __host__
-    dim_manager(extents_type extents,
+    dim_manager(extents<Dims> extents,
                 const align_t &align,
                 const std::array<array_size_t, Dims - 1> &offAlignImpl = std::array<array_size_t, Dims - 1>())
     {
@@ -278,11 +299,9 @@ template <typename T, unsigned Dims>
 class dynarray_base {
 public:
     using  dim_manager_type = dim_manager<T, Dims>;
-    using      extents_type = std::array<array_size_t, Dims>;
     using host_storage_type = host_storage<T>;
 
-
-    dynarray_base(extents_type extents,
+    dynarray_base(extents<Dims> extents,
                   const align_t &align) :
         dimManager_(extents, align)
     {
@@ -330,3 +349,5 @@ class dynarray_storage;
 }
 
 #endif
+
+/* vim:set backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab: */

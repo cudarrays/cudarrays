@@ -292,3 +292,5 @@ struct index_ptr<T, Dims, PartZ, PartY, PartX, 3>
 }
 
 #endif
+
+/* vim:set backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab: */

@@ -40,8 +40,6 @@ namespace cudarrays {
 
 template <unsigned Dims>
 class page_allocator {
-    using extents_type = std::array<array_size_t, Dims>;
-
 public:
     struct page_stats {
         unsigned gpu;
@@ -194,9 +192,9 @@ public:
 private:
     unsigned gpus_;
 
-    extents_type dims_;
-    extents_type dimsAlign_;
-    extents_type dimsLocal_;
+    extents<Dims> dims_;
+    extents<Dims> dimsAlign_;
+    extents<Dims> dimsLocal_;
 
     std::array<unsigned, Dims> arrayDimToGpus_;
 
@@ -219,12 +217,11 @@ class dynarray_storage<T, Dims, VM, PartConf> :
 {
     using base_storage_type = dynarray_base<T, Dims>;
     using  dim_manager_type = typename base_storage_type::dim_manager_type;
-    using      extents_type = typename base_storage_type::extents_type;
 
     struct storage_host_info {
         unsigned gpus;
 
-        extents_type localDims;
+        extents<Dims> localDims;
         std::array<unsigned, Dims>     arrayDimToGpus;
 
         storage_host_info(unsigned _gpus) :
@@ -314,9 +311,9 @@ public:
     }
 
     __host__
-    dynarray_storage(const extents_type &extents,
+    dynarray_storage(const extents<Dims> &ext,
                   const align_t &align) :
-        base_storage_type(extents, align),
+        base_storage_type(ext, align),
         dataDev_(NULL),
         hostInfo_(NULL)
     {
@@ -388,8 +385,8 @@ private:
     {
         using my_allocator = page_allocator<Dims>;
 
-        extents_type elems;
-        extents_type elemsAlign;
+        extents<Dims> elems;
+        extents<Dims> elemsAlign;
 
         utils::copy(this->get_dim_manager().sizes_, elems);
         std::copy(this->get_dim_manager().sizesAlign_, this->get_dim_manager().sizesAlign_ + Dims, elemsAlign.begin());

@@ -42,7 +42,6 @@ class dynarray_storage<T, Dims, RESHAPE_CYCLIC, PartConf> :
 {
     using base_storage_type = dynarray_base<T, Dims>;
     using  dim_manager_type = typename base_storage_type::dim_manager_type;
-    using      extents_type = typename base_storage_type::extents_type;
 
     __host__
     void alloc()
@@ -300,9 +299,9 @@ private:
 
 public:
     __host__
-    dynarray_storage(const extents_type &extents,
+    dynarray_storage(const extents<Dims> &ext,
                   const align_t &align) :
-        base_storage_type(extents, align),
+        base_storage_type(ext, align),
         dataDev_(nullptr),
         hostInfo_(nullptr)
     {

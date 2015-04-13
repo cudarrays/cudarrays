@@ -34,8 +34,6 @@
 #include <cuda_runtime_api.h>
 #include <driver_functions.h>
 
-#include <functional>
-
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
@@ -45,52 +43,11 @@
 
 namespace cudarrays {
 
-using handler_fn = std::function<bool (bool)>;
-
-template <unsigned Dims>
-using extents = std::array<array_size_t, Dims>;
-
-template <typename... T>
-auto make_extents(T... values) -> extents<sizeof...(T)>
-{
-    return extents<sizeof...(T)>{array_size_t(values)...};
-}
-
-struct align_t {
-    array_size_t alignment;
-    array_size_t position;
-
-    explicit align_t(array_size_t _alignment = 0,
-                     array_index_t _position = 0) :
-        alignment(_alignment),
-        position(_position)
-    {
-    }
-};
-
 void init_lib();
 void fini_lib();
 
-#ifdef CUDARRAYS_UNITTEST
-#define CUDARRAYS_TESTED(C,T) friend ::C##_##T##_Test;
-#else
-#define CUDARRAYS_TESTED(C,T)
-#endif
-
-#define CUDA_CALL(x)                                       \
-do {                                                       \
-    cudaError_t err__ = (x);                               \
-    if (err__ != cudaSuccess) {                            \
-        fprintf(stderr,                                    \
-                "Error calling CUDA: %d. Message: '%s'\n", \
-                err__,                                     \
-                cudaGetErrorString(err__));                \
-        abort();                                           \
-    }                                                      \
-} while (0)
-
 }
 
 #endif
 
-/* vim:set backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab: */
+/* vim:set ft=cpp backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab: */
