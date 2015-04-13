@@ -30,7 +30,7 @@
 
 #include "common.hpp"
 
-#include "cudarrays/iterator.hpp"
+#include "cudarrays/detail/dynarray/iterator.hpp"
 
 #include "gtest/gtest.h"
 

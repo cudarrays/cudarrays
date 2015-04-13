@@ -27,14 +27,14 @@
  * THE SOFTWARE. */
 
 #pragma once
-#ifndef CUDARRAYS_ITERATOR_HPP_
-#define CUDARRAYS_ITERATOR_HPP_
+#ifndef CUDARRAYS_DETAIL_DYNARRAY_ITERATOR_HPP_
+#define CUDARRAYS_DETAIL_DYNARRAY_ITERATOR_HPP_
 
 #include <iterator>
 
-#include "compiler.hpp"
-#include "common.hpp"
-#include "utils.hpp"
+#include "../../compiler.hpp"
+#include "../../common.hpp"
+#include "../../utils.hpp"
 
 namespace cudarrays {
 

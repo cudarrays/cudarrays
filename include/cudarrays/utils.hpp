@@ -39,8 +39,7 @@
 #include <sstream>
 
 #include "compiler.hpp"
-#include "integral_iterator.hpp"
-
+#include "detail/utils/integral_iterator.hpp"
 #include "detail/utils/log.hpp"
 
 namespace std {

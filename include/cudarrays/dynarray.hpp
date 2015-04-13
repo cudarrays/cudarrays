@@ -47,7 +47,8 @@
 #include "memory.hpp"
 #include "storage.hpp"
 #include "storage_impl.hpp"
-#include "iterator.hpp"
+
+#include "detail/dynarray/iterator.hpp"
 
 namespace cudarrays {
 

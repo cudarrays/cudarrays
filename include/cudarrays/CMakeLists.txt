@@ -5,18 +5,18 @@ set(CUDARRAYS_HEADERS array.hpp
                       compiler.hpp
                       storage.hpp
                       storage_impl.hpp
+                      detail/dynarray/indexing.hpp
+                      detail/dynarray/iterator.hpp
                       detail/dynarray/storage_reshape-block.hpp
                       detail/dynarray/storage_reshape-cyclic.hpp
                       detail/dynarray/storage_reshape-block_cyclic.hpp
                       detail/dynarray/storage_replicated.hpp
                       detail/dynarray/storage_vm.hpp
-                      detail/dynarray/indexing.hpp
+                      detail/utils/integral_iterator.hpp
                       detail/utils/log.hpp
                       dynarray.hpp
                       env.hpp
                       gpu.cuh
-                      integral_iterator.hpp
-                      iterator.hpp
                       launch.hpp
                       launch_cpu.hpp
                       memory.hpp
