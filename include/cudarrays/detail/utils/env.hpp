@@ -27,8 +27,8 @@
  * THE SOFTWARE. */
 
 #pragma once
-#ifndef CUDARRAYS_ENV_HPP_
-#define CUDARRAYS_ENV_HPP_
+#ifndef CUDARRAYS_DETAIL_UTILS_ENV_HPP_
+#define CUDARRAYS_DETAIL_UTILS_ENV_HPP_
 
 #include <cstdlib>
 #include <string>
@@ -36,9 +36,9 @@
 #include <algorithm>
 #include <iostream>
 
-namespace cudarrays {
+namespace detail {
 
-namespace internal {
+namespace utils {
 
 template <typename T>
 class string_to {
@@ -131,6 +131,9 @@ public:
 };
 
 }
+}
+
+namespace utils {
 
 template <typename T1>
 static T1 getenv(const std::string &name, T1 default_value)
@@ -143,9 +146,9 @@ static T1 getenv(const std::string &name, T1 default_value)
 
     T1 out;
 
-    bool ok = internal::string_to<T1>::convert(val, out);
-
-    return out;
+    bool ok = detail::utils::string_to<T1>::convert(val, out);
+    if (ok) return out;
+    else return T1(0);
 }
 
 }

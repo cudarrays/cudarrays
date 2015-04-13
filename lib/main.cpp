@@ -33,8 +33,8 @@
 #include <cuda_runtime.h>
 
 #include "cudarrays/common.hpp"
-#include "cudarrays/env.hpp"
 #include "cudarrays/memory.hpp"
+#include "cudarrays/utils.hpp"
 
 #include "cudarrays/detail/utils/log.hpp"
 
@@ -44,16 +44,16 @@ namespace cudarrays {
 void init_lib()
 {
     // Initialize logging
-    config::OPTION_DEBUG = getenv<bool>("CUDARRAYS_DEBUG", false);
+    config::OPTION_DEBUG = utils::getenv<bool>("CUDARRAYS_DEBUG", false);
 
     // Get gpus from environment variable
-    config::MAX_GPUS = getenv<unsigned>("CUDARRAYS_GPUS", 0);
+    config::MAX_GPUS = utils::getenv<unsigned>("CUDARRAYS_GPUS", 0);
 
     // VM alignment used by the CUDA driver
-    config::CUDA_VM_ALIGN = getenv<array_size_t>("CUDARRAYS_VM_ALIGN", 1 * 1024 * 1024);
+    config::CUDA_VM_ALIGN = utils::getenv<array_size_t>("CUDARRAYS_VM_ALIGN", 1 * 1024 * 1024);
 
     // Page size to be emulated in VM based allocators
-    config::PAGE_ALIGN = getenv<array_size_t>("CUDARRAYS_PAGE_ALIGN", 4 * 1024);
+    config::PAGE_ALIGN = utils::getenv<array_size_t>("CUDARRAYS_PAGE_ALIGN", 4 * 1024);
 
     config::PAGES_PER_ARENA = config::CUDA_VM_ALIGN / config::PAGE_ALIGN;
 

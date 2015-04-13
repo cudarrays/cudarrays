@@ -30,7 +30,6 @@
 #ifndef CUDARRAYS_DETAIL_DYNARRAY_STORAGE_VM_HPP_
 #define CUDARRAYS_DETAIL_DYNARRAY_STORAGE_VM_HPP_
 
-#include "../../detail/utils/log.hpp"
 #include "../../utils.hpp"
 
 #include "base.hpp"

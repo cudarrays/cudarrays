@@ -12,10 +12,13 @@ set(CUDARRAYS_HEADERS array.hpp
                       detail/dynarray/storage_reshape-block_cyclic.hpp
                       detail/dynarray/storage_replicated.hpp
                       detail/dynarray/storage_vm.hpp
+                      detail/utils/env.hpp
                       detail/utils/integral_iterator.hpp
                       detail/utils/log.hpp
+                      detail/utils/misc.hpp
+                      detail/utils/permute.hpp
+                      detail/utils/stl.hpp
                       dynarray.hpp
-                      env.hpp
                       gpu.cuh
                       launch.hpp
                       launch_cpu.hpp

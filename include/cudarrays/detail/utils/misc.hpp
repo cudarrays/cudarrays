@@ -27,14 +27,65 @@
  * THE SOFTWARE. */
 
 #pragma once
-#ifndef CUDARRAYS_UTIL_HPP_
-#define CUDARRAYS_UTIL_HPP_
+#ifndef CUDARRAYS_DETAIL_UTILS_MISC_HPP_
+#define CUDARRAYS_DETAIL_UTILS_MISC_HPP_
 
-#include "detail/utils/env.hpp"
-#include "detail/utils/integral_iterator.hpp"
-#include "detail/utils/log.hpp"
-#include "detail/utils/misc.hpp"
-#include "detail/utils/permute.hpp"
-#include "detail/utils/stl.hpp"
+#include <type_traits>
+#include <vector>
 
-#endif // CUDARRAYS_UTIL_HPP_
+namespace utils {
+
+template <typename T>
+void
+_get_factors(T n, std::vector<T> &factors)
+{
+    if (n == 1) return;
+
+    unsigned z = 2;
+    while (z <= n) {
+        if (n % z == 0) {
+            break;
+        }
+        ++z;
+    }
+    factors.push_back(z);
+    _get_factors(n/z, factors);
+    return;
+}
+
+template <typename T>
+std::vector<T>
+get_factors(T n)
+{
+    std::vector<T> ret;
+
+    _get_factors(n, ret);
+
+    return ret;
+}
+
+template <class T, class U>
+T div_ceil(T a, U b)
+{
+    static_assert(std::is_integral<T>::value &&
+                  std::is_integral<U>::value, "div_ceil works on integral types only");
+    ASSERT(b > U(0));
+    T res = a / b;
+    if (a % b != 0) ++res;
+    return res;
+}
+
+template <class T, class U>
+typename std::common_type<T, U>::type
+round_next(T val, U step)
+{
+    static_assert(std::is_integral<T>::value &&
+                  std::is_integral<U>::value, "round_next works on integral types only");
+    if (val % step != 0)
+        val = ((val / step) + 1) * step;
+    return val;
+}
+
+}
+
+#endif

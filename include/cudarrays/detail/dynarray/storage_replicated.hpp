@@ -32,6 +32,8 @@
 
 #include <memory>
 
+#include "../../utils.hpp"
+
 #include "base.hpp"
 
 namespace cudarrays {
