@@ -76,29 +76,6 @@ make_array(const T(&array)[Elems])
 
 // TODO: Life will be much more easier when NVCC compiles this
 #if 0
-template <typename T, size_t Elems>
-struct array_dev {
-    T data_[Elems];
-
-    __hostdevice__
-    T &operator[](size_t idx)
-    {
-        return data_[idx];
-    }
-
-    __hostdevice__
-    constexpr
-    const T &operator[](size_t idx) const
-    {
-        return data_[idx];
-    }
-
-    constexpr size_t size() const
-    {
-        return Elems;
-    }
-};
-
 template <typename T, class U, class M>
 struct reorder_gather_static;
 
@@ -121,20 +98,38 @@ struct array_dev {
     T data_[Elems];
 
     __hostdevice__
-    T &operator[](size_t idx)
+    constexpr
+    T operator[](size_t idx) const
     {
         return data_[idx];
     }
 
     __hostdevice__
     constexpr
-    const T &operator[](size_t idx) const
+    const T &at(size_t idx) const
     {
         return data_[idx];
     }
 
+    template <size_t Idx>
     __hostdevice__
-    constexpr size_t size() const
+    constexpr
+    const typename std::enable_if<(Idx < Elems), T>::type at() const
+    {
+        return data_[Idx];
+    }
+
+    template <size_t Idx>
+    __hostdevice__
+    constexpr
+    const typename std::enable_if<(Idx >= Elems), T>::type at() const
+    {
+        return T(0);
+    }
+
+    __hostdevice__
+    constexpr
+    size_t size() const
     {
         return Elems;
     }

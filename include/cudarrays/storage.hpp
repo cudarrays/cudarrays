@@ -61,44 +61,19 @@ enum storage_impl {
     REPLICATED           = 10,
 };
 
-#if 0
 template <bool... PartVals>
 struct part_impl {
-    static constexpr size_t Dims = sizeof...(PartVals);
-    using array_type = array_dev<bool, sizeof...(PartVals)>;
+    static constexpr size_t dimensions = sizeof...(PartVals);
+    using array_type = utils::array_dev<bool, sizeof...(PartVals)>;
     static constexpr array_type Pos{PartVals...};
+
+    static_assert(sizeof...(PartVals) <= 3,
+                  "Up to 3 dimensional arrays are supported so far");
+
+    static constexpr bool X = Pos.template at<(dimensions - 1) - 0>();
+    static constexpr bool Y = Pos.template at<(dimensions - 1) - 1>();
+    static constexpr bool Z = Pos.template at<(dimensions - 1) - 2>();
 };
-#else
-template <bool... PartVals>
-struct part_impl;
-
-template <bool PartX>
-struct part_impl<PartX> {
-    static constexpr unsigned dimensions = 1;
-    static constexpr bool X = PartX;
-
-    static constexpr bool Y = false;
-    static constexpr bool Z = false;
-};
-
-template <bool PartY, bool PartX>
-struct part_impl<PartY, PartX> {
-    static constexpr unsigned dimensions = 2;
-    static constexpr bool X = PartX;
-    static constexpr bool Y = PartY;
-
-    static constexpr bool Z = false;
-};
-
-template <bool PartZ, bool PartY, bool PartX>
-struct part_impl<PartZ, PartY, PartX> {
-    static constexpr unsigned dimensions = 3;
-    static constexpr bool X = PartX;
-    static constexpr bool Y = PartY;
-    static constexpr bool Z = PartZ;
-};
-
-#endif
 
 // Predefined partition classes
 template <unsigned Dims>
