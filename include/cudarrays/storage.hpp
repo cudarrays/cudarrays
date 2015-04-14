@@ -63,7 +63,7 @@ enum class storage_tag {
 };
 
 template <bool... PartVals>
-struct part_impl {
+struct storage_part_dim_helper {
     static constexpr size_t dimensions = sizeof...(PartVals);
     using array_type = utils::array_dev<bool, sizeof...(PartVals)>;
     static constexpr array_type Pos{PartVals...};
@@ -82,120 +82,120 @@ struct storage_part_helper;
 // Predefined partition classes
 template <>
 struct storage_part_helper<partition::none, 1> {
-    using type = part_impl<false>;
+    using type = storage_part_dim_helper<false>;
 };
 template <>
 struct storage_part_helper<partition::none, 2> {
-    using type = part_impl<false, false>;
+    using type = storage_part_dim_helper<false, false>;
 };
 template <>
 struct storage_part_helper<partition::none, 3> {
-    using type = part_impl<false, false, false>;
+    using type = storage_part_dim_helper<false, false, false>;
 };
 
 template <>
 struct storage_part_helper<partition::x, 1> {
-    using type = part_impl<true>;
+    using type = storage_part_dim_helper<true>;
 };
 template <>
 struct storage_part_helper<partition::x, 2> {
-    using type = part_impl<false, true>;
+    using type = storage_part_dim_helper<false, true>;
 };
 template <>
 struct storage_part_helper<partition::x, 3> {
-    using type = part_impl<false, false, true>;
+    using type = storage_part_dim_helper<false, false, true>;
 };
 
 template <>
 struct storage_part_helper<partition::y, 2> {
-    using type = part_impl<true, false>;
+    using type = storage_part_dim_helper<true, false>;
 };
 template <>
 struct storage_part_helper<partition::y, 3> {
-    using type = part_impl<false, true, false>;
+    using type = storage_part_dim_helper<false, true, false>;
 };
 
 template <>
 struct storage_part_helper<partition::z, 3> {
-    using type = part_impl<true, false, false>;
+    using type = storage_part_dim_helper<true, false, false>;
 };
 
 template <>
 struct storage_part_helper<partition::xy, 2> {
-    using type = part_impl<true, true>;
+    using type = storage_part_dim_helper<true, true>;
 };
 template <>
 struct storage_part_helper<partition::xy, 3> {
-    using type = part_impl<false, true, true>;
+    using type = storage_part_dim_helper<false, true, true>;
 };
 
 template <>
 struct storage_part_helper<partition::xz, 3> {
-    using type = part_impl<true, false, true>;
+    using type = storage_part_dim_helper<true, false, true>;
 };
 
 template <>
 struct storage_part_helper<partition::yz, 3> {
-    using type = part_impl<true, true, false>;
+    using type = storage_part_dim_helper<true, true, false>;
 };
 
 template <>
 struct storage_part_helper<partition::xyz, 3> {
-    using type = part_impl<true, true, true>;
+    using type = storage_part_dim_helper<true, true, true>;
 };
 
 template <unsigned... PosVals>
-struct storage_reorder_conf;
+struct storage_dim_order;
 
 // Predefined reorder classes
 template <unsigned Dims>
-struct storage_reorder_none;
+struct storage_dim_order_default;
 
 template <>
-struct storage_reorder_none<1u> {
-    using type = storage_reorder_conf<0u>;
+struct storage_dim_order_default<1u> {
+    using type = storage_dim_order<0u>;
 };
 template <>
-struct storage_reorder_none<2u> {
-    using type = storage_reorder_conf<0u, 1u>;
+struct storage_dim_order_default<2u> {
+    using type = storage_dim_order<0u, 1u>;
 };
 template <>
-struct storage_reorder_none<3u> {
-    using type = storage_reorder_conf<0u, 1u, 2u>;
+struct storage_dim_order_default<3u> {
+    using type = storage_dim_order<0u, 1u, 2u>;
 };
 
 template <unsigned Dims>
-struct storage_reorder_inverse;
+struct storage_dim_order_inverse;
 
 template <>
-struct storage_reorder_inverse<1u> {
-    using type = storage_reorder_conf<0u>;
+struct storage_dim_order_inverse<1u> {
+    using type = storage_dim_order<0u>;
 };
 template <>
-struct storage_reorder_inverse<2u> {
-    using type = storage_reorder_conf<1u, 0u>;
+struct storage_dim_order_inverse<2u> {
+    using type = storage_dim_order<1u, 0u>;
 };
 template <>
-struct storage_reorder_inverse<3u> {
-    using type = storage_reorder_conf<2u, 1u, 0u>;
+struct storage_dim_order_inverse<3u> {
+    using type = storage_dim_order<2u, 1u, 0u>;
 };
 
 template <unsigned Dims, typename StorageType>
-struct make_reorder;
+struct make_dim_order;
 
 template <unsigned Dims>
-struct make_reorder<Dims, layout::rmo> {
-    using type = typename storage_reorder_none<Dims>::type;
+struct make_dim_order<Dims, layout::rmo> {
+    using type = typename storage_dim_order_default<Dims>::type;
 };
 
 template <unsigned Dims>
-struct make_reorder<Dims, layout::cmo> {
-    using type = typename storage_reorder_inverse<Dims>::type;
+struct make_dim_order<Dims, layout::cmo> {
+    using type = typename storage_dim_order_inverse<Dims>::type;
 };
 
 template <unsigned Dims, unsigned... Order>
-struct make_reorder<Dims, layout::custom<Order...>> {
-    using type = storage_reorder_conf<Order...>;
+struct make_dim_order<Dims, layout::custom<Order...>> {
+    using type = storage_dim_order<Order...>;
 };
 
 template <storage_tag Storage>

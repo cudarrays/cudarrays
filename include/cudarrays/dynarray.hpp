@@ -61,16 +61,16 @@ template <typename T, unsigned Dims,
 class dynarray :
     public coherent {
 public:
-    using reorder_conf_type = typename make_reorder<Dims, StorageType>::type;
-    using     permuter_type = utils::permuter<Dims, reorder_conf_type>;
+    using dim_order_type = typename make_dim_order<Dims, StorageType>::type;
+    using  permuter_type = utils::permuter<Dims, dim_order_type>;
 
-    using        storage_type =
+    using   storage_type =
         dynarray_storage<T, Dims, PartConf::final_impl,
-                      typename reorder_gather_static< // User-provided reordering
+                      typename reorder_gather_static< // User-provided dimension ordering
                           Dims,
                           bool,
                           typename PartConf::template part_type<Dims>,
-                          reorder_conf_type
+                          dim_order_type
                       >::type>;
 
     using host_storage_type = typename storage_type::host_storage_type;
