@@ -257,6 +257,31 @@ public:
     }
 
     __host__ bool
+    distribute(const std::vector<unsigned> &gpus)
+    {
+#if 0
+        if (!dataDev_) {
+            hostInfo_ = new storage_host_info(mapping.comp.procs);
+
+            if (mapping.comp.procs == 1) {
+                hostInfo_->localDims = make_array(this->get_dim_manager().sizes_);
+                fill(hostInfo_->arrayDimToGpus, 0);
+                alloc(mapping.comp.procs);
+            } else {
+                compute_distribution(mapping);
+                // TODO: remove when the allocation is properly done
+                alloc(mapping.comp.procs);
+
+                //DEBUG("VM> ALLOC: SHIIIIT: %s", to_string(offsGPU_, Dims - 1).c_str());
+            }
+
+            return true;
+        }
+#endif
+        return false;
+    }
+
+    __host__ bool
     is_distributed()
     {
         return dataDev_ != NULL;
@@ -313,7 +338,7 @@ public:
 
     __host__
     dynarray_storage(const extents<Dims> &ext,
-                  const align_t &align) :
+                     const align_t &align) :
         base_storage_type(ext, align),
         dataDev_(NULL),
         hostInfo_(NULL)

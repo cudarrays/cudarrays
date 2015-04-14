@@ -29,6 +29,7 @@
 #include <iostream>
 #include <cudarrays/types.hpp>
 #include <cudarrays/launch.hpp>
+#include <cudarrays/gpu.cuh>
 
 using namespace cudarrays;
 
@@ -43,6 +44,8 @@ vecadd_kernel( vector_ref<float> C,
 
 int main()
 {
+    init_lib();
+
     static const array_size_t ELEMS = 1024;
     // Declare vectors
     vector<float> A{{ELEMS}};
@@ -54,7 +57,7 @@ int main()
         B(i)      = float(i + 1.f);
     }
 
-    cuda_conf conf{ELEMS / 512, 512};
+    cuda_conf conf{ELEMS / 256, 256};
     // Launch vecadd kernel. The kernel is executed on all GPUs.
     // The computation grid is decomposed on its X dimension.
     bool status = launch(vecadd_kernel, conf, compute_conf<1>{compute::x})(C, A, B);

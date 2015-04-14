@@ -270,6 +270,12 @@ public:
     }
 
     __host__ bool
+    distribute(const std::vector<unsigned> &gpus)
+    {
+        return false;
+    }
+
+    __host__ bool
     is_distributed()
     {
         return dataDev_ != nullptr;

@@ -135,10 +135,15 @@ int main(int argc, char *argv[])
 
     bool ok = false;
 
-    ok = launch_test_vecadd<replicate::none>({ compute::none, 1 },
-                                             {{NONE}}, {{NONE}}, {{NONE}});
-    printf("COHERENT 1: %d\n", ok);
-
+    ok = launch_test_vecadd<replicate::x>({ compute::x, 1 },
+                                          {{0}}, {{0}}, {{0}});
+    printf("REPLICATED 1: %d\n", ok);
+    ok = launch_test_vecadd<replicate::x>({ compute::x, 2 },
+                                          {{0}}, {{0}}, {{0}});
+    printf("REPLICATED 2: %d\n", ok);
+    ok = launch_test_vecadd<replicate::x>({ compute::x, 4 },
+                                          {{0}}, {{0}}, {{0}});
+    printf("REPLICATED 4: %d\n", ok);
     ok = launch_test_vecadd<vm::x>({ compute::x, 1 },
                                    {{0}}, {{0}}, {{0}});
     printf("DISTRIBUTED_VM 1: %d\n", ok);
@@ -161,4 +166,4 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-/* vim:set backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab: */
+/* vim:set ft=cpp backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab: */

@@ -340,21 +340,21 @@ protected:
         conf_(conf),
         transposeXY_(transposeXY)
     {
+        if (gpuConf.procs > config::PEER_GPUS) {
+            printf("WARNING: # requested GPUs > # installed GPUs\n");
+        }
         if (gpuConf.procs == 0) {
             gpus_ = config::PEER_GPUS;
         } else {
             gpus_ = std::min(gpuConf.procs, config::PEER_GPUS);
-        }
-        if (gpuConf.procs > config::PEER_GPUS) {
-            printf("WARNING: # requested GPUs > # installed GPUs\n");
         }
 
         init_streams(gpus_);
 
         unsigned partDims = utils::count(gpuConf.info, true);
 
-        auto factorsGPUs = get_factors(gpuConf.procs);
-        if (gpuConf.procs == 1) {
+        auto factorsGPUs = get_factors(gpus_);
+        if (gpus_ == 1) {
             factorsGPUs.push_back(1);
         }
         utils::sort(factorsGPUs, std::greater<unsigned>());

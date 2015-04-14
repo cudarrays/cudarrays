@@ -70,10 +70,10 @@ private:
     T *dataDev_;
 
     struct storage_host_info {
-        unsigned gpus = 0;
+        std::vector<unsigned> gpus;
         std::vector<T *> allocsDev;
 
-        storage_host_info(unsigned _gpus) :
+        storage_host_info(const std::vector<unsigned> &_gpus) :
             gpus(_gpus),
             allocsDev(config::MAX_GPUS)
         {
@@ -117,12 +117,13 @@ public:
     {
         DEBUG("Replicated> Distributing");
         if (!hostInfo_) {
-            hostInfo_ = new storage_host_info{mapping.comp.procs};
-
             std::vector<unsigned> gpus;
-            for (unsigned idx : utils::make_range(hostInfo_->gpus)) {
+            for (unsigned idx : utils::make_range(mapping.comp.procs)) {
                 gpus.push_back(idx);
             }
+
+            hostInfo_ = new storage_host_info{gpus};
+
             alloc(this->get_dim_manager().get_elems_align(), this->get_dim_manager().get_offset(), gpus);
 
             return true;
@@ -135,7 +136,7 @@ public:
     {
         DEBUG("Replicated> Distributing2");
         if (!hostInfo_) {
-            hostInfo_ = new storage_host_info{gpus.size()};
+            hostInfo_ = new storage_host_info{gpus};
 
             alloc(this->get_dim_manager().get_elems_align(), this->get_dim_manager().get_offset(), gpus);
 
@@ -147,7 +148,7 @@ public:
     __host__ bool
     is_distributed()
     {
-        return hostInfo_->allocsDev != nullptr;
+        return hostInfo_ != nullptr;
     }
 
     T *get_dev_ptr(unsigned idx = 0)
@@ -171,9 +172,8 @@ public:
     {
         if (hostInfo_ == nullptr)
             return 0;
-        return std::count_if(hostInfo_->allocsDev.begin(),
-                             hostInfo_->allocsDev.end(),
-                             [](T *ptr) { return ptr != nullptr; });
+        return config::MAX_GPUS - std::count(hostInfo_->allocsDev.begin(),
+                                             hostInfo_->allocsDev.end(), nullptr);
     }
 
     __array_index__
@@ -206,7 +206,9 @@ public:
 
     void to_host()
     {
-        if (this->get_ngpus()) {
+        ASSERT(this->get_ngpus() != 0);
+
+        if (this->get_ngpus() == 1) {
             // Request copy-to-device
             for (unsigned idx : utils::make_range(config::MAX_GPUS)) {
                 if (hostInfo_->allocsDev[idx] != nullptr) {
@@ -235,7 +237,6 @@ public:
 
                     DEBUG("Replicated> gpu %u > to host: %p", idx, hostInfo_->allocsDev[idx] - this->get_dim_manager().get_offset());
 
-                    #pragma omp parallel for
                     for (array_size_t j = 0; j < this->get_dim_manager().get_elems_align(); ++j) {
                         if (memcmp(tmp.get() + j, this->get_host_storage().get_base_addr() + j, sizeof(T)) != 0) {
                             merged[j] = tmp[j];
@@ -253,6 +254,8 @@ public:
 
     void to_device()
     {
+        ASSERT(this->get_ngpus() != 0);
+
         // Request copy-to-device
         for (unsigned idx : utils::make_range(config::MAX_GPUS)) {
             if (hostInfo_->allocsDev[idx] != nullptr) {

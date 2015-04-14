@@ -48,6 +48,12 @@ namespace cudarrays {
 
     template <typename... Args>
     static void
+    print(FILE *out)
+    {
+    }
+
+    template <typename... Args>
+    static void
     fatal(std::string msg, Args &&...args)
     {
         print(stderr, msg, args...);
@@ -86,11 +92,12 @@ DEBUG(std::string _msg)
     } while (0)
 
 
-#define ASSERT(c) do {                                           \
-        if (!(c)) {                                              \
-            fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);      \
-            detail::cudarrays::fatal("Condition '"#c"' failed"); \
-        }                                                        \
+#define ASSERT(c,...) do {                                                   \
+        if (!(c)) {                                                          \
+            detail::cudarrays::print(stderr,##__VA_ARGS__);                  \
+            detail::cudarrays::print(stderr, "%s:%d\n", __FILE__, __LINE__); \
+            detail::cudarrays::fatal("Condition '"#c"' failed");             \
+        }                                                                    \
     } while (0)
 }
 

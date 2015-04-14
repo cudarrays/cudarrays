@@ -126,7 +126,7 @@ private:
 
 public:
     __host__
-    dim_manager(extents<Dims> extents,
+    dim_manager(const extents<Dims> &extents,
                 const align_t &align,
                 const std::array<array_size_t, Dims - 1> &offAlignImpl = std::array<array_size_t, Dims - 1>())
     {
@@ -301,7 +301,7 @@ public:
     using  dim_manager_type = dim_manager<T, Dims>;
     using host_storage_type = host_storage<T>;
 
-    dynarray_base(extents<Dims> extents,
+    dynarray_base(const extents<Dims> &extents,
                   const align_t &align) :
         dimManager_(extents, align)
     {

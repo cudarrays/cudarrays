@@ -40,7 +40,6 @@
 
 #include <utility>
 
-#include "coherence.hpp"
 #include "compiler.hpp"
 #include "utils.hpp"
 #include "common.hpp"
@@ -49,6 +48,7 @@
 #include "storage_impl.hpp"
 
 #include "detail/dynarray/iterator.hpp"
+#include "detail/coherence/default.hpp"
 
 namespace cudarrays {
 
@@ -175,6 +175,18 @@ public:
         mapping2.info = permuter_type::reorder(mapping2.info);
 
         return storage_.template distribute<DimsComp>(mapping2);
+    }
+
+    __host__ bool
+    distribute(const std::vector<unsigned> &gpus)
+    {
+        return storage_.distribute(gpus);
+    }
+
+    __host__ bool
+    is_distributed()
+    {
+        return storage_.is_distributed();
     }
 
     inline __host__ __device__
