@@ -35,51 +35,80 @@
 
 namespace utils {
 
+namespace mpl {
+
 template <typename T, class V1, class V2>
-struct merge_static;
+struct merge;
 
 template <typename T, T... Values1, T... Values2, template <T...> class S>
-struct merge_static<T, S<Values1...>, S<Values2...>> {
+struct merge<T, S<Values1...>, S<Values2...>> {
     using type = S<Values1..., Values2...>;
 };
 
 template <typename T, unsigned Size, T FillValue, template <T...> class S, T... Generated>
-struct generate_static_detail {
-    using type = typename generate_static_detail<T, Size - 1, FillValue, S, FillValue, Generated...>::type;
+struct fill_detail {
+    using type = typename fill_detail<T, Size - 1, FillValue, S, FillValue, Generated...>::type;
 };
 
 template <typename T, T FillValue, template <T...> class S, T... Generated>
-struct generate_static_detail<T, 0, FillValue, S, Generated...> {
+struct fill_detail<T, 0, FillValue, S, Generated...> {
     using type = S<Generated...>;
 };
 
 template <typename T, unsigned Size, T FillValue, template <T...> class S>
-struct generate_static {
-    using type = typename generate_static_detail<T, Size - 1, FillValue, S, FillValue>::type;
+struct fill {
+    using type = typename fill_detail<T, Size, FillValue, S>::type;
 };
 
-template <typename T, T FillValue, template <T...> class S>
-struct generate_static<T, 0, FillValue, S> {
-    using type = typename generate_static_detail<T, 0, FillValue, S>::type;
+template <typename T, unsigned Size, T Current, template <T...> class S, T... Generated>
+struct seq_inc_detail {
+    using type = typename seq_inc_detail<T, Size - 1, Current + 1, S, Current, Generated...>::type;
+};
+
+template <typename T, T Current, template <T...> class S, T... Generated>
+struct seq_inc_detail<T, 1, Current, S, Generated...> {
+    using type = S<Generated...>;
+};
+
+template <typename T, unsigned Size, template <T...> class S>
+struct seq_inc {
+    using type = typename seq_inc_detail<T, Size, 0, S>::type;
+};
+
+template <typename T, unsigned Size, T Current, template <T...> class S, T... Generated>
+struct seq_dec_detail {
+    using type = typename seq_dec_detail<T, Size - 1, Current - 1, S, Current, Generated...>::type;
+};
+
+template <typename T, T Current, template <T...> class S, T... Generated>
+struct seq_dec_detail<T, 1, Current, S, Generated...> {
+    using type = S<Generated...>;
+};
+
+template <typename T, unsigned Size, template <T...> class S>
+struct seq_dec {
+    using type = typename seq_dec_detail<T, Size, Size - 1, S>::type;
 };
 
 template <typename T, unsigned Size, T FillValue, template <T...> class S, T... Rest>
-struct prepend_static {
-    using prepend_values_type = generate_static<T, Size - sizeof...(Rest), FillValue, S>;
-    using type = typename merge_static<T, prepend_values_type, S<Rest...>>::type;
+struct seq_prepend {
+    using prepend_values_type = typename fill<T, Size - sizeof...(Rest), FillValue, S>::type;
+    using type = typename merge<T, prepend_values_type, S<Rest...>>::type;
 };
 
 template <typename T, unsigned Size, T FillValue, template <T...> class S, T... Rest>
-struct append_static {
-    using append_values_type = generate_static<T, Size - sizeof...(Rest), FillValue, S>;
-    using type = typename merge_static<T, S<Rest...>, append_values_type>::type;
+struct seq_append {
+    using append_values_type = typename fill<T, Size - sizeof...(Rest), FillValue, S>::type;
+    using type = typename merge<T, S<Rest...>, append_values_type>::type;
 };
+
+}
 
 template <typename T>
 void
 _get_factors(T n, std::vector<T> &factors)
 {
-    if (n == 1) return;
+    if (n <= 1) return;
 
     unsigned z = 2;
     while (z <= n) {
