@@ -237,6 +237,7 @@ public:
 
                     DEBUG("Replicated> gpu %u > to host: %p", idx, hostInfo_->allocsDev[idx] - this->get_dim_manager().get_offset());
 
+                    #pragma omp parallel for
                     for (array_size_t j = 0; j < this->get_dim_manager().get_elems_align(); ++j) {
                         if (memcmp(tmp.get() + j, this->get_host_storage().get_base_addr() + j, sizeof(T)) != 0) {
                             merged[j] = tmp[j];
