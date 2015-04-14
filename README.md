@@ -1,4 +1,5 @@
-# CUDArrays
+![CUDArrays](https://raw.githubusercontent.com/wiki/cudarrays/cudarrays/images/cudarrays_logo_300x75.png)
+
 C++ programming framework for multi-GPU CUDA applications.
 
 ## Example: vector addition
