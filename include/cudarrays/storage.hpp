@@ -77,87 +77,70 @@ struct part_impl {
 };
 
 template <partition Part, unsigned Dims>
-struct part_helper;
+struct storage_part_helper;
 
 // Predefined partition classes
-template <unsigned Dims>
-struct part_none;
-template <unsigned Dims>
-struct part_x;
-template <unsigned Dims>
-struct part_y;
-template <unsigned Dims>
-struct part_z;
-template <unsigned Dims>
-struct part_xy;
-template <unsigned Dims>
-struct part_xz;
-template <unsigned Dims>
-struct part_yz;
-template <unsigned Dims>
-struct part_xyz;
-
 template <>
-struct part_helper<partition::none, 1> {
+struct storage_part_helper<partition::none, 1> {
     using type = part_impl<false>;
 };
 template <>
-struct part_helper<partition::none, 2> {
+struct storage_part_helper<partition::none, 2> {
     using type = part_impl<false, false>;
 };
 template <>
-struct part_helper<partition::none, 3> {
+struct storage_part_helper<partition::none, 3> {
     using type = part_impl<false, false, false>;
 };
 
 template <>
-struct part_helper<partition::x, 1> {
+struct storage_part_helper<partition::x, 1> {
     using type = part_impl<true>;
 };
 template <>
-struct part_helper<partition::x, 2> {
+struct storage_part_helper<partition::x, 2> {
     using type = part_impl<false, true>;
 };
 template <>
-struct part_helper<partition::x, 3> {
+struct storage_part_helper<partition::x, 3> {
     using type = part_impl<false, false, true>;
 };
 
 template <>
-struct part_helper<partition::y, 2> {
+struct storage_part_helper<partition::y, 2> {
     using type = part_impl<true, false>;
 };
 template <>
-struct part_helper<partition::y, 3> {
+struct storage_part_helper<partition::y, 3> {
     using type = part_impl<false, true, false>;
 };
 
 template <>
-struct part_helper<partition::z, 3> {
+struct storage_part_helper<partition::z, 3> {
     using type = part_impl<true, false, false>;
 };
 
 template <>
-struct part_helper<partition::xy, 2> {
+struct storage_part_helper<partition::xy, 2> {
     using type = part_impl<true, true>;
 };
 template <>
-struct part_helper<partition::xy, 3> {
+struct storage_part_helper<partition::xy, 3> {
     using type = part_impl<false, true, true>;
 };
 
 template <>
-struct part_helper<partition::xz, 3> {
+struct storage_part_helper<partition::xz, 3> {
     using type = part_impl<true, false, true>;
 };
 
 template <>
-struct part_helper<partition::yz, 3> {
+struct storage_part_helper<partition::yz, 3> {
     using type = part_impl<true, true, false>;
 };
 
 template <>
-struct part_helper<partition::xyz, 3> {
+struct storage_part_helper<partition::xyz, 3> {
     using type = part_impl<true, true, true>;
 };
 
@@ -239,17 +222,17 @@ struct storage_part
     static constexpr storage_tag impl = Impl;
     static constexpr storage_tag final_impl = select_auto_impl<Impl>::impl;
 
-    using none = storage_conf<Impl, partition::none, part_helper>;
+    using none = storage_conf<Impl, partition::none, storage_part_helper>;
 
-    using x = storage_conf<Impl, partition::x, part_helper>;
-    using y = storage_conf<Impl, partition::y, part_helper>;
-    using z = storage_conf<Impl, partition::z, part_helper>;
+    using x = storage_conf<Impl, partition::x, storage_part_helper>;
+    using y = storage_conf<Impl, partition::y, storage_part_helper>;
+    using z = storage_conf<Impl, partition::z, storage_part_helper>;
 
-    using xy = storage_conf<Impl, partition::xy, part_helper>;
-    using xz = storage_conf<Impl, partition::xz, part_helper>;
-    using yz = storage_conf<Impl, partition::yz, part_helper>;
+    using xy = storage_conf<Impl, partition::xy, storage_part_helper>;
+    using xz = storage_conf<Impl, partition::xz, storage_part_helper>;
+    using yz = storage_conf<Impl, partition::yz, storage_part_helper>;
 
-    using xyz = storage_conf<Impl, partition::xyz, part_helper>;
+    using xyz = storage_conf<Impl, partition::xyz, storage_part_helper>;
 };
 
 struct automatic : storage_part<storage_tag::AUTO> {
