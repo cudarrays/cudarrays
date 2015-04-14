@@ -48,8 +48,8 @@ int main(int argc, char *argv[])
 
     static const int NONE = -1;
 
-    auto *A_x_x = new float_array<3, tag_auto::none>({ 1500, 300, 600 });
-    auto *A_x_y = new float_array<3, tag_auto::none>({ 1500, 300, 600 });
+    auto *A_x_x = new float_array<3, automatic::none>({ 1500, 300, 600 });
+    auto *A_x_y = new float_array<3, automatic::none>({ 1500, 300, 600 });
     A_x_x->distribute<3>({{compute::x, 6}, {NONE, NONE, 0}});
     A_x_y->distribute<3>({{compute::y, 6}, {NONE, NONE, 1}});
     delete A_x_x; delete A_x_y;

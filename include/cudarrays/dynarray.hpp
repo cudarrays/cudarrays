@@ -56,7 +56,7 @@ namespace cudarrays {
 
 template <typename T, unsigned Dims,
           typename StorageType = layout::rmo,
-          typename PartConf = tag_auto::none,
+          typename PartConf = automatic::none,
           template <typename> class CoherencePolicy = default_coherence>
 class dynarray :
     public coherent {

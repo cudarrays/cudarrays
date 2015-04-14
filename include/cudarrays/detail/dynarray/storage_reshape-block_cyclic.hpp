@@ -38,7 +38,7 @@
 namespace cudarrays {
 
 template <typename T, unsigned Dims, typename PartConf>
-class dynarray_storage<T, Dims, RESHAPE_BLOCK_CYCLIC, PartConf> :
+class dynarray_storage<T, Dims, storage_tag::RESHAPE_BLOCK_CYCLIC, PartConf> :
     public dynarray_base<T, Dims>
 {
     static constexpr array_size_t BlockSize = 1;

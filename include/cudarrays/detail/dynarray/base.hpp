@@ -343,7 +343,7 @@ private:
     host_storage_type hostStorage_;
 };
 
-template <typename T, unsigned Dims, storage_impl StorageImpl, typename PartConf>
+template <typename T, unsigned Dims, storage_tag StorageImpl, typename PartConf>
 class dynarray_storage;
 
 }

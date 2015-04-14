@@ -213,7 +213,7 @@ private:
 };
 
 template <typename T, unsigned Dims, typename PartConf>
-class dynarray_storage<T, Dims, VM, PartConf> :
+class dynarray_storage<T, Dims, storage_tag::VM, PartConf> :
     public dynarray_base<T, Dims>
 {
     using base_storage_type = dynarray_base<T, Dims>;

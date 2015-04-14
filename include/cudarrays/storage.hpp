@@ -52,13 +52,13 @@ template <unsigned... Order>
 struct custom {};
 };
 
-enum storage_impl {
-    AUTO                 = 0,
-    RESHAPE_BLOCK        = 2,
-    RESHAPE_CYCLIC       = 3,
-    RESHAPE_BLOCK_CYCLIC = 4,
-    VM                   = 5,
-    REPLICATED           = 10,
+enum class storage_tag {
+    AUTO,
+    RESHAPE_BLOCK,
+    RESHAPE_CYCLIC,
+    RESHAPE_BLOCK_CYCLIC,
+    VM,
+    REPLICATED,
 };
 
 template <bool... PartVals>
@@ -211,29 +211,29 @@ struct make_reorder<Dims, layout::custom<Order...>> {
     using type = storage_reorder_conf<Order...>;
 };
 
-template <storage_impl Storage>
+template <storage_tag Storage>
 struct select_auto_impl {
-    static constexpr storage_impl impl = Storage;
+    static constexpr storage_tag impl = Storage;
 };
 
 template <>
-struct select_auto_impl<AUTO> {
-    static constexpr storage_impl impl = REPLICATED;
+struct select_auto_impl<storage_tag::AUTO> {
+    static constexpr storage_tag impl = storage_tag::REPLICATED;
 };
 
-template <storage_impl Storage, template <unsigned> class PartConf>
+template <storage_tag Storage, template <unsigned> class PartConf>
 struct storage_conf {
-    static constexpr storage_impl impl = Storage;
-    static constexpr storage_impl final_impl = select_auto_impl<Storage>::impl;
+    static constexpr storage_tag impl = Storage;
+    static constexpr storage_tag final_impl = select_auto_impl<Storage>::impl;
     template <unsigned Dims>
     using part_type = typename PartConf<Dims>::type;
 };
 
-template <storage_impl Impl>
+template <storage_tag Impl>
 struct storage_part
 {
-    static constexpr storage_impl impl = Impl;
-    static constexpr storage_impl final_impl = select_auto_impl<Impl>::impl;
+    static constexpr storage_tag impl = Impl;
+    static constexpr storage_tag final_impl = select_auto_impl<Impl>::impl;
 
     using none = storage_conf<Impl, part_none>;
 
@@ -248,29 +248,29 @@ struct storage_part
     using xyz = storage_conf<Impl, part_xyz>;
 };
 
-struct tag_auto : storage_part<AUTO> {
+struct automatic : storage_part<storage_tag::AUTO> {
     static constexpr const char *name = "AUTO";
 };
 
-struct reshape : storage_part<RESHAPE_BLOCK> {
+struct reshape : storage_part<storage_tag::RESHAPE_BLOCK> {
     static constexpr const char *name = "Reshape BLOCK";
 };
 
 using reshape_block = reshape;
 
-struct reshape_cyclic : storage_part<RESHAPE_CYCLIC> {
+struct reshape_cyclic : storage_part<storage_tag::RESHAPE_CYCLIC> {
     static constexpr const char *name = "Reshape CYCLIC";
 };
 
-struct reshape_block_cyclic : storage_part<RESHAPE_BLOCK_CYCLIC> {
+struct reshape_block_cyclic : storage_part<storage_tag::RESHAPE_BLOCK_CYCLIC> {
     static constexpr const char *name = "Reshape BLOCK-CYCLIC";
 };
 
-struct vm : storage_part<VM> {
+struct vm : storage_part<storage_tag::VM> {
     static constexpr const char *name = "Virtual Memory";
 };
 
-struct replicate : storage_part<REPLICATED> {
+struct replicate : storage_part<storage_tag::REPLICATED> {
     static constexpr const char *name = "Replicate";
 };
 

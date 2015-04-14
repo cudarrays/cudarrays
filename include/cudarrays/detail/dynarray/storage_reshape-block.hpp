@@ -38,7 +38,7 @@
 namespace cudarrays {
 
 template <typename T, unsigned Dims, typename PartConf>
-class dynarray_storage<T, Dims, RESHAPE_BLOCK, PartConf> :
+class dynarray_storage<T, Dims, storage_tag::RESHAPE_BLOCK, PartConf> :
     public dynarray_base<T, Dims>
 {
     using base_storage_type = dynarray_base<T, Dims>;

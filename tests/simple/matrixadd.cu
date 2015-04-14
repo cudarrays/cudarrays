@@ -139,11 +139,11 @@ launch_test_matrixadd(compute_conf<3> gpus, std::array<int, 3> infoC,
     return ok;
 }
 
-static const int NONE = -1;
 
 template <typename Impl>
 void test_conf(unsigned gpus)
 {
+    static const int NONE = -1;
     bool ok = false;
 
     ok = launch_test_matrixadd<typename Impl::x>({compute::x, gpus},
@@ -199,14 +199,9 @@ void test_conf(unsigned gpus)
 int main(int argc, char *argv[])
 {
     init_lib();
-    bool ok;
-    ok = launch_test_matrixadd<replicate::none>({compute::none, 1},
-                                                {NONE, NONE, NONE},
-                                                {NONE, NONE, NONE},
-                                                {NONE, NONE, NONE});
-    printf("COHERENT 1: %d\n", ok);
 
     for (unsigned gpus : {1, 2, 4}) {
+        test_conf<replicate>(gpus);
         test_conf<vm>(gpus);
         test_conf<reshape>(gpus);
 #if 0
