@@ -60,7 +60,7 @@ int main()
     cuda_conf conf{ELEMS / 256, 256};
     // Launch vecadd kernel. The kernel is executed on all GPUs.
     // The computation grid is decomposed on its X dimension.
-    bool status = launch(vecadd_kernel, conf, compute_conf<1>{compute::x})(C, A, B);
+    bool status = launch(vecadd_kernel, conf, compute_conf<1>{partition::x})(C, A, B);
 
     for (unsigned i = 0; i < ELEMS; ++i) {
         std::cout << C(i) << " ";

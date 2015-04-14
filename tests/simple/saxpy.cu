@@ -121,31 +121,31 @@ int main(int argc, char *argv[])
 
     bool ok = false;
 
-    ok = launch_test_saxpy<replicate::x>({ compute::x, 1 },
+    ok = launch_test_saxpy<replicate::x>({ partition::x, 1 },
                                          {{0}}, {{0}});
     printf("DISTRIBUTED_REPLICATED 1: %d\n", ok);
-    ok = launch_test_saxpy<replicate::x>({compute::x, 2},
+    ok = launch_test_saxpy<replicate::x>({partition::x, 2},
                                          {{0}}, {{0}});
     printf("DISTRIBUTED_REPLICATED 2: %d\n", ok);
-    ok = launch_test_saxpy<replicate::x>({compute::x, 4},
+    ok = launch_test_saxpy<replicate::x>({partition::x, 4},
                                          {{0}}, {{0}});
     printf("DISTRIBUTED_REPLICATED 4: %d\n", ok);
-    ok = launch_test_saxpy<vm::x>({ compute::x, 1 },
+    ok = launch_test_saxpy<vm::x>({ partition::x, 1 },
                                      {{0}}, {{0}});
     printf("DISTRIBUTED_VM 1: %d\n", ok);
-    ok = launch_test_saxpy<vm::x>({compute::x, 2},
+    ok = launch_test_saxpy<vm::x>({partition::x, 2},
                                      {{0}}, {{0}});
     printf("DISTRIBUTED_VM 2: %d\n", ok);
-    ok = launch_test_saxpy<vm::x>({compute::x, 4},
+    ok = launch_test_saxpy<vm::x>({partition::x, 4},
                                      {{0}}, {{0}});
     printf("DISTRIBUTED_VM 4: %d\n", ok);
-    ok = launch_test_saxpy<reshape::x>({compute::x, 1},
+    ok = launch_test_saxpy<reshape::x>({partition::x, 1},
                                           {{0}}, {{0}});
     printf("RESHAPE_BLOCK   1: %d\n", ok);
-    ok = launch_test_saxpy<reshape::x>({compute::x, 2},
+    ok = launch_test_saxpy<reshape::x>({partition::x, 2},
                                           {{0}}, {{0}});
     printf("RESHAPE_BLOCK_X 2: %d\n", ok);
-    ok = launch_test_saxpy<reshape::x>({compute::x, 4},
+    ok = launch_test_saxpy<reshape::x>({partition::x, 4},
                                           {{0}}, {{0}});
     printf("RESHAPE_BLOCK_X 4: %d\n", ok);
 

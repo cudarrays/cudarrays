@@ -26,9 +26,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. */
 
-#include "common.hpp"
-
+#include <array>
 #include <iostream>
+
+#include "common.hpp"
 
 #include "cudarrays/dynarray.hpp"
 
@@ -59,7 +60,7 @@ using extents = std::array<cudarrays::array_size_t, Dims>;
 #define do_host_alloc(P)                                                              \
 {                                                                                     \
     using my_array = cudarrays::dynarray_storage<float, 3, P::final_impl,             \
-                                                 cudarrays::part_none<3>::type>;      \
+                                                 cudarrays::part_helper<cudarrays::partition::none, 3>::type>;      \
                                                                                       \
     static const cudarrays::array_size_t Z = 3;                                       \
     static const cudarrays::array_size_t Y = 5;                                       \

@@ -43,6 +43,13 @@
 
 namespace cudarrays {
 
+enum class partition {
+    none,
+    x, y, z,
+    xy, xz, yz,
+    xyz
+};
+
 void init_lib();
 void fini_lib();
 

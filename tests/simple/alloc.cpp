@@ -50,32 +50,32 @@ int main(int argc, char *argv[])
 
     auto *A_x_x = new float_array<3, automatic::none>({ 1500, 300, 600 });
     auto *A_x_y = new float_array<3, automatic::none>({ 1500, 300, 600 });
-    A_x_x->distribute<3>({{compute::x, 6}, {NONE, NONE, 0}});
-    A_x_y->distribute<3>({{compute::y, 6}, {NONE, NONE, 1}});
+    A_x_x->distribute<3>({{partition::x, 6}, {NONE, NONE, 0}});
+    A_x_y->distribute<3>({{partition::y, 6}, {NONE, NONE, 1}});
     delete A_x_x; delete A_x_y;
 
     auto *A_y_x = new float_array<3, reshape::y>({ 1500, 300, 600 });
     auto *A_y_y = new float_array<3, reshape::y>({ 1500, 300, 600 });
-    A_y_x->distribute<3>({{compute::x, 6}, {NONE, 0, NONE}});
-    A_y_y->distribute<3>({{compute::y, 6}, {NONE, 1, NONE}});
+    A_y_x->distribute<3>({{partition::x, 6}, {NONE, 0, NONE}});
+    A_y_y->distribute<3>({{partition::y, 6}, {NONE, 1, NONE}});
     delete A_y_x; delete A_y_y;
 
     auto *A_xy1 = new float_array<3, reshape::xy>({ 1500, 300, 600 });
     auto *A_xy2 = new float_array<3, reshape::xy>({ 1500, 300, 600 });
-    A_xy1->distribute<3>({{compute::xy, 6}, {NONE, 1, 0}});
-    A_xy2->distribute<3>({{compute::xy, 6}, {NONE, 0, 1}});
+    A_xy1->distribute<3>({{partition::xy, 6}, {NONE, 1, 0}});
+    A_xy2->distribute<3>({{partition::xy, 6}, {NONE, 0, 1}});
     delete A_xy1; delete A_xy2;
 
     auto *A_xz1 = new float_array<3, reshape::xz>({ 1500, 300, 600 });
     auto *A_xz2 = new float_array<3, reshape::xz>({ 1500, 300, 600 });
-    A_xz1->distribute<3>({{compute::xz, 6}, {2, NONE, 0}});
-    A_xz2->distribute<3>({{compute::xz, 6}, {0, NONE, 2}});
+    A_xz1->distribute<3>({{partition::xz, 6}, {2, NONE, 0}});
+    A_xz2->distribute<3>({{partition::xz, 6}, {0, NONE, 2}});
     delete A_xz1; delete A_xz2;
 
     auto *A_yz1 = new float_array<3, reshape::yz>({ 1500, 300, 600 });
     auto *A_yz2 = new float_array<3, reshape::yz>({ 1500, 300, 600 });
-    A_yz1->distribute<3>({{compute::yz, 6}, {2, 1, NONE}});
-    A_yz2->distribute<3>({{compute::yz, 6}, {1, 2, NONE}});
+    A_yz1->distribute<3>({{partition::yz, 6}, {2, 1, NONE}});
+    A_yz2->distribute<3>({{partition::yz, 6}, {1, 2, NONE}});
     delete A_yz1; delete A_yz2;
 
     return 0;

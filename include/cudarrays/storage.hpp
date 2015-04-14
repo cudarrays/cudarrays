@@ -40,6 +40,7 @@
 #include "coherence.hpp"
 #include "common.hpp"
 #include "compiler.hpp"
+#include "compute.hpp"
 #include "utils.hpp"
 
 namespace cudarrays {
@@ -75,6 +76,9 @@ struct part_impl {
     static constexpr bool Z = Pos.template at<(dimensions - 1) - 2>();
 };
 
+template <partition Part, unsigned Dims>
+struct part_helper;
+
 // Predefined partition classes
 template <unsigned Dims>
 struct part_none;
@@ -94,66 +98,66 @@ template <unsigned Dims>
 struct part_xyz;
 
 template <>
-struct part_none<1> {
+struct part_helper<partition::none, 1> {
     using type = part_impl<false>;
 };
 template <>
-struct part_none<2> {
+struct part_helper<partition::none, 2> {
     using type = part_impl<false, false>;
 };
 template <>
-struct part_none<3> {
+struct part_helper<partition::none, 3> {
     using type = part_impl<false, false, false>;
 };
 
 template <>
-struct part_x<1> {
+struct part_helper<partition::x, 1> {
     using type = part_impl<true>;
 };
 template <>
-struct part_x<2> {
+struct part_helper<partition::x, 2> {
     using type = part_impl<false, true>;
 };
 template <>
-struct part_x<3> {
+struct part_helper<partition::x, 3> {
     using type = part_impl<false, false, true>;
 };
 
 template <>
-struct part_y<2> {
+struct part_helper<partition::y, 2> {
     using type = part_impl<true, false>;
 };
 template <>
-struct part_y<3> {
+struct part_helper<partition::y, 3> {
     using type = part_impl<false, true, false>;
 };
 
 template <>
-struct part_z<3> {
+struct part_helper<partition::z, 3> {
     using type = part_impl<true, false, false>;
 };
 
 template <>
-struct part_xy<2> {
+struct part_helper<partition::xy, 2> {
     using type = part_impl<true, true>;
 };
 template <>
-struct part_xy<3> {
+struct part_helper<partition::xy, 3> {
     using type = part_impl<false, true, true>;
 };
 
 template <>
-struct part_xz<3> {
+struct part_helper<partition::xz, 3> {
     using type = part_impl<true, false, true>;
 };
 
 template <>
-struct part_yz<3> {
+struct part_helper<partition::yz, 3> {
     using type = part_impl<true, true, false>;
 };
 
 template <>
-struct part_xyz<3> {
+struct part_helper<partition::xyz, 3> {
     using type = part_impl<true, true, true>;
 };
 
@@ -221,12 +225,12 @@ struct select_auto_impl<storage_tag::AUTO> {
     static constexpr storage_tag impl = storage_tag::REPLICATED;
 };
 
-template <storage_tag Storage, template <unsigned> class PartConf>
+template <storage_tag Storage, partition Part, template <partition, unsigned> class PartConf>
 struct storage_conf {
     static constexpr storage_tag impl = Storage;
     static constexpr storage_tag final_impl = select_auto_impl<Storage>::impl;
     template <unsigned Dims>
-    using part_type = typename PartConf<Dims>::type;
+    using part_type = typename PartConf<Part, Dims>::type;
 };
 
 template <storage_tag Impl>
@@ -235,17 +239,17 @@ struct storage_part
     static constexpr storage_tag impl = Impl;
     static constexpr storage_tag final_impl = select_auto_impl<Impl>::impl;
 
-    using none = storage_conf<Impl, part_none>;
+    using none = storage_conf<Impl, partition::none, part_helper>;
 
-    using x = storage_conf<Impl, part_x>;
-    using y = storage_conf<Impl, part_y>;
-    using z = storage_conf<Impl, part_z>;
+    using x = storage_conf<Impl, partition::x, part_helper>;
+    using y = storage_conf<Impl, partition::y, part_helper>;
+    using z = storage_conf<Impl, partition::z, part_helper>;
 
-    using xy = storage_conf<Impl, part_xy>;
-    using xz = storage_conf<Impl, part_xz>;
-    using yz = storage_conf<Impl, part_yz>;
+    using xy = storage_conf<Impl, partition::xy, part_helper>;
+    using xz = storage_conf<Impl, partition::xz, part_helper>;
+    using yz = storage_conf<Impl, partition::yz, part_helper>;
 
-    using xyz = storage_conf<Impl, part_xyz>;
+    using xyz = storage_conf<Impl, partition::xyz, part_helper>;
 };
 
 struct automatic : storage_part<storage_tag::AUTO> {
@@ -274,84 +278,6 @@ struct replicate : storage_part<storage_tag::REPLICATED> {
     static constexpr const char *name = "Replicate";
 };
 
-enum class compute {
-    none,
-    x, y, z,
-    xy, xz, yz,
-    xyz
-};
-
-template <unsigned Dims>
-struct compute_part_helper;
-
-template <>
-struct compute_part_helper<1> {
-    static std::array<bool, 1>
-    make_array(compute c)
-    {
-        std::array<bool, 1> ret;
-        if (c == compute::none)   ret = { false };
-        else if (c == compute::x) ret = { true  };
-        else abort();
-        return ret;
-    }
-};
-
-template <>
-struct compute_part_helper<2> {
-    static std::array<bool, 2>
-    make_array(compute c)
-    {
-        std::array<bool, 2> ret;
-        if (c == compute::none)    ret = { false, false };
-        else if (c == compute::x)  ret = { false, true  };
-        else if (c == compute::y)  ret = { true, false  };
-        else if (c == compute::xy) ret = { true, true   };
-        else abort();
-        return ret;
-    }
-};
-
-template <>
-struct compute_part_helper<3> {
-    static std::array<bool, 3>
-    make_array(compute c)
-    {
-        std::array<bool, 3> ret;
-        if (c == compute::none)     ret = { false, false, false };
-        else if (c == compute::x)   ret = { false, false, true  };
-        else if (c == compute::y)   ret = { false, true,  false };
-        else if (c == compute::z)   ret = { true,  false, false };
-        else if (c == compute::xy)  ret = { false, true,  true  };
-        else if (c == compute::xz)  ret = { true,  false, true  };
-        else if (c == compute::yz)  ret = { true,  true,  false };
-        else if (c == compute::xyz) ret = { true,  true,  true  };
-        else abort();
-        return ret;
-    }
-};
-
-template <unsigned Dims>
-struct compute_conf {
-    std::array<bool, Dims> info;
-    unsigned procs;
-
-    compute_conf(compute c, unsigned _procs = 0) :
-        procs(_procs)
-    {
-        info = compute_part_helper<Dims>::make_array(c);
-    }
-
-    constexpr bool is_dim_part(unsigned dim) const
-    {
-        return info[dim];
-    }
-
-    unsigned get_part_dims() const
-    {
-        return utils::count(info, true);
-    }
-};
 
 static constexpr int DimInvalid = -1;
 

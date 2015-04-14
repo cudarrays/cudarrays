@@ -3,6 +3,7 @@ set(CUDARRAYS_HEADERS array.hpp
                       common.hpp
                       config.hpp
                       compiler.hpp
+                      compute.hpp
                       storage.hpp
                       storage_impl.hpp
                       detail/coherence/default.hpp

@@ -142,25 +142,25 @@ int main(int argc, char *argv[])
 
     bool ok = false;
 
-    ok = launch_test_matrixmul<replicate::none>({compute::none, 1},
+    ok = launch_test_matrixmul<replicate::none>({partition::none, 1},
                                                 {NONE, NONE},
                                                 {NONE, NONE},
                                                 {NONE, NONE});
     printf("COHERENT 1: %d\n", ok);
 
-    ok = launch_test_matrixmul<vm::none>({compute::none, 1},
+    ok = launch_test_matrixmul<vm::none>({partition::none, 1},
                                          {NONE, NONE},
                                          {NONE, NONE},
                                          {NONE, NONE});
     printf("VM 1: %d\n", ok);
 
-    ok = launch_test_matrixmul<vm::none>({compute::y, 2},
+    ok = launch_test_matrixmul<vm::none>({partition::y, 2},
                                          {0, NONE},
                                          {0, NONE},
                                          {0, NONE});
     printf("VM 2: %d\n", ok);
 
-    ok = launch_test_matrixmul<vm::none>({compute::y, 2},
+    ok = launch_test_matrixmul<vm::none>({partition::y, 2},
                                          {0, NONE},
                                          {0, NONE},
                                          {0, NONE});
@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
 
     // TODO: implement proper replication
 #if 0
-    ok = launch_test_matrixmul<reshape::none>({1, compute::none},
+    ok = launch_test_matrixmul<reshape::none>({1, partition::none},
                                                {NONE, NONE},
                                                {NONE, NONE},
                                                {NONE, NONE});
@@ -176,35 +176,35 @@ int main(int argc, char *argv[])
 #endif
 
     ok = launch_test_matrixmul<reshape::x, reshape::x, replicate::none>
-                                           ({compute::x, 2},
+                                           ({partition::x, 2},
                                             {NONE, 0},
                                             {NONE, 0},
                                             {NONE, NONE});
     printf("RESHAPE_BLOCK_X 2: %d\n", ok);
 
     ok = launch_test_matrixmul<reshape::y, replicate::none, reshape::x>
-                                           ({compute::y, 2},
+                                           ({partition::y, 2},
                                             {1, NONE},
                                             {NONE, NONE},
                                             {NONE, 1});
     printf("RESHAPE_BLOCK_Y 2: %d\n", ok);
 
     ok = launch_test_matrixmul<reshape::x, reshape::x, replicate::none>
-                                           ({compute::x, 4},
+                                           ({partition::x, 4},
                                             {NONE, 0},
                                             {NONE, 0},
                                             {NONE, NONE});
     printf("RESHAPE_BLOCK_X 4, 4: %d\n", ok);
 
     ok = launch_test_matrixmul<reshape::y, replicate::none, reshape::x>
-                                           ({compute::y, 4},
+                                           ({partition::y, 4},
                                             {1, NONE},
                                             {NONE, NONE},
                                             {NONE, 1});
     printf("RESHAPE_BLOCK_Y 4, 4: %d\n", ok);
 
     ok = launch_test_matrixmul<reshape::xy, replicate::x, replicate::x>
-                                            ({compute::xy, 4},
+                                            ({partition::xy, 4},
                                              {1, 0},
                                              {NONE, 0},
                                              {NONE, 1});
