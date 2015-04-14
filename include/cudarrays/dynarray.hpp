@@ -47,6 +47,8 @@
 #include "storage.hpp"
 #include "storage_impl.hpp"
 
+#include "gpu.cuh"
+
 #include "detail/dynarray/iterator.hpp"
 #include "detail/coherence/default.hpp"
 
