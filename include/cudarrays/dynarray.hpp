@@ -63,7 +63,8 @@ public:
     using dim_order_type = typename make_dim_order<Dims, StorageType>::type;
     using  permuter_type = utils::permuter<Dims, dim_order_type>;
 
-    using   storage_type =
+    using   host_storage_type = host_storage<T>;
+    using device_storage_type =
         dynarray_storage<T, Dims, PartConf::final_impl,
                          typename reorder_gather_static< // User-provided dimension ordering
                              Dims,
@@ -76,7 +77,6 @@ public:
     using difference_type = array_index_t;
 
     using coherence_policy_type = CoherencePolicy<dynarray>;
-    using host_storage_type = host_storage<T>;
 
     using indexer_type = linearizer<Dims>;
 
@@ -86,13 +86,13 @@ public:
     explicit dynarray(const extents<Dims> &extents,
                       const align_t &align = align_t{0, 0},
                       coherence_policy_type coherence = coherence_policy_type()) :
-        storage_(permuter_type::reorder(extents), align),
+        device_(permuter_type::reorder(extents), align),
         coherencePolicy_(coherence)
     {
         coherencePolicy_.bind(this);
 
         // Alloc host memory
-        host_.alloc(storage_.get_dim_manager().get_elems_align(), storage_.get_dim_manager().get_offset());
+        host_.alloc(device_.get_dim_manager().get_elems_align(), device_.get_dim_manager().get_offset());
         // TODO: Move this to a better place
         register_range(this->get_host_storage().get_base_addr(),
                        this->get_host_storage().size());
@@ -100,7 +100,7 @@ public:
 
     __host__
     explicit dynarray(const dynarray &a) :
-        storage_(a.storage_),
+        device_(a.device_),
         coherencePolicy_(a.coherencePolicy_)
     {
     }
@@ -109,7 +109,7 @@ public:
     dynarray &operator=(const dynarray &a)
     {
         if (&a != this) {
-            storage_         = a.storage_;
+            device_         = a.device_;
             coherencePolicy_ = a.coherencePolicy_;
         }
 
@@ -151,7 +151,7 @@ public:
 #ifdef __CUDA_ARCH__
         return storage_.access_pos(0, i1, i2);
 #else
-        auto idx = indexer_type::access_pos(storage_.get_dim_manager().get_offs_align(), 0, i1, i2);
+        auto idx = indexer_type::access_pos(device_.get_dim_manager().get_offs_align(), 0, i1, i2);
         return host_.get_addr()[idx];
 #endif
     }
@@ -165,7 +165,7 @@ public:
 #ifdef __CUDA_ARCH__
         return storage_.access_pos(0, i1, i2);
 #else
-        auto idx = indexer_type::access_pos(storage_.get_dim_manager().get_offs_align(), 0, i1, i2);
+        auto idx = indexer_type::access_pos(device_.get_dim_manager().get_offs_align(), 0, i1, i2);
         return host_.get_addr()[idx];
 #endif
     }
@@ -180,7 +180,7 @@ public:
 #ifdef __CUDA_ARCH__
         return storage_.access_pos(i1, i2, i3);
 #else
-        auto idx = indexer_type::access_pos(storage_.get_dim_manager().get_offs_align(), i1, i2, i3);
+        auto idx = indexer_type::access_pos(device_.get_dim_manager().get_offs_align(), i1, i2, i3);
         return host_.get_addr()[idx];
 #endif
     }
@@ -195,7 +195,7 @@ public:
 #ifdef __CUDA_ARCH__
         return storage_.access_pos(i1, i2, i3);
 #else
-        auto idx = indexer_type::access_pos(storage_.get_dim_manager().get_offs_align(), i1, i2, i3);
+        auto idx = indexer_type::access_pos(device_.get_dim_manager().get_offs_align(), i1, i2, i3);
         return host_.get_addr()[idx];
 #endif
     }
@@ -207,19 +207,19 @@ public:
         auto mapping2 = mapping;
         mapping2.info = permuter_type::reorder(mapping2.info);
 
-        return storage_.template distribute<DimsComp>(mapping2);
+        return device_.template distribute<DimsComp>(mapping2);
     }
 
     __host__ bool
     distribute(const std::vector<unsigned> &gpus)
     {
-        return storage_.distribute(gpus);
+        return device_.distribute(gpus);
     }
 
     __host__ bool
     is_distributed()
     {
-        return storage_.is_distributed();
+        return device_.is_distributed();
     }
 
     template <unsigned Orig>
@@ -227,20 +227,20 @@ public:
     array_size_t get_dim() const
     {
         auto new_dim = permuter_type::template dim_index<Orig>();
-        return storage_.get_dim_manager().get_dim(new_dim);
+        return device_.get_dim_manager().get_dim(new_dim);
     }
 
     __array_bounds__
     array_size_t get_dim(unsigned dim) const
     {
         auto new_dim = permuter_type::dim_index(dim);
-        return storage_.get_dim_manager().get_dim(new_dim);
+        return device_.get_dim_manager().get_dim(new_dim);
     }
 
     void
     set_current_gpu(unsigned idx)
     {
-        storage_.set_current_gpu(idx);
+        device_.set_current_gpu(idx);
     }
 
     coherence_policy &get_coherence_policy()
@@ -255,12 +255,12 @@ public:
 
     void to_device()
     {
-        storage_.to_device(host_);
+        device_.to_device(host_);
     }
 
     void to_host()
     {
-        storage_.to_host(host_);
+        device_.to_host(host_);
     }
 
     //
@@ -358,9 +358,9 @@ public:
     friend myiterator<dynarray, true>;
 
 private:
-    storage_type          storage_;
     coherence_policy_type coherencePolicy_;
     host_storage_type     host_;
+    device_storage_type   device_;
 };
 
 template <typename Array>
