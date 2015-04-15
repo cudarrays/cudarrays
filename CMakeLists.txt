@@ -3,7 +3,8 @@ cmake_minimum_required(VERSION 2.8)
 
 set(CUDA_PATH "/usr/local/cuda" CACHE PATH "CUDA directory")
 set(CUDA_TOOLKIT_ROOT_DIR "${CUDA_PATH}")
-include(FindCUDA)
+find_package(CUDA REQUIRED)
+find_package(OpenMP)
 
 message(STATUS "CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
 
