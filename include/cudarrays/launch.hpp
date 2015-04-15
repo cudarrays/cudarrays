@@ -60,10 +60,10 @@ std::ofstream &operator<<(std::ofstream &os, const tracer<WARP> &t)
     cudaError_t err;
     err = cudaMemcpy(t.traces_,
                      t.tracesStartDev_, t.ntraces() * sizeof(long long), cudaMemcpyDeviceToHost);
-    assert(err == cudaSuccess);
+    ASSERT(err == cudaSuccess);
     err = cudaMemcpy(t.traces_ + t.ntraces(),
                      t.tracesEndDev_, t.ntraces() * sizeof(long long), cudaMemcpyDeviceToHost);
-    assert(err == cudaSuccess);
+    ASSERT(err == cudaSuccess);
     unsigned long ntraces = 0;
     // Count # of valid traces
     for (unsigned long long i = 0; i < t.ntraces(); ++i) {
@@ -270,21 +270,21 @@ static void init_streams(unsigned gpus)
             cudaError_t err;
 
             err = cudaSetDevice(i);
-            assert(err == cudaSuccess);
+            ASSERT(err == cudaSuccess);
 
             // Preallocate streams for kernel execution
             cudaStream_t stream;
             err = cudaStreamCreate(&stream);
-            assert(err == cudaSuccess);
+            ASSERT(err == cudaSuccess);
 
             Streams.push_back(stream);
 
             // Preallocate events for kernel execution
             cudaEvent_t begin, end;
             err = cudaEventCreate(&begin);
-            assert(err == cudaSuccess);
+            ASSERT(err == cudaSuccess);
             err = cudaEventCreate(&end);
-            assert(err == cudaSuccess);
+            ASSERT(err == cudaSuccess);
 
             EventsBegin.push_back(begin);
             EventsEnd.push_back(end);
@@ -441,9 +441,9 @@ protected:
 
         for (unsigned i : utils::make_range(gpus_)) {
             cudaError_t err = cudaSetDevice(i);
-            assert(err == cudaSuccess);
+            ASSERT(err == cudaSuccess);
             err = cudaDeviceSynchronize();
-            assert(err == cudaSuccess);
+            ASSERT(err == cudaSuccess);
         }
 
         unsigned gpu = 0;
@@ -476,7 +476,7 @@ protected:
 
                     if (local.z > 0 && local.y > 0 && local.x > 0) {
                         cudaError_t err = cudaSetDevice(gpu);
-                        assert(err == cudaSuccess);
+                        ASSERT(err == cudaSuccess);
 
                         DEBUG("MemcpyToSymbol> gpu %zd: %zd %zd %zd", gpu, i, j, k);
                         DEBUG("MemcpyToSymbol> grid: %zd %zd %zd", local.z, local.y, local.x);
@@ -527,7 +527,7 @@ protected:
 
                     if (local.z > 0 && local.y > 0 && local.x > 0) {
                         cudaError_t err = cudaSetDevice(gpu);
-                        assert(err == cudaSuccess);
+                        ASSERT(err == cudaSuccess);
                         DEBUG("Launch> gpu %zd: %zd %zd %zd", gpu, i, j, k);
                         DEBUG("Launch> grid: %zd %zd %zd", local.z, local.y, local.x);
 
@@ -539,7 +539,7 @@ protected:
                         set_args(coherentParams_, gpu);
 
                         err = cudaEventRecord(EventsBegin[gpu], Streams[gpu]);
-                        assert(err == cudaSuccess);
+                        ASSERT(err == cudaSuccess);
 
 #if 0
 // #ifdef CUDARRAYS_TRACE
@@ -561,17 +561,17 @@ protected:
                                                my_arguments::Params,
                                                0,
                                                Streams[gpu]);
-                        assert(err == cudaSuccess);
+                        ASSERT(err == cudaSuccess);
 #if 0
 // #ifdef CUDARRAYS_TRACE
                         err = cudaStreamSynchronize(Streams[gpu]);
-                        assert(err == cudaSuccess);
+                        ASSERT(err == cudaSuccess);
 
                         out << driver;
                         out.close();
 #endif
                         err = cudaEventRecord(EventsEnd[gpu], Streams[gpu]);
-                        assert(err == cudaSuccess);
+                        ASSERT(err == cudaSuccess);
                     }
 
                     off.x += step.x;
@@ -591,15 +591,15 @@ public:
         for (unsigned i : activeGPUs) {
             // TODO: switch to events
             cudaError_t err = cudaEventSynchronize(EventsEnd[i]);
-            assert(err == cudaSuccess);
+            ASSERT(err == cudaSuccess);
 
             #if 0
             float milis;
             err = cudaEventElapsedTime(&milis, EventsBegin[i], EventsEnd[i]);
-            assert(err == cudaSuccess);
+            ASSERT(err == cudaSuccess);
 
             err = cudaStreamSynchronize(Streams[i]);
-            assert(err == cudaSuccess);
+            ASSERT(err == cudaSuccess);
             #endif
         }
 

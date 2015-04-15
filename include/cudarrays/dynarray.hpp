@@ -31,7 +31,6 @@
 #ifndef CUDARRAYS_DYNARRAY_HPP_
 #define CUDARRAYS_DYNARRAY_HPP_
 
-#include <cassert>
 #include <cstdlib>
 #include <cstring>
 

@@ -49,11 +49,6 @@ class dynarray_storage<T, Dims, storage_tag::RESHAPE_CYCLIC, PartConf> :
     __host__
     void alloc()
     {
-        // Only support offsets in 1D arrays
-        assert(this->get_dim_manager().get_offset() == 0 || Dims != 1);
-
-        CUDA_CALL(cudaSetDevice(0));
-
         // Array grid layout
         unsigned partZ = (Dims > 2)? arrayPartitionGrid_[dim_manager_type::DimIdxZ]: 1;
         unsigned partY = (Dims > 1)? arrayPartitionGrid_[dim_manager_type::DimIdxY]: 1;
