@@ -126,7 +126,7 @@ public:
     T &operator()(array_index_t idx)
     {
 #ifdef __CUDA_ARCH__
-        return storage_.access_pos(0, 0, idx);
+        return device_.access_pos(0, 0, idx);
 #else
         return host_.get_addr()[idx];
 #endif
@@ -136,7 +136,7 @@ public:
     const T &operator()(array_index_t idx) const
     {
 #ifdef __CUDA_ARCH__
-        return storage_.access_pos(0, 0, idx);
+        return device_.access_pos(0, 0, idx);
 #else
         return host_.get_addr()[idx];
 #endif
@@ -149,7 +149,7 @@ public:
         array_index_t i2 = permuter_type::template select<1>(idx1, idx2);
 
 #ifdef __CUDA_ARCH__
-        return storage_.access_pos(0, i1, i2);
+        return device_.access_pos(0, i1, i2);
 #else
         auto idx = indexer_type::access_pos(device_.get_dim_manager().get_offs_align(), 0, i1, i2);
         return host_.get_addr()[idx];
@@ -163,7 +163,7 @@ public:
         array_index_t i2 = permuter_type::template select<1>(idx1, idx2);
 
 #ifdef __CUDA_ARCH__
-        return storage_.access_pos(0, i1, i2);
+        return device_.access_pos(0, i1, i2);
 #else
         auto idx = indexer_type::access_pos(device_.get_dim_manager().get_offs_align(), 0, i1, i2);
         return host_.get_addr()[idx];
@@ -178,7 +178,7 @@ public:
         array_index_t i3 = permuter_type::template select<2>(idx1, idx2, idx3);
 
 #ifdef __CUDA_ARCH__
-        return storage_.access_pos(i1, i2, i3);
+        return device_.access_pos(i1, i2, i3);
 #else
         auto idx = indexer_type::access_pos(device_.get_dim_manager().get_offs_align(), i1, i2, i3);
         return host_.get_addr()[idx];
@@ -193,7 +193,7 @@ public:
         array_index_t i3 = permuter_type::template select<2>(idx1, idx2, idx3);
 
 #ifdef __CUDA_ARCH__
-        return storage_.access_pos(i1, i2, i3);
+        return device_.access_pos(i1, i2, i3);
 #else
         auto idx = indexer_type::access_pos(device_.get_dim_manager().get_offs_align(), i1, i2, i3);
         return host_.get_addr()[idx];
@@ -390,40 +390,18 @@ public:
     static constexpr unsigned dimensions = dynarray_type::dimensions;
 
     // Forward calls to the parent array
+    template <typename... T>
     __array_index__
-    value_type &operator()(array_index_t idx)
+    value_type &operator()(T &&... indices)
     {
-        return array_(idx);
+        return array_(std::forward<T>(indices)...);
     }
 
+    template <typename... T>
     __array_index__
-    const value_type &operator()(array_index_t idx) const
+    const value_type &operator()(T &&... indices) const
     {
-        return array_(idx);
-    }
-
-    __array_index__
-    value_type &operator()(array_index_t idx1, array_index_t idx2)
-    {
-        return array_(idx1, idx2);
-    }
-
-    __array_index__
-    const value_type &operator()(array_index_t idx1, array_index_t idx2) const
-    {
-        return array_(idx1, idx2);
-    }
-
-    __array_index__
-    value_type &operator()(array_index_t idx1, array_index_t idx2, array_index_t idx3)
-    {
-        return array_(idx1, idx2, idx3);
-    }
-
-    __array_index__
-    const value_type &operator()(array_index_t idx1, array_index_t idx2, array_index_t idx3) const
-    {
-        return array_(idx1, idx2, idx3);
+        return array_(std::forward<T>(indices)...);
     }
 
     template <unsigned Orig>
@@ -483,22 +461,11 @@ public:
     static constexpr unsigned dimensions = dynarray_type::dimensions;
 
     // Forward calls to constant methods only
+    template <typename... T>
     __array_index__
-    const value_type &operator()(array_index_t idx) const
+    const value_type &operator()(T &&... indices) const
     {
-        return array_(idx);
-    }
-
-    __array_index__
-    const value_type &operator()(array_index_t idx1, array_index_t idx2) const
-    {
-        return array_(idx1, idx2);
-    }
-
-    __array_index__
-    const value_type &operator()(array_index_t idx1, array_index_t idx2, array_index_t idx3) const
-    {
-        return array_(idx1, idx2, idx3);
+        return array_(std::forward<T>(indices)...);
     }
 
     template <unsigned Orig>
