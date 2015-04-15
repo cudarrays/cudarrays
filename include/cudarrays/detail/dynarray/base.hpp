@@ -31,6 +31,7 @@
 #define CUDARRAYS_DETAIL_DYNARRAY_BASE_HPP_
 
 #include "../../common.hpp"
+#include "../../host.hpp"
 #include "../../storage.hpp"
 
 #include "indexing.hpp"
@@ -204,109 +205,14 @@ public:
     CUDARRAYS_TESTED(storage_test, dim_manager_get_dim)
 };
 
-template <typename T>
-class host_storage {
-private:
-    struct state {
-        T * data_;
-        array_size_t offset_;
-        size_t hostSize_;
-    };
-
-    // Store the state of the object in the heap to minimize the size in the GPU
-    state *state_;
-
-private:
-    void free_data()
-    {
-        state_->data_ -= state_->offset_;
-
-        int ret = munmap(state_->data_, state_->hostSize_);
-        ASSERT(ret == 0);
-        state_->data_ = nullptr;
-    }
-
-public:
-    __host__
-    host_storage()
-    {
-        state_ = new state;
-        state_->data_ = nullptr;
-    }
-
-    __host__
-    virtual ~host_storage()
-    {
-        if (state_->data_ != nullptr) {
-            free_data();
-        }
-        delete state_;
-        state_ = nullptr;
-    }
-
-    void alloc(array_size_t elems, array_size_t offset, T *addr = nullptr)
-    {
-        int flags = MAP_PRIVATE | MAP_ANONYMOUS;
-        if (addr != nullptr) flags |= MAP_FIXED;
-        state_->hostSize_ = size_t(elems) * sizeof(T);
-        state_->data_ = (T *) mmap(addr, state_->hostSize_,
-                                   PROT_READ | PROT_WRITE,
-                                   flags, -1, 0);
-
-        if (addr != nullptr && state_->data_ != addr) {
-            FATAL("%p vs %p", state_->data_, addr);
-        }
-        DEBUG("mmapped: %p (%zd)", state_->data_, state_->hostSize_);
-
-        state_->data_  += offset;
-        state_->offset_ = offset;
-    }
-
-    const T *
-    get_addr() const
-    {
-        return state_->data_;
-    }
-
-    T *
-    get_addr()
-    {
-        return state_->data_;
-    }
-
-    const T *
-    get_base_addr() const
-    {
-        return state_->data_ - state_->offset_;
-    }
-
-    T *
-    get_base_addr()
-    {
-        return state_->data_ - state_->offset_;
-    }
-
-    size_t
-    size() const
-    {
-        return state_->hostSize_;
-    }
-
-    CUDARRAYS_TESTED(storage_test, host_storage)
-};
-
 template <typename T, unsigned Dims>
 class dynarray_base {
 public:
     using  dim_manager_type = dim_manager<T, Dims>;
-    using host_storage_type = host_storage<T>;
-
     dynarray_base(const extents<Dims> &extents,
                   const align_t &align) :
         dimManager_(extents, align)
     {
-        // Alloc host memory
-        hostStorage_.alloc(this->get_dim_manager().get_elems_align(), this->get_dim_manager().get_offset());
     }
 
     virtual ~dynarray_base()
@@ -320,27 +226,12 @@ public:
         return dimManager_;
     }
 
-    inline __host__ __device__
-    const host_storage_type &
-    get_host_storage() const
-    {
-        return hostStorage_;
-    }
-
-    inline __host__ __device__
-    host_storage_type &
-    get_host_storage()
-    {
-        return hostStorage_;
-    }
-
     virtual void set_current_gpu(unsigned /*idx*/) {}
-    virtual void to_device() = 0;
-    virtual void to_host() = 0;
+    virtual void to_device(host_storage<T> &host) = 0;
+    virtual void to_host(host_storage<T> &host) = 0;
 
 private:
     dim_manager_type dimManager_;
-    host_storage_type hostStorage_;
 };
 
 template <typename T, unsigned Dims, storage_tag StorageImpl, typename PartConf>

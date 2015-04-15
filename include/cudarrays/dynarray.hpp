@@ -66,19 +66,20 @@ public:
 
     using   storage_type =
         dynarray_storage<T, Dims, PartConf::final_impl,
-                      typename reorder_gather_static< // User-provided dimension ordering
-                          Dims,
-                          bool,
-                          typename PartConf::template part_type<Dims>,
-                          dim_order_type
-                      >::type>;
-
-    using host_storage_type = typename storage_type::host_storage_type;
+                         typename reorder_gather_static< // User-provided dimension ordering
+                             Dims,
+                             bool,
+                             typename PartConf::template part_type<Dims>,
+                             dim_order_type
+                         >::type>;
 
     using      value_type = T;
     using difference_type = array_index_t;
 
     using coherence_policy_type = CoherencePolicy<dynarray>;
+    using host_storage_type = host_storage<T>;
+
+    using indexer_type = linearizer<Dims>;
 
     static constexpr unsigned dimensions = Dims;
 
@@ -90,6 +91,9 @@ public:
         coherencePolicy_(coherence)
     {
         coherencePolicy_.bind(this);
+
+        // Alloc host memory
+        host_.alloc(storage_.get_dim_manager().get_elems_align(), storage_.get_dim_manager().get_offset());
         // TODO: Move this to a better place
         register_range(this->get_host_storage().get_base_addr(),
                        this->get_host_storage().size());
@@ -122,13 +126,21 @@ public:
     __array_index__
     T &operator()(array_index_t idx)
     {
+#ifdef __CUDA_ARCH__
         return storage_.access_pos(0, 0, idx);
+#else
+        return host_.get_addr()[idx];
+#endif
     }
 
     __array_index__
     const T &operator()(array_index_t idx) const
     {
+#ifdef __CUDA_ARCH__
         return storage_.access_pos(0, 0, idx);
+#else
+        return host_.get_addr()[idx];
+#endif
     }
 
     __array_index__
@@ -137,7 +149,12 @@ public:
         array_index_t i1 = permuter_type::template select<0>(idx1, idx2);
         array_index_t i2 = permuter_type::template select<1>(idx1, idx2);
 
+#ifdef __CUDA_ARCH__
         return storage_.access_pos(0, i1, i2);
+#else
+        auto idx = indexer_type::access_pos(storage_.get_dim_manager().get_offs_align(), 0, i1, i2);
+        return host_.get_addr()[idx];
+#endif
     }
 
     __array_index__
@@ -146,7 +163,12 @@ public:
         array_index_t i1 = permuter_type::template select<0>(idx1, idx2);
         array_index_t i2 = permuter_type::template select<1>(idx1, idx2);
 
+#ifdef __CUDA_ARCH__
         return storage_.access_pos(0, i1, i2);
+#else
+        auto idx = indexer_type::access_pos(storage_.get_dim_manager().get_offs_align(), 0, i1, i2);
+        return host_.get_addr()[idx];
+#endif
     }
 
     __array_index__
@@ -156,7 +178,12 @@ public:
         array_index_t i2 = permuter_type::template select<1>(idx1, idx2, idx3);
         array_index_t i3 = permuter_type::template select<2>(idx1, idx2, idx3);
 
+#ifdef __CUDA_ARCH__
         return storage_.access_pos(i1, i2, i3);
+#else
+        auto idx = indexer_type::access_pos(storage_.get_dim_manager().get_offs_align(), i1, i2, i3);
+        return host_.get_addr()[idx];
+#endif
     }
 
     __array_index__
@@ -166,7 +193,12 @@ public:
         array_index_t i2 = permuter_type::template select<1>(idx1, idx2, idx3);
         array_index_t i3 = permuter_type::template select<2>(idx1, idx2, idx3);
 
+#ifdef __CUDA_ARCH__
         return storage_.access_pos(i1, i2, i3);
+#else
+        auto idx = indexer_type::access_pos(storage_.get_dim_manager().get_offs_align(), i1, i2, i3);
+        return host_.get_addr()[idx];
+#endif
     }
 
     template <unsigned DimsComp>
@@ -191,18 +223,6 @@ public:
         return storage_.is_distributed();
     }
 
-    inline __host__ __device__
-    array_size_t get_elems() const
-    {
-        return storage_.get_dim_manager().get_elems();
-    }
-
-    inline __host__ __device__
-    array_size_t get_elems_align() const
-    {
-        return storage_.get_dim_manager().get_elems_align();
-    }
-
     template <unsigned Orig>
     __array_bounds__
     array_size_t get_dim() const
@@ -211,27 +231,11 @@ public:
         return storage_.get_dim_manager().get_dim(new_dim);
     }
 
-    template <unsigned Orig>
-    __array_bounds__
-    array_size_t get_dim_align() const
-    {
-        auto new_dim = permuter_type::template dim_index<Orig>();
-        return storage_.get_dim_manager().get_dim_align(new_dim);
-    }
-
-
     __array_bounds__
     array_size_t get_dim(unsigned dim) const
     {
         auto new_dim = permuter_type::dim_index(dim);
         return storage_.get_dim_manager().get_dim(new_dim);
-    }
-
-    __array_bounds__
-    array_size_t get_dim_align(unsigned dim) const
-    {
-        auto new_dim = permuter_type::dim_index(dim);
-        return storage_.get_dim_manager().get_dim_align(new_dim);
     }
 
     void
@@ -247,17 +251,17 @@ public:
 
     host_storage_type &get_host_storage()
     {
-        return storage_.get_host_storage();
+        return host_;
     }
 
     void to_device()
     {
-        storage_.to_device();
+        storage_.to_device(host_);
     }
 
     void to_host()
     {
-        storage_.to_host();
+        storage_.to_host(host_);
     }
 
     //
@@ -357,6 +361,7 @@ public:
 private:
     storage_type          storage_;
     coherence_policy_type coherencePolicy_;
+    host_storage_type     host_;
 };
 
 template <typename Array>
@@ -422,18 +427,6 @@ public:
         return array_(idx1, idx2, idx3);
     }
 
-    inline __host__ __device__
-    array_size_t get_elems() const
-    {
-        return array_.get_elems();
-    }
-
-    inline __host__ __device__
-    array_size_t get_elems_align() const
-    {
-        return array_.get_elems_align();
-    }
-
     template <unsigned Orig>
     __array_bounds__
     array_size_t get_dim() const
@@ -441,23 +434,10 @@ public:
         return array_.get_dim<Orig>();
     }
 
-    template <unsigned Orig>
-    __array_bounds__
-    array_size_t get_dim_align() const
-    {
-        return array_.get_dim_align<Orig>();
-    }
-
     __array_bounds__
     array_size_t get_dim(unsigned dim) const
     {
         return array_.get_dim(dim);
-    }
-
-    __array_bounds__
-    array_size_t get_dim_align(unsigned dim) const
-    {
-        return array_.get_dim_align(dim);
     }
 
     void
@@ -522,18 +502,6 @@ public:
         return array_(idx1, idx2, idx3);
     }
 
-    inline __host__ __device__
-    array_size_t get_elems() const
-    {
-        return array_.get_elems();
-    }
-
-    inline __host__ __device__
-    array_size_t get_elems_align() const
-    {
-        return array_.get_elems_align();
-    }
-
     template <unsigned Orig>
     __array_bounds__
     array_size_t get_dim() const
@@ -541,23 +509,10 @@ public:
         return array_.get_dim<Orig>();
     }
 
-    template <unsigned Orig>
-    __array_bounds__
-    array_size_t get_dim_align() const
-    {
-        return array_.get_dim_align<Orig>();
-    }
-
     __array_bounds__
     array_size_t get_dim(unsigned dim) const
     {
         return array_.get_dim(dim);
-    }
-
-    __array_bounds__
-    array_size_t get_dim_align(unsigned dim) const
-    {
-        return array_.get_dim_align(dim);
     }
 };
 

@@ -44,6 +44,8 @@ class dynarray_storage<T, Dims, storage_tag::RESHAPE_BLOCK, PartConf> :
     using base_storage_type = dynarray_base<T, Dims>;
     using  dim_manager_type = typename base_storage_type::dim_manager_type;
 
+    using indexer_type = index_block<PartConf>;
+
     __host__
     void alloc()
     {
@@ -263,9 +265,9 @@ public:
     }
 
     __host__
-    void to_host()
+    void to_host(host_storage<T> &host)
     {
-        T *unaligned = this->get_host_storage().get_addr();
+        T *unaligned = host.get_addr();
 
         unsigned partZ = (Dims > 2)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxZ]: 1;
         unsigned partY = (Dims > 1)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxY]: 1;
@@ -337,9 +339,9 @@ public:
     }
 
     __host__
-    void to_device()
+    void to_device(host_storage<T> &host)
     {
-        T *unaligned = this->get_host_storage().get_addr();
+        T *unaligned = host.get_addr();
 
         unsigned partZ = (Dims > 2)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxZ]: 1;
         unsigned partY = (Dims > 1)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxY]: 1;
@@ -420,42 +422,24 @@ public:
         return hostInfo_->gpus;
     }
 
-    __host__ __device__ inline
+    __device__ inline
     T &access_pos(array_index_t idx1, array_index_t idx2, array_index_t idx3)
     {
-#ifndef __CUDA_ARCH__
-        using my_linearizer = linearizer<Dims>;
-        array_index_t off;
-        off = my_linearizer::access_pos(this->get_dim_manager().get_offs_align(),
-                                        idx1, idx2, idx3);
-        return this->get_host_storage().get_addr()[off];
-#else
-        using my_indexer = index_block<PartConf>;
-        array_index_t off;
-        off = my_indexer::access_pos(localOffs_, localDims_,
-                                     gpuOffs_,
-                                     idx1, idx2, idx3);
-        return this->dataDev_[off];
-#endif
+        array_index_t idx;
+        idx = indexer_type::access_pos(localOffs_, localDims_,
+                                       gpuOffs_,
+                                       idx1, idx2, idx3);
+        return this->dataDev_[idx];
     }
 
-    __host__ __device__ inline
+    __device__ inline
     const T &access_pos(array_index_t idx1, array_index_t idx2, array_index_t idx3) const
     {
-#ifndef __CUDA_ARCH__
-        using my_linearizer = linearizer<Dims>;
-        array_index_t off;
-        off = my_linearizer::access_pos(this->get_dim_manager().get_offs_align(),
-                                        idx1, idx2, idx3);
-        return this->get_host_storage().get_addr()[off];
-#else
-        using my_indexer = index_block<PartConf>;
-        array_index_t off;
-        off = my_indexer::access_pos(localOffs_, localDims_,
+        array_index_t idx;
+        idx = indexer_type::access_pos(localOffs_, localDims_,
                                      gpuOffs_,
                                      idx1, idx2, idx3);
-        return this->dataDev_[off];
- #endif
+        return this->dataDev_[idx];
     }
 
 private:

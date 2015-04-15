@@ -219,14 +219,19 @@ class dynarray_storage<T, Dims, storage_tag::VM, PartConf> :
     using base_storage_type = dynarray_base<T, Dims>;
     using  dim_manager_type = typename base_storage_type::dim_manager_type;
 
+    using indexer_type = linearizer<Dims>;
+
     struct storage_host_info {
         unsigned gpus;
 
         extents<Dims> localDims;
         std::array<unsigned, Dims>     arrayDimToGpus;
 
+        unsigned npages;
+
         storage_host_info(unsigned _gpus) :
-            gpus(_gpus)
+            gpus(_gpus),
+            npages(0)
         {
         }
     };
@@ -293,17 +298,17 @@ public:
     }
 
     __host__
-    void to_host()
+    void to_host(host_storage<T> &host)
     {
         unsigned npages;
-        npages = div_ceil(this->get_host_storage().size(), config::CUDA_VM_ALIGN);
+        npages = div_ceil(host.size(), config::CUDA_VM_ALIGN);
 
         T *src = dataDev_ - this->get_dim_manager().get_offset();
-        T *dst = this->get_host_storage().get_base_addr();
+        T *dst = host.get_base_addr();
         for (array_size_t idx  = 0; idx < npages; ++idx) {
             array_size_t bytesChunk = config::CUDA_VM_ALIGN;
-            if ((idx + 1) * config::CUDA_VM_ALIGN > this->get_host_storage().size())
-                bytesChunk = this->get_host_storage().size() - idx * config::CUDA_VM_ALIGN;
+            if ((idx + 1) * config::CUDA_VM_ALIGN > host.size())
+                bytesChunk = host.size() - idx * config::CUDA_VM_ALIGN;
 
             DEBUG("COPYING TO HOST: %p -> %p (%zd)", &src[(config::CUDA_VM_ALIGN * idx)/sizeof(T)],
                                                      &dst[(config::CUDA_VM_ALIGN * idx)/sizeof(T)],
@@ -315,17 +320,17 @@ public:
     }
 
     __host__
-    void to_device()
+    void to_device(host_storage<T> &host)
     {
         unsigned npages;
-        npages = div_ceil(this->get_host_storage().size(), config::CUDA_VM_ALIGN);
+        npages = div_ceil(host.size(), config::CUDA_VM_ALIGN);
 
-        T *src = this->get_host_storage().get_base_addr();
+        T *src = host.get_base_addr();
         T *dst = dataDev_ - this->get_dim_manager().get_offset();
         for (array_size_t idx  = 0; idx < npages; ++idx) {
             array_size_t bytesChunk = config::CUDA_VM_ALIGN;
-            if ((idx + 1) * config::CUDA_VM_ALIGN > this->get_host_storage().size())
-                bytesChunk = this->get_host_storage().size() - idx * config::CUDA_VM_ALIGN;
+            if ((idx + 1) * config::CUDA_VM_ALIGN > host.size())
+                bytesChunk = host.size() - idx * config::CUDA_VM_ALIGN;
 
             DEBUG("COPYING TO DEVICE: %p -> %p (%zd)", &src[(config::CUDA_VM_ALIGN * idx)/sizeof(T)],
                                                        &dst[(config::CUDA_VM_ALIGN * idx)/sizeof(T)],
@@ -358,13 +363,11 @@ public:
     {
 #ifndef __CUDA_ARCH__
         if (dataDev_ != NULL) {
-            unsigned npages = div_ceil(this->get_host_storage().size(), config::CUDA_VM_ALIGN);
-
             // Update offset
             T *data = dataDev_ - this->get_dim_manager().get_offset();
 
             // Free data in GPU memory
-            for (auto idx : utils::make_range(npages)) {
+            for (auto idx : utils::make_range(hostInfo_->npages)) {
                 CUDA_CALL(cudaFree(&data[config::CUDA_VM_ALIGN_ELEMS<T>() * idx]));
             }
         }
@@ -375,34 +378,18 @@ public:
 #endif
     }
 
-    __host__ __device__ inline
+    __device__ inline
     T &access_pos(array_index_t idx1, array_index_t idx2, array_index_t idx3)
     {
-        using my_linearizer = linearizer<Dims>;
-
-        array_index_t pos = my_linearizer::access_pos(this->get_dim_manager().get_offs_align(), idx1, idx2, idx3);
-        return
-#ifndef __CUDA_ARCH__
-            this->get_host_storage().get_addr()
-#else
-            dataDev_
-#endif
-            [pos];
+        array_index_t idx = indexer_type::access_pos(this->get_dim_manager().get_offs_align(), idx1, idx2, idx3);
+        return dataDev_ [idx];
     }
 
-    __host__ __device__ inline
+    __device__ inline
     const T &access_pos(array_index_t idx1, array_index_t idx2, array_index_t idx3) const
     {
-        using my_linearizer = linearizer<Dims>;
-
-        array_index_t pos = my_linearizer::access_pos(this->get_dim_manager().get_offs_align(), idx1, idx2, idx3);
-        return
-#ifndef __CUDA_ARCH__
-            this->get_host_storage().get_addr()
-#else
-            dataDev_
-#endif
-            [pos];
+        array_index_t idx = indexer_type::access_pos(this->get_dim_manager().get_offs_align(), idx1, idx2, idx3);
+        return dataDev_ [idx];
     }
 
 private:
@@ -426,6 +413,8 @@ private:
 
         char *last = NULL, *curr = NULL;
 
+        unsigned npages = 0;
+
         // Allocate data in the GPU memory
         for (std::pair<bool, typename my_allocator::page_stats> ret = cursor.advance();
              !ret.first || ret.second.get_total() > 0;
@@ -448,7 +437,10 @@ private:
                 assert(last + config::CUDA_VM_ALIGN == curr);
             }
             std::swap(last, curr);
+            ++npages;
         }
+
+        hostInfo_->npages = npages;
 
         dataDev_ += this->get_dim_manager().get_offset();
     }

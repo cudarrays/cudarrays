@@ -54,13 +54,14 @@ lib_storage_test::TearDownTestCase()
     cudarrays::fini_lib();
 }
 
+#if 0
 template <unsigned Dims>
 using extents = std::array<cudarrays::array_size_t, Dims>;
 
 #define do_host_alloc(P)                                                              \
 {                                                                                     \
-    using my_array = cudarrays::dynarray_storage<float, 3, P::final_impl,             \
-                                                 cudarrays::storage_part_helper<cudarrays::partition::none, 3>::type>; \
+    using my_dims  = cudarrays::dim_manager<float, 3>;                                \
+    using my_array = cudarrays::host_storage<float>;                                  \
                                                                                       \
     static const cudarrays::array_size_t Z = 3;                                       \
     static const cudarrays::array_size_t Y = 5;                                       \
@@ -70,6 +71,7 @@ using extents = std::array<cudarrays::array_size_t, Dims>;
                                                                                       \
     float regular[Z][Y][X];                                                           \
                                                                                       \
+    my_dims  D1{extents_type{Z, Y, X}, cudarrays::align_t{}};                         \
     my_array A1{extents_type{Z, Y, X}, cudarrays::align_t{}};                         \
                                                                                       \
     for (auto i : make_range(Z)) {                                                    \
@@ -116,3 +118,4 @@ TEST_F(lib_storage_test, host_vm)
 {
     do_host_alloc(cudarrays::vm);
 }
+#endif

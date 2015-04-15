@@ -146,7 +146,19 @@ int main(int argc, char *argv[])
                                                 {NONE, NONE},
                                                 {NONE, NONE},
                                                 {NONE, NONE});
-    printf("COHERENT 1: %d\n", ok);
+    printf("REPLICATE 1: %d\n", ok);
+
+    ok = launch_test_matrixmul<replicate::none>({partition::y, 2},
+                                                {0, NONE},
+                                                {0, NONE},
+                                                {0, NONE});
+    printf("REPLICATE 2: %d\n", ok);
+
+    ok = launch_test_matrixmul<replicate::none>({partition::y, 4},
+                                                {0, NONE},
+                                                {0, NONE},
+                                                {0, NONE});
+    printf("REPLICATE 4: %d\n", ok);
 
     ok = launch_test_matrixmul<vm::none>({partition::none, 1},
                                          {NONE, NONE},
@@ -160,7 +172,7 @@ int main(int argc, char *argv[])
                                          {0, NONE});
     printf("VM 2: %d\n", ok);
 
-    ok = launch_test_matrixmul<vm::none>({partition::y, 2},
+    ok = launch_test_matrixmul<vm::none>({partition::y, 4},
                                          {0, NONE},
                                          {0, NONE},
                                          {0, NONE});
