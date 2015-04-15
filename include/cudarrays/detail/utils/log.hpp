@@ -46,6 +46,13 @@ namespace cudarrays {
         fprintf(out, msg_nl.c_str(), args...);
     }
 
+    static void
+    print(FILE *out, std::string msg)
+    {
+        std::string msg_nl = msg + "\n";
+        fprintf(out, "%s", msg_nl.c_str());
+    }
+
     template <typename... Args>
     static void
     print(FILE *out)
