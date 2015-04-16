@@ -8,6 +8,7 @@ set(CUDARRAYS_HEADERS array.hpp
                       storage.hpp
                       storage_impl.hpp
                       detail/coherence/default.hpp
+                      detail/dynarray/base.hpp
                       detail/dynarray/helpers.hpp
                       detail/dynarray/indexing.hpp
                       detail/dynarray/iterator.hpp
