@@ -173,24 +173,6 @@ do {                                                       \
     }                                                      \
 } while (0)
 
-#ifdef CUDARRAYS_UNITTEST
-#define CUDARRAYS_TESTED(C,T) friend ::C##_##T##_Test;
-#else
-#define CUDARRAYS_TESTED(C,T)
-#endif
-
-#define CUDA_CALL(x)                                       \
-do {                                                       \
-    cudaError_t err__ = (x);                               \
-    if (err__ != cudaSuccess) {                            \
-        fprintf(stderr,                                    \
-                "Error calling CUDA: %d. Message: '%s'\n", \
-                err__,                                     \
-                cudaGetErrorString(err__));                \
-        abort();                                           \
-    }                                                      \
-} while (0)
-
 }
 
 #endif
