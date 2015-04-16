@@ -73,12 +73,23 @@ private:
         std::vector<unsigned> gpus;
         std::vector<T *> allocsDev;
 
+        T *mergeTmp;
+        T *mergeFinal;
+
         storage_host_info(const std::vector<unsigned> &_gpus) :
             gpus(_gpus),
-            allocsDev(config::MAX_GPUS)
+            allocsDev(config::MAX_GPUS),
+            mergeTmp(nullptr),
+            mergeFinal(nullptr)
         {
             std::fill(allocsDev.begin(),
                       allocsDev.end(), (T *)nullptr);
+        }
+
+        ~storage_host_info()
+        {
+            if (mergeTmp != nullptr)   delete []mergeTmp;
+            if (mergeFinal != nullptr) delete []mergeFinal;
         }
     };
 
@@ -206,17 +217,19 @@ public:
                 }
             }
         } else {
-            std::unique_ptr<T[]> tmp{new T[this->get_dim_manager().get_elems_align()]};
-            std::unique_ptr<T[]> merged{new T[this->get_dim_manager().get_elems_align()]};
+            if (hostInfo_->mergeTmp == nullptr) {
+                hostInfo_->mergeTmp   = new T[this->get_dim_manager().get_elems_align()];
+                hostInfo_->mergeFinal = new T[this->get_dim_manager().get_elems_align()];
+            }
 
             std::copy(host.get_base_addr(),
                       host.get_base_addr() + this->get_dim_manager().get_elems_align(),
-                      merged.get());
+                      hostInfo_->mergeFinal);
 
             // Request copy-to-device
             for (unsigned idx : utils::make_range(config::MAX_GPUS)) {
                 if (hostInfo_->allocsDev[idx] != nullptr) {
-                    CUDA_CALL(cudaMemcpy(tmp.get(),
+                    CUDA_CALL(cudaMemcpy(hostInfo_->mergeTmp,
                                          hostInfo_->allocsDev[idx] - this->get_dim_manager().get_offset(),
                                          this->get_dim_manager().get_elems_align() * sizeof(T),
                                          cudaMemcpyDeviceToHost));
@@ -225,16 +238,16 @@ public:
 
                     #pragma omp parallel for
                     for (array_size_t j = 0; j < this->get_dim_manager().get_elems_align(); ++j) {
-                        if (memcmp(tmp.get() + j, host.get_base_addr() + j, sizeof(T)) != 0) {
-                            merged[j] = tmp[j];
+                        if (memcmp(hostInfo_->mergeTmp + j, host.get_base_addr() + j, sizeof(T)) != 0) {
+                            hostInfo_->mergeFinal[j] = hostInfo_->mergeTmp[j];
                         }
                     }
                 }
             }
 
             DEBUG("Replicated> Updating main host copy");
-            std::copy(merged.get(),
-                      merged.get() + this->get_dim_manager().get_elems_align(),
+            std::copy(hostInfo_->mergeFinal,
+                      hostInfo_->mergeFinal + this->get_dim_manager().get_elems_align(),
                       host.get_base_addr());
         }
     }

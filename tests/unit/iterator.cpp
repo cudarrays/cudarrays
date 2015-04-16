@@ -175,7 +175,7 @@ public:
         return const_reverse_iterator{const_iterator{*this, dims}};
     }
 
-    cudarrays::array_size_t get_dim(unsigned dim) const
+    cudarrays::array_size_t dim(unsigned dim) const
     {
         return dims_[dim];
     }

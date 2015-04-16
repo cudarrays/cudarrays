@@ -195,10 +195,10 @@ TEST_F(storage_test, dim_manager_get_dim)
     extents<2> extents{3, 5};
     my_dim_manager mgr1{extents, cudarrays::align_t{0}};
 
-    ASSERT_EQ(mgr1.sizes_[0], mgr1.get_dim(0));
-    ASSERT_EQ(mgr1.sizes_[1], mgr1.get_dim(1));
-    ASSERT_EQ(mgr1.sizesAlign_[0], mgr1.get_dim_align(0));
-    ASSERT_EQ(mgr1.sizesAlign_[1], mgr1.get_dim_align(1));
+    ASSERT_EQ(mgr1.sizes_[0], mgr1.dim(0));
+    ASSERT_EQ(mgr1.sizes_[1], mgr1.dim(1));
+    ASSERT_EQ(mgr1.sizesAlign_[0], mgr1.dim_align(0));
+    ASSERT_EQ(mgr1.sizesAlign_[1], mgr1.dim_align(1));
 }
 
 TEST_F(storage_test, host_storage)

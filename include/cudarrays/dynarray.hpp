@@ -109,7 +109,7 @@ public:
     dynarray &operator=(const dynarray &a)
     {
         if (&a != this) {
-            device_         = a.device_;
+            device_          = a.device_;
             coherencePolicy_ = a.coherencePolicy_;
         }
 
@@ -224,17 +224,17 @@ public:
 
     template <unsigned Orig>
     __array_bounds__
-    array_size_t get_dim() const
+    array_size_t dim() const
     {
         auto new_dim = permuter_type::template dim_index<Orig>();
-        return device_.get_dim_manager().get_dim(new_dim);
+        return device_.get_dim_manager().dim(new_dim);
     }
 
     __array_bounds__
-    array_size_t get_dim(unsigned dim) const
+    array_size_t dim(unsigned dim) const
     {
         auto new_dim = permuter_type::dim_index(dim);
-        return device_.get_dim_manager().get_dim(new_dim);
+        return device_.get_dim_manager().dim(new_dim);
     }
 
     void
@@ -299,7 +299,7 @@ public:
     {
         array_index_t dims[Dims];
         for (unsigned i = 0; i < Dims; ++i) {
-            dims[i] = this->get_dim(i) - 1;
+            dims[i] = this->dim(i) - 1;
         }
         return reverse_iterator(iterator(*this, dims));
     }
@@ -307,7 +307,7 @@ public:
     iterator end()
     {
         array_index_t dims[Dims];
-        dims[0] = this->get_dim(0);
+        dims[0] = this->dim(0);
         if (Dims > 1) {
             std::fill(dims + 1, dims + Dims, 0);
         }
@@ -322,7 +322,7 @@ public:
     const_iterator cend() const
     {
         array_index_t dims[Dims];
-        dims[0] = this->get_dim(0);
+        dims[0] = this->dim(0);
         if (Dims > 1) {
             std::fill(dims + 1, dims + Dims, 0);
         }
@@ -334,7 +334,7 @@ public:
         array_index_t dims[Dims];
         dims[0] = -1;
         for (unsigned i = 0; i < Dims; ++i) {
-            dims[i] = this->get_dim(i) - 1;
+            dims[i] = this->dim(i) - 1;
         }
         return reverse_iterator(iterator(*this, dims));
     }
@@ -349,7 +349,7 @@ public:
         array_index_t dims[Dims];
         dims[0] = -1;
         for (unsigned i = 0; i < Dims; ++i) {
-            dims[i] = this->get_dim(i) - 1;
+            dims[i] = this->dim(i) - 1;
         }
         return const_reverse_iterator(const_iterator(*this, dims));
     }
@@ -404,17 +404,17 @@ public:
         return array_(std::forward<T>(indices)...);
     }
 
-    template <unsigned Orig>
+    template <unsigned Dim>
     __array_bounds__
-    array_size_t get_dim() const
+    array_size_t dim() const
     {
-        return array_.get_dim<Orig>();
+        return array_.dim<Dim>();
     }
 
     __array_bounds__
-    array_size_t get_dim(unsigned dim) const
+    array_size_t dim(unsigned dim) const
     {
-        return array_.get_dim(dim);
+        return array_.dim(dim);
     }
 
     void
@@ -468,17 +468,17 @@ public:
         return array_(std::forward<T>(indices)...);
     }
 
-    template <unsigned Orig>
+    template <unsigned Dim>
     __array_bounds__
-    array_size_t get_dim() const
+    array_size_t dim() const
     {
-        return array_.get_dim<Orig>();
+        return array_.dim<Dim>();
     }
 
     __array_bounds__
-    array_size_t get_dim(unsigned dim) const
+    array_size_t dim(unsigned dim) const
     {
-        return array_.get_dim(dim);
+        return array_.dim(dim);
     }
 };
 

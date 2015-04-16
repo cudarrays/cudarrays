@@ -63,7 +63,7 @@ matrixmul_kernel( matrix_ref<float, layout::cmo, StorageC> C,
 
     __shared__ float b_s[MATRIXMUL_TILE_TB_HEIGHT][MATRIXMUL_TILE_N];
 
-    int iter = A.get_dim(1);
+    int iter = A.dim(1);
 
     // Compute tiles
     for (int i = 0; i < iter; i += MATRIXMUL_TILE_TB_HEIGHT) {

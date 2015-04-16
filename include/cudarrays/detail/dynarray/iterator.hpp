@@ -201,14 +201,14 @@ protected:
     {
         for (int dim = Dims - 1; dim >= 0; --dim) {
             difference_type i = idx_[dim] + off;
-            if (dim > 0 && i >= parent_->get_dim(dim)) {
+            if (dim > 0 && i >= parent_->dim(dim)) {
                 // Next iteration will update dim - 1
                 if (Unit) {
                     idx_[dim] = 0;
                     off = 1;
                 } else {
-                    idx_[dim] = i % difference_type(parent_->get_dim(dim));
-                    off       = i / difference_type(parent_->get_dim(dim));
+                    idx_[dim] = i % difference_type(parent_->dim(dim));
+                    off       = i / difference_type(parent_->dim(dim));
                 }
             } else {
                 // No overflow, we are done
@@ -226,11 +226,11 @@ protected:
             if (dim > 0 && i < 0) {
                 // Next iteration will update dim - 1
                 if (Unit) {
-                    idx_[dim] = difference_type(parent_->get_dim(dim)) - 1;
+                    idx_[dim] = difference_type(parent_->dim(dim)) - 1;
                     off       = 1;
                 } else {
-                    idx_[dim] = difference_type(parent_->get_dim(dim)) - (i % difference_type(parent_->get_dim(dim)));
-                    off       = i / difference_type(parent_->get_dim(dim));
+                    idx_[dim] = difference_type(parent_->dim(dim)) - (i % difference_type(parent_->dim(dim)));
+                    off       = i / difference_type(parent_->dim(dim));
                 }
             } else {
                 // No underflow, we are done
@@ -272,7 +272,7 @@ protected:
         for (int dim = Dims - 1; dim >= 0; --dim) {
             ret += (idx_[dim] - it.idx_[dim]) * inc;
 
-            inc *= difference_type(parent_->get_dim(dim));
+            inc *= difference_type(parent_->dim(dim));
         }
         return ret;
     }
