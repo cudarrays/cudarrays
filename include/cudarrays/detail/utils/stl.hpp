@@ -55,6 +55,22 @@ end(T(&)[0])
 
 namespace utils {
 
+template <typename C, typename T, typename BinaryOperation>
+static inline
+auto
+accumulate(const C &cont, T &&init, BinaryOperation &&op) -> decltype(std::accumulate(std::begin(cont), std::end(cont), init, op))
+{
+    return std::accumulate(std::begin(cont), std::end(cont), std::forward<T>(init), std::forward<BinaryOperation>(op));
+}
+
+template <typename C1, typename C2>
+static inline
+auto
+copy(const C1 &in, C2 &out) -> decltype(std::copy(std::begin(in), std::end(in), std::begin(out)))
+{
+    return std::copy(std::begin(in), std::end(in), std::begin(out));
+}
+
 template <typename C, typename T>
 static inline
 auto
@@ -71,13 +87,6 @@ count_if(const C &cont, P &&pred) -> decltype(std::count_if(std::begin(cont), st
     return std::count_if(std::begin(cont), std::end(cont), std::forward<P>(pred));
 }
 
-template <typename C1, typename C2>
-static inline
-auto
-copy(const C1 &in, C2 &out) -> decltype(std::copy(std::begin(in), std::end(in), std::begin(out)))
-{
-    return std::copy(std::begin(in), std::end(in), std::begin(out));
-}
 
 template <typename C>
 static inline
@@ -93,14 +102,6 @@ auto
 fill(C &cont, T &&val) -> decltype(std::fill(std::begin(cont), std::end(cont), val))
 {
     return std::fill(std::begin(cont), std::end(cont), std::forward<T>(val));
-}
-
-template <typename C, typename T, typename BinaryOperation>
-static inline
-auto
-accumulate(const C &cont, T &&init, BinaryOperation &&op) -> decltype(std::accumulate(std::begin(cont), std::end(cont), init, op))
-{
-    return std::accumulate(std::begin(cont), std::end(cont), std::forward<T>(init), std::forward<BinaryOperation>(op));
 }
 
 template <typename C>
