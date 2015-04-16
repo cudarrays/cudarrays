@@ -79,19 +79,11 @@ private:
     array_size_t elemsAlign_;
 
     __host__ void
-    init(const extents<Dims> &extents,
-         align_t align,
-         const std::array<array_size_t, Dims - 1> &offAlignImpl)
+    init(const extents<Dims> &extents, align_t align)
     {
         // Initialize array sizes
         utils::copy(extents, sizes_);
         std::copy(extents.begin(), extents.end(), sizesAlign_);
-
-        // Check if the implementation imposes a bigger alignment than the user
-        if (Dims > 1 && offAlignImpl[Dims - 2] > align.alignment) {
-            ASSERT(offAlignImpl[Dims - 2] % align.alignment == 0);
-            align.alignment = offAlignImpl[Dims - 2];
-        }
 
         // Compute offset and aligned size of the lowest order dimension
         offset_ = 0;
@@ -111,16 +103,11 @@ private:
         for (int i = Dims - 1; i > 0; --i) {
             nextOffAlign *= sizesAlign_[i];
 
-            if (offAlignImpl[i - 1] > 0) {
-                nextOffAlign = utils::round_next(nextOffAlign, offAlignImpl[i - 1]);
-            }
-
             offsAlign_[i - 1] = nextOffAlign;
         }
 
         // Compute number of elements
-        elems_      = std::accumulate(sizes_, sizes_ + Dims,
-                                      1, std::multiplies<array_size_t>());
+        elems_      = utils::accumulate(sizes_, 1, std::multiplies<array_size_t>());
         elemsAlign_ = std::accumulate(sizesAlign_, sizesAlign_ + Dims,
                                       1, std::multiplies<array_size_t>());
     }
@@ -128,13 +115,12 @@ private:
 public:
     __host__
     dim_manager(const extents<Dims> &extents,
-                const align_t &align,
-                const std::array<array_size_t, Dims - 1> &offAlignImpl = std::array<array_size_t, Dims - 1>())
+                const align_t &align)
     {
         ASSERT(extents.size() == Dims);
 
         sizesAlign_ = new array_size_t[Dims];
-        init(extents, align, offAlignImpl);
+        init(extents, align);
     }
 
     __host__
@@ -181,14 +167,14 @@ public:
 
     __host__ __device__
     inline
-    array_size_t get_dim(unsigned dim) const
+    array_size_t dim(unsigned dim) const
     {
         return this->sizes_[dim];
     }
 
     __host__ __device__
     inline
-    array_size_t get_dim_align(unsigned dim) const
+    array_size_t dim_align(unsigned dim) const
     {
         return this->sizesAlign_[dim];
     }

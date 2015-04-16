@@ -186,18 +186,6 @@ TEST_F(storage_test, dim_manager_impl_offset)
     ASSERT_EQ(mgr1.sizesAlign_[0], 5);
 
     ASSERT_EQ(mgr1.offsAlign_[1], mgr1.sizesAlign_[2]);
-
-    my_dim_manager mgr2{extents, alignment, {1024, 32}};
-
-    ASSERT_EQ(mgr2.sizes_[2],      7);
-    ASSERT_EQ(mgr2.sizesAlign_[2], 32);
-    ASSERT_EQ(mgr2.sizes_[1],      3);
-    ASSERT_EQ(mgr2.sizesAlign_[1], 3);
-    ASSERT_EQ(mgr2.sizes_[0],      5);
-    ASSERT_EQ(mgr2.sizesAlign_[0], 5);
-
-    ASSERT_EQ(mgr2.offsAlign_[1], mgr2.sizesAlign_[2]);
-    ASSERT_EQ(mgr2.offsAlign_[0] % 1024, 0);
 }
 
 TEST_F(storage_test, dim_manager_get_dim)
