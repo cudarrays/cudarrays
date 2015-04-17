@@ -121,28 +121,28 @@ TEST_F(storage_test, dim_manager)
     extents<2> extents_small{3, 5};
     my_dim_manager mgr1{extents_small, cudarrays::align_t{0}};
 
-    ASSERT_EQ(mgr1.sizes_[0], extents_small[0]);
-    ASSERT_EQ(mgr1.sizes_[1], extents_small[1]);
-    ASSERT_EQ(mgr1.sizesAlign_[0], extents_small[0]);
-    ASSERT_EQ(mgr1.sizesAlign_[1], extents_small[1]);
+    ASSERT_EQ(mgr1.dims()[0], extents_small[0]);
+    ASSERT_EQ(mgr1.dims()[1], extents_small[1]);
+    ASSERT_EQ(mgr1.dims_align()[0], extents_small[0]);
+    ASSERT_EQ(mgr1.dims_align()[1], extents_small[1]);
 
     cudarrays::align_t alignment{16};
     my_dim_manager mgr2{extents_small, alignment};
 
-    ASSERT_EQ(mgr2.sizes_[0], extents_small[0]);
-    ASSERT_EQ(mgr2.sizes_[1], extents_small[1]);
-    ASSERT_EQ(mgr2.sizesAlign_[0], extents_small[0]);
-    ASSERT_EQ(mgr2.sizesAlign_[1], alignment.alignment);
+    ASSERT_EQ(mgr2.dims()[0], extents_small[0]);
+    ASSERT_EQ(mgr2.dims()[1], extents_small[1]);
+    ASSERT_EQ(mgr2.dims_align()[0], extents_small[0]);
+    ASSERT_EQ(mgr2.dims_align()[1], alignment.alignment);
 
     // Big extents
     extents<2> extents_big{247, 251};
     my_dim_manager mgr3{extents_big, alignment};
 
-    ASSERT_EQ(mgr3.sizes_[0], extents_big[0]);
-    ASSERT_EQ(mgr3.sizes_[1], extents_big[1]);
-    ASSERT_EQ(mgr3.sizesAlign_[0], extents_big[0]);
-    ASSERT_GT(mgr3.sizesAlign_[1], extents_big[1]);
-    ASSERT_EQ(mgr3.sizesAlign_[1] % alignment.alignment, 0);
+    ASSERT_EQ(mgr3.dims()[0], extents_big[0]);
+    ASSERT_EQ(mgr3.dims()[1], extents_big[1]);
+    ASSERT_EQ(mgr3.dims_align()[0], extents_big[0]);
+    ASSERT_GT(mgr3.dims_align()[1], extents_big[1]);
+    ASSERT_EQ(mgr3.dims_align()[1] % alignment.alignment, 0);
 }
 
 TEST_F(storage_test, dim_manager_offset)
@@ -155,17 +155,17 @@ TEST_F(storage_test, dim_manager_offset)
     cudarrays::align_t alignment1{4};
     my_dim_manager mgr1{extents, alignment1};
 
-    ASSERT_EQ(mgr1.get_offset(), 0);
+    ASSERT_EQ(mgr1.offset(), 0);
 
     cudarrays::align_t alignment2{4, 2};
     my_dim_manager mgr2{extents, alignment2};
 
-    ASSERT_EQ(mgr2.get_offset(), 2);
+    ASSERT_EQ(mgr2.offset(), 2);
 
     cudarrays::align_t alignment3{4, 5};
     my_dim_manager mgr3{extents, alignment3};
 
-    ASSERT_EQ(mgr3.get_offset(), 3);
+    ASSERT_EQ(mgr3.offset(), 3);
 }
 
 TEST_F(storage_test, dim_manager_impl_offset)
@@ -178,14 +178,14 @@ TEST_F(storage_test, dim_manager_impl_offset)
     cudarrays::align_t alignment{4};
     my_dim_manager mgr1{extents, alignment};
 
-    ASSERT_EQ(mgr1.sizes_[2],      7);
-    ASSERT_EQ(mgr1.sizesAlign_[2], 8);
-    ASSERT_EQ(mgr1.sizes_[1],      3);
-    ASSERT_EQ(mgr1.sizesAlign_[1], 3);
-    ASSERT_EQ(mgr1.sizes_[0],      5);
-    ASSERT_EQ(mgr1.sizesAlign_[0], 5);
+    ASSERT_EQ(mgr1.dims()[2],       7);
+    ASSERT_EQ(mgr1.dims_align()[2], 8);
+    ASSERT_EQ(mgr1.dims()[1],       3);
+    ASSERT_EQ(mgr1.dims_align()[1], 3);
+    ASSERT_EQ(mgr1.dims()[0],       5);
+    ASSERT_EQ(mgr1.dims_align()[0], 5);
 
-    ASSERT_EQ(mgr1.offsAlign_[1], mgr1.sizesAlign_[2]);
+    ASSERT_EQ(mgr1.get_offs_align()[1], mgr1.dims_align()[2]);
 }
 
 TEST_F(storage_test, dim_manager_get_dim)
@@ -195,10 +195,10 @@ TEST_F(storage_test, dim_manager_get_dim)
     extents<2> extents{3, 5};
     my_dim_manager mgr1{extents, cudarrays::align_t{0}};
 
-    ASSERT_EQ(mgr1.sizes_[0], mgr1.dim(0));
-    ASSERT_EQ(mgr1.sizes_[1], mgr1.dim(1));
-    ASSERT_EQ(mgr1.sizesAlign_[0], mgr1.dim_align(0));
-    ASSERT_EQ(mgr1.sizesAlign_[1], mgr1.dim_align(1));
+    ASSERT_EQ(mgr1.dims()[0], mgr1.dim(0));
+    ASSERT_EQ(mgr1.dims()[1], mgr1.dim(1));
+    ASSERT_EQ(mgr1.dims_align()[0], mgr1.dim_align(0));
+    ASSERT_EQ(mgr1.dims_align()[1], mgr1.dim_align(1));
 }
 
 TEST_F(storage_test, host_storage)
@@ -208,13 +208,13 @@ TEST_F(storage_test, host_storage)
     my_host_storage mgr{};
 
     mgr.alloc(10, 0);
-    ASSERT_EQ(mgr.get_addr(), mgr.get_base_addr());
+    ASSERT_EQ(mgr.addr(), mgr.base_addr());
 
     my_host_storage mgr2{};
 
     mgr.alloc(10, 1);
-    ASSERT_NE(mgr.get_addr(), mgr.get_base_addr());
-    ASSERT_EQ(mgr.get_addr() - mgr.get_base_addr(), 1);
+    ASSERT_NE(mgr.addr(), mgr.base_addr());
+    ASSERT_EQ(mgr.addr() - mgr.base_addr(), 1);
 }
 
 TEST_F(storage_test, vm_page_allocator1)

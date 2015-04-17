@@ -89,7 +89,7 @@ class dynarray_storage<T, Dims, storage_tag::RESHAPE_CYCLIC, PartConf> :
             }
         }
 
-        dataDev_ += this->get_dim_manager().get_offset();
+        dataDev_ += this->get_dim_manager().offset();
     }
 
 public:
@@ -114,7 +114,7 @@ public:
         if ((1 << compPartDims) > mapping.comp.procs)
             FATAL("Not enough GPUs (%u), to partition %u", mapping.comp.procs, arrayPartDims);
 #endif
-        std::array<array_size_t, Dims> dims = utils::make_array(this->get_dim_manager().sizes_);
+        std::array<array_size_t, Dims> dims = utils::make_array(this->get_dim_manager().dims());
 
         // Distribute the partition uniformly across GPUs
         // 1- Compute GPU grid
@@ -177,7 +177,7 @@ public:
         if ((1 << compPartDims) > mapping.comp.procs)
             FATAL("Not enough GPUs (%u), to partition %u", mapping.comp.procs, arrayPartDims);
 #endif
-        std::array<array_size_t, Dims> dims = utils::make_array(this->get_dim_manager().sizes_);
+        std::array<array_size_t, Dims> dims = utils::make_array(this->get_dim_manager().dims());
 
         // Distribute the partition uniformly across GPUs
         // 1- Compute GPU grid
@@ -317,8 +317,8 @@ public:
         if (dataDev_ != nullptr) {
             // Free device memory (1 chunk per GPU)
             for (unsigned idx = 0; idx < hostInfo_->gpus; ++idx) {
-                DEBUG("Reshape> - freeing %p", dataDev_ - this->get_dim_manager().get_offset() + hostInfo_->elemsLocal * idx);
-                CUDA_CALL(cudaFree(dataDev_ - this->get_dim_manager().get_offset() + hostInfo_->elemsLocal * idx));
+                DEBUG("Reshape> - freeing %p", dataDev_ - this->get_dim_manager().offset() + hostInfo_->elemsLocal * idx);
+                CUDA_CALL(cudaFree(dataDev_ - this->get_dim_manager().offset() + hostInfo_->elemsLocal * idx));
             }
         }
 
@@ -330,7 +330,8 @@ public:
     __host__
     void to_host(host_storage<T> &host)
     {
-        T *unaligned = host.get_addr();
+        T *unaligned = host.addr();
+        auto &dimMgr = this->get_dim_manager();
 
         unsigned partZ = (Dims > 2)? arrayPartitionGrid_[dim_manager_type::DimIdxZ]: 1;
         unsigned partY = (Dims > 1)? arrayPartitionGrid_[dim_manager_type::DimIdxY]: 1;
@@ -338,9 +339,9 @@ public:
 
         cudaMemcpy3DParms myParms = {0};
         myParms.dstPtr = make_cudaPitchedPtr(unaligned,
-                                             sizeof(T) * this->get_dim_manager().sizesAlign_[dim_manager_type::DimIdxX],
-                                                         this->get_dim_manager().sizesAlign_[dim_manager_type::DimIdxX],
-                                             Dims > 1?   this->get_dim_manager().sizesAlign_[dim_manager_type::DimIdxY]: 1);
+                                             sizeof(T) * dimMgr.dim_align(dim_manager_type::DimIdxX),
+                                                         dimMgr.dim_align(dim_manager_type::DimIdxX),
+                                             Dims > 1?   dimMgr.dim_align(dim_manager_type::DimIdxY): 1);
 
         for (unsigned pZ : utils::make_range(partZ)) {
             for (unsigned pY : utils::make_range(partY)) {
@@ -360,8 +361,8 @@ public:
                     DEBUG("TO_HOST: Src Block Off: %u", blockOff);
 
                     DEBUG("TO_HOST: Block (%u, %u, %u)", pZ, pY, pX);
-                    DEBUG("TO_HOST: Dst  (%zd, %zd, %zd)", pZ * localZ * (Dims > 2? this->get_dim_manager().get_offs_align()[dim_manager_type::DimIdxZ]: 0),
-                                                           pY * localY * (Dims > 1? this->get_dim_manager().get_offs_align()[dim_manager_type::DimIdxY]: 0),
+                    DEBUG("TO_HOST: Dst  (%zd, %zd, %zd)", pZ * localZ * (Dims > 2? dimMgr.get_offs_align()[dim_manager_type::DimIdxZ]: 0),
+                                                           pY * localY * (Dims > 1? dimMgr.get_offs_align()[dim_manager_type::DimIdxY]: 0),
                                                            pX * localX);
                     DEBUG("TO_HOST: Src   (%zd, %zd, %zd)", pZ * (Dims > 2? gpuOffs_[dim_manager_type::DimIdxZ]: 0),
                                                             pY * (Dims > 1? gpuOffs_[dim_manager_type::DimIdxY]: 0),
@@ -381,11 +382,11 @@ public:
 
                     // Only transfer the remaining elements
                     if (PartConf::Z)
-                    localZ = std::min(localZ, array_index_t(this->get_dim_manager().sizesAlign_[dim_manager_type::DimIdxZ] - pZ * localZ));
+                    localZ = std::min(localZ, array_index_t(dimMgr.dim_align(dim_manager_type::DimIdxZ) - pZ * localZ));
                     if (PartConf::Y)
-                    localY = std::min(localY, array_index_t(this->get_dim_manager().sizesAlign_[dim_manager_type::DimIdxY] - pY * localY));
+                    localY = std::min(localY, array_index_t(dimMgr.dim_align(dim_manager_type::DimIdxY) - pY * localY));
                     if (PartConf::X)
-                    localX = std::min(localX, array_index_t(this->get_dim_manager().sizesAlign_[dim_manager_type::DimIdxX] - pX * localX));
+                    localX = std::min(localX, array_index_t(dimMgr.dim_align(dim_manager_type::DimIdxX) - pX * localX));
 
                     if (localZ < 1 || localY < 1 || localZ < 1) continue;
 
@@ -404,7 +405,8 @@ public:
     __host__
     void to_device(host_storage<T> &host)
     {
-        T *unaligned = host.get_addr();
+        T *unaligned = host.addr();
+        auto &dimMgr = this->get_dim_manager();
 
         unsigned partZ = (Dims > 2)? arrayPartitionGrid_[dim_manager_type::DimIdxZ]: 1;
         unsigned partY = (Dims > 1)? arrayPartitionGrid_[dim_manager_type::DimIdxY]: 1;
@@ -412,9 +414,9 @@ public:
 
         cudaMemcpy3DParms myParms = {0};
         myParms.srcPtr = make_cudaPitchedPtr(unaligned,
-                                             sizeof(T) * this->get_dim_manager().sizesAlign_[dim_manager_type::DimIdxX],
-                                                         this->get_dim_manager().sizesAlign_[dim_manager_type::DimIdxX],
-                                             Dims > 1?   this->get_dim_manager().sizesAlign_[dim_manager_type::DimIdxY]: 1);
+                                             sizeof(T) * dimMgr.dim_align(dim_manager_type::DimIdxX),
+                                                         dimMgr.dim_align(dim_manager_type::DimIdxX),
+                                             Dims > 1?   dimMgr.dim_align(dim_manager_type::DimIdxY): 1);
 
         for (unsigned pZ : utils::make_range(partZ)) {
             for (unsigned pY : utils::make_range(partY)) {
@@ -433,8 +435,8 @@ public:
                     DEBUG("TO_DEVICE: Dst   (%zd, %zd, %zd)", pZ * (Dims > 2? gpuOffs_[dim_manager_type::DimIdxZ]: 0),
                                                               pY * (Dims > 1? gpuOffs_[dim_manager_type::DimIdxY]: 0),
                                                               pX *            gpuOffs_[dim_manager_type::DimIdxX]);
-                    DEBUG("TO_DEVICE: Src   (%zd, %zd, %zd)", pZ * localZ * (Dims > 2? this->get_dim_manager().get_offs_align()[dim_manager_type::DimIdxZ]: 0),
-                                                              pY * localY * (Dims > 1? this->get_dim_manager().get_offs_align()[dim_manager_type::DimIdxY]: 0),
+                    DEBUG("TO_DEVICE: Src   (%zd, %zd, %zd)", pZ * localZ * (Dims > 2? dimMgr.get_offs_align()[dim_manager_type::DimIdxZ]: 0),
+                                                              pY * localY * (Dims > 1? dimMgr.get_offs_align()[dim_manager_type::DimIdxY]: 0),
                                                               pX * localX);
 
                     myParms.dstPtr = make_cudaPitchedPtr(dataDev_ + blockOff,
@@ -448,21 +450,21 @@ public:
                     myParms.srcPos = make_cudaPos(sizeof(T) * pX * localX,
                                                   pY * localY,
                                                   pZ * localZ);
-
-                    if (PartConf::Z && pZ * localZ >= this->get_dim_manager().sizesAlign_[dim_manager_type::DimIdxZ])
+                    // TODO: Check if this is necessary. If so, use it in to_host and the rest of implementations
+                    if (PartConf::Z && pZ * localZ >= dimMgr.dim_align(dim_manager_type::DimIdxZ))
                         continue;
-                    if (PartConf::Y && pY * localY >= this->get_dim_manager().sizesAlign_[dim_manager_type::DimIdxY])
+                    if (PartConf::Y && pY * localY >= dimMgr.dim_align(dim_manager_type::DimIdxY))
                         continue;
-                    if (PartConf::X && pX * localX >= this->get_dim_manager().sizesAlign_[dim_manager_type::DimIdxX])
+                    if (PartConf::X && pX * localX >= dimMgr.dim_align(dim_manager_type::DimIdxX))
                         continue;
 
                     // Only transfer the remaining elements
                     if (PartConf::Z)
-                    localZ = std::min(localZ, array_index_t(this->get_dim_manager().sizesAlign_[dim_manager_type::DimIdxZ] - pZ * localZ));
+                    localZ = std::min(localZ, array_index_t(dimMgr.dim_align(dim_manager_type::DimIdxZ) - pZ * localZ));
                     if (PartConf::Y)
-                    localY = std::min(localY, array_index_t(this->get_dim_manager().sizesAlign_[dim_manager_type::DimIdxY] - pY * localY));
+                    localY = std::min(localY, array_index_t(dimMgr.dim_align(dim_manager_type::DimIdxY) - pY * localY));
                     if (PartConf::X)
-                    localX = std::min(localX, array_index_t(this->get_dim_manager().sizesAlign_[dim_manager_type::DimIdxX] - pX * localX));
+                    localX = std::min(localX, array_index_t(dimMgr.dim_align(dim_manager_type::DimIdxX) - pX * localX));
 
                     DEBUG("TO_DEVICE: Extent: (%u %u %u)", sizeof(T) * localX,
                                                            localY,

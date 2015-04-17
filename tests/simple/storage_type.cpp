@@ -64,8 +64,8 @@ int main(int argc, char *argv[])
         }
     }
 
-    const float *P_rmo = A_rmo.get_host_storage().get_addr();
-    const float *P_cmo = A_cmo.get_host_storage().get_addr();
+    const float *P_rmo = A_rmo.get_host_storage().addr();
+    const float *P_cmo = A_cmo.get_host_storage().addr();
 
     for (unsigned i = 0; i < elems; ++i) {
         printf("%f vs %f\n", P_rmo[i], P_cmo[i]);

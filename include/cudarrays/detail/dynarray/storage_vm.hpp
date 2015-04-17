@@ -245,7 +245,7 @@ public:
             hostInfo_ = new storage_host_info(mapping.comp.procs);
 
             if (mapping.comp.procs == 1) {
-                hostInfo_->localDims = make_array(this->get_dim_manager().sizes_);
+                hostInfo_->localDims = make_array(this->get_dim_manager().dims());
                 fill(hostInfo_->arrayDimToGpus, 0);
                 alloc(mapping.comp.procs);
             } else {
@@ -269,7 +269,7 @@ public:
             hostInfo_ = new storage_host_info(mapping.comp.procs);
 
             if (mapping.comp.procs == 1) {
-                hostInfo_->localDims = make_array(this->get_dim_manager().sizes_);
+                hostInfo_->localDims = make_array(this->get_dim_manager().dims());
                 fill(hostInfo_->arrayDimToGpus, 0);
                 alloc(mapping.comp.procs);
             } else {
@@ -303,8 +303,8 @@ public:
         unsigned npages;
         npages = div_ceil(host.size(), config::CUDA_VM_ALIGN);
 
-        T *src = dataDev_ - this->get_dim_manager().get_offset();
-        T *dst = host.get_base_addr();
+        T *src = dataDev_ - this->get_dim_manager().offset();
+        T *dst = host.base_addr();
         for (array_size_t idx  = 0; idx < npages; ++idx) {
             array_size_t bytesChunk = config::CUDA_VM_ALIGN;
             if ((idx + 1) * config::CUDA_VM_ALIGN > host.size())
@@ -325,8 +325,8 @@ public:
         unsigned npages;
         npages = div_ceil(host.size(), config::CUDA_VM_ALIGN);
 
-        T *src = host.get_base_addr();
-        T *dst = dataDev_ - this->get_dim_manager().get_offset();
+        T *src = host.base_addr();
+        T *dst = dataDev_ - this->get_dim_manager().offset();
         for (array_size_t idx  = 0; idx < npages; ++idx) {
             array_size_t bytesChunk = config::CUDA_VM_ALIGN;
             if ((idx + 1) * config::CUDA_VM_ALIGN > host.size())
@@ -364,7 +364,7 @@ public:
 #ifndef __CUDA_ARCH__
         if (dataDev_ != NULL) {
             // Update offset
-            T *data = dataDev_ - this->get_dim_manager().get_offset();
+            T *data = dataDev_ - this->get_dim_manager().offset();
 
             // Free data in GPU memory
             for (auto idx : utils::make_range(hostInfo_->npages)) {
@@ -401,8 +401,8 @@ private:
         extents<Dims> elems;
         extents<Dims> elemsAlign;
 
-        utils::copy(this->get_dim_manager().sizes_, elems);
-        std::copy(this->get_dim_manager().sizesAlign_, this->get_dim_manager().sizesAlign_ + Dims, elemsAlign.begin());
+        utils::copy(this->get_dim_manager().dims(), elems);
+        std::copy(this->get_dim_manager().dims_align(), this->get_dim_manager().dims_align() + Dims, elemsAlign.begin());
 
         my_allocator cursor(gpus,
                             elems,
@@ -442,7 +442,7 @@ private:
 
         hostInfo_->npages = npages;
 
-        dataDev_ += this->get_dim_manager().get_offset();
+        dataDev_ += this->get_dim_manager().offset();
     }
 
     template <unsigned DimsComp>
@@ -466,7 +466,7 @@ private:
         if ((1 << compPartDims) > mapping.comp.procs)
             FATAL("Not enough GPUs (%u), to partition %u", mapping.comp.procs, arrayPartDims);
 #endif
-        std::array<array_size_t, Dims> dims = make_array(this->get_dim_manager().sizes_);
+        std::array<array_size_t, Dims> dims = make_array(this->get_dim_manager().dims());
 
         // Distribute the partition uniformly across GPUs
         // 1- Compute GPU grid

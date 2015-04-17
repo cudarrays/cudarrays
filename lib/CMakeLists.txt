@@ -3,11 +3,10 @@ aux_source_directory(${CMAKE_SOURCE_DIR}/include LIB_INCLUDE)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
-set(CUDA_PROPAGATE_HOST_FLAGS OFF)
+set(CUDA_PROPAGATE_HOST_FLAGS ON)
 
-option(CUDA_DEBUG "Compile CUDA code with debug support" OFF)
 if(CMAKE_COMPILER_IS_GNUCC)
-    set(CUDA_NVCC_FLAGS "-std=c++11" "-rdc" "true" "-g")
+    set(CUDA_NVCC_FLAGS "-std=c++11" "-rdc" "true")
     list(APPEND CUDA_NVCC_FLAGS ${GPU_ARCH})
     if(CUDA_DEBUG)
         set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -G")

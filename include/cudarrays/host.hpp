@@ -31,6 +31,8 @@
 #define CUDARRAYS_HOST_HPP_
 
 #include "compiler.hpp"
+#include "config.hpp"
+#include "utils.hpp"
 
 namespace cudarrays {
 
@@ -93,25 +95,25 @@ public:
     }
 
     const T *
-    get_addr() const
+    addr() const
     {
         return state_->data_;
     }
 
     T *
-    get_addr()
+    addr()
     {
         return state_->data_;
     }
 
     const T *
-    get_base_addr() const
+    base_addr() const
     {
         return state_->data_ - state_->offset_;
     }
 
     T *
-    get_base_addr()
+    base_addr()
     {
         return state_->data_ - state_->offset_;
     }

@@ -92,9 +92,9 @@ public:
         coherencePolicy_.bind(this);
 
         // Alloc host memory
-        host_.alloc(device_.get_dim_manager().get_elems_align(), device_.get_dim_manager().get_offset());
+        host_.alloc(device_.get_dim_manager().get_elems_align(), device_.get_dim_manager().offset());
         // TODO: Move this to a better place
-        register_range(this->get_host_storage().get_base_addr(),
+        register_range(this->get_host_storage().base_addr(),
                        this->get_host_storage().size());
     }
 
@@ -119,7 +119,7 @@ public:
     __host__
     virtual ~dynarray()
     {
-        unregister_range(this->get_host_storage().get_base_addr());
+        unregister_range(this->get_host_storage().base_addr());
     }
 
     __array_index__
@@ -128,7 +128,7 @@ public:
 #ifdef __CUDA_ARCH__
         return device_.access_pos(0, 0, idx);
 #else
-        return host_.get_addr()[idx];
+        return host_.addr()[idx];
 #endif
     }
 
@@ -138,7 +138,7 @@ public:
 #ifdef __CUDA_ARCH__
         return device_.access_pos(0, 0, idx);
 #else
-        return host_.get_addr()[idx];
+        return host_.addr()[idx];
 #endif
     }
 
@@ -152,7 +152,7 @@ public:
         return device_.access_pos(0, i1, i2);
 #else
         auto idx = indexer_type::access_pos(device_.get_dim_manager().get_offs_align(), 0, i1, i2);
-        return host_.get_addr()[idx];
+        return host_.addr()[idx];
 #endif
     }
 
@@ -166,7 +166,7 @@ public:
         return device_.access_pos(0, i1, i2);
 #else
         auto idx = indexer_type::access_pos(device_.get_dim_manager().get_offs_align(), 0, i1, i2);
-        return host_.get_addr()[idx];
+        return host_.addr()[idx];
 #endif
     }
 
@@ -181,7 +181,7 @@ public:
         return device_.access_pos(i1, i2, i3);
 #else
         auto idx = indexer_type::access_pos(device_.get_dim_manager().get_offs_align(), i1, i2, i3);
-        return host_.get_addr()[idx];
+        return host_.addr()[idx];
 #endif
     }
 
@@ -196,7 +196,7 @@ public:
         return device_.access_pos(i1, i2, i3);
 #else
         auto idx = indexer_type::access_pos(device_.get_dim_manager().get_offs_align(), i1, i2, i3);
-        return host_.get_addr()[idx];
+        return host_.addr()[idx];
 #endif
     }
 

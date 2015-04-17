@@ -57,6 +57,27 @@ struct align_t {
         position(_position)
     {
     }
+
+    std::tuple<array_size_t, array_size_t>
+    align(array_size_t dim) const
+    {
+        array_size_t offset;
+        array_size_t sizeAlign;
+
+        offset = 0;
+        if (alignment > 1) {
+            if (position > alignment) {
+                offset = utils::round_next(position, alignment) - position;
+            } else if (position > 0) {
+                offset = alignment - position;
+            }
+            sizeAlign = utils::round_next(dim + offset, alignment);
+        } else {
+            sizeAlign = dim;
+        }
+
+        return std::make_tuple(offset, sizeAlign);
+    }
 };
 
 template <typename T, unsigned Dims>
@@ -68,49 +89,15 @@ public:
     static constexpr unsigned DimIdxY = 1 - FirstDim;
     static constexpr unsigned DimIdxX = 2 - FirstDim;
 
+private:
     array_size_t sizes_[Dims];
     array_size_t *sizesAlign_;
     array_size_t offsAlign_[Dims - 1];
 
-private:
     array_size_t elems_;
     array_size_t offset_;
 
     array_size_t elemsAlign_;
-
-    __host__ void
-    init(const extents<Dims> &extents, align_t align)
-    {
-        // Initialize array sizes
-        utils::copy(extents, sizes_);
-        std::copy(extents.begin(), extents.end(), sizesAlign_);
-
-        // Compute offset and aligned size of the lowest order dimension
-        offset_ = 0;
-        if (align.alignment > 1) {
-            if (align.position > align.alignment) {
-                offset_ = utils::round_next(align.position, align.alignment) - align.position;
-            } else if (align.position > 0) {
-                offset_ = align.alignment - align.position;
-            }
-            sizesAlign_[Dims - 1] = utils::round_next(extents[Dims - 1] + offset_, align.alignment);
-        } else {
-            sizesAlign_[Dims - 1] = extents[Dims - 1];
-        }
-
-        // Fill offsets' array
-        array_size_t nextOffAlign = 1;
-        for (int i = Dims - 1; i > 0; --i) {
-            nextOffAlign *= sizesAlign_[i];
-
-            offsAlign_[i - 1] = nextOffAlign;
-        }
-
-        // Compute number of elements
-        elems_      = utils::accumulate(sizes_, 1, std::multiplies<array_size_t>());
-        elemsAlign_ = std::accumulate(sizesAlign_, sizesAlign_ + Dims,
-                                      1, std::multiplies<array_size_t>());
-    }
 
 public:
     __host__
@@ -120,7 +107,25 @@ public:
         ASSERT(extents.size() == Dims);
 
         sizesAlign_ = new array_size_t[Dims];
-        init(extents, align);
+
+        // Initialize array sizes
+        utils::copy(extents, sizes_);
+        std::copy(extents.begin(), extents.end(), sizesAlign_);
+
+        // Compute offset and aligned size of the lowest order dimension
+        std::tie(offset_, sizesAlign_[Dims - 1]) = align.align(extents[Dims - 1]);
+
+        // Fill offsets' array
+        array_size_t nextOffAlign = 1;
+        for (int i = Dims - 1; i > 0; --i) {
+            nextOffAlign     *= sizesAlign_[i];
+            offsAlign_[i - 1] = nextOffAlign;
+        }
+
+        // Compute number of elements
+        elems_      = utils::accumulate(sizes_, 1, std::multiplies<array_size_t>());
+        elemsAlign_ = std::accumulate(sizesAlign_, sizesAlign_ + Dims,
+                                      1, std::multiplies<array_size_t>());
     }
 
     __host__
@@ -153,16 +158,9 @@ public:
 
     __host__ __device__
     inline
-    array_size_t get_offset() const
+    array_size_t offset() const
     {
         return offset_;
-    }
-
-    __host__ __device__
-    inline
-    void set_offset(array_size_t offset)
-    {
-        offset_ = offset;
     }
 
     __host__ __device__
@@ -182,9 +180,16 @@ public:
     using sizes_type = array_size_t[Dims];
     __host__ __device__
     inline
-    const sizes_type &get_sizes() const
+    const sizes_type &dims() const
     {
         return sizes_;
+    }
+
+    __host__ __device__
+    inline
+    const sizes_type &dims_align() const
+    {
+        return (const sizes_type &) sizesAlign_;
     }
 
     CUDARRAYS_TESTED(storage_test, dim_manager)

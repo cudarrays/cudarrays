@@ -70,10 +70,10 @@ public:
             ASSERT(ok, "Error while distributing array");
         }
 
-        DEBUG("Coherence> Release: %p", obj_->get_host_storage().get_base_addr());
+        DEBUG("Coherence> Release: %p", obj_->get_host_storage().base_addr());
 
         if (state_ == CPU) {
-            DEBUG("Coherence> obj TO DEVICE: %p", obj_->get_host_storage().get_base_addr());
+            DEBUG("Coherence> obj TO DEVICE: %p", obj_->get_host_storage().base_addr());
             obj_->to_device();
 
             if (!Const) {
@@ -94,15 +94,15 @@ public:
 
     void acquire()
     {
-        DEBUG("Coherence> Acquire: %p", obj_->get_host_storage().get_base_addr());
+        DEBUG("Coherence> Acquire: %p", obj_->get_host_storage().base_addr());
 
         if (state_ == GPU) {
             // Delay acquire
-            protect_range(obj_->get_host_storage().get_base_addr(),
+            protect_range(obj_->get_host_storage().base_addr(),
                           obj_->get_host_storage().size(),
                           [this](bool write) -> bool
                           {
-                              void *ptr = obj_->get_host_storage().get_base_addr();
+                              void *ptr = obj_->get_host_storage().base_addr();
 
                               unprotect_range(ptr);
 
