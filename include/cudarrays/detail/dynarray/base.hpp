@@ -189,7 +189,7 @@ public:
     inline
     const sizes_type &dims_align() const
     {
-        return (const sizes_type &) sizesAlign_;
+        return *(const sizes_type *) sizesAlign_;
     }
 
     CUDARRAYS_TESTED(storage_test, dim_manager)
