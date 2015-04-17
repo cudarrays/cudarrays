@@ -54,7 +54,8 @@ do
     esac
 done
 
-GENERATOR="CodeBlocks - Unix Makefiles"
+#GENERATOR="CodeBlocks - Unix Makefiles"
+GENERATOR="Unix Makefiles"
 
 CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_BUILD_TYPE=${BUILD_TYPE}"
 echo "$0 $*" > ${SCRIPT_NAME}.log

@@ -96,7 +96,7 @@ public:
 
         std::vector<array_size_t> localStats(gpus_, 0); // gpu -> local_elems
 
-        if (idx_[0] == dimsAlign_[0]) return std::pair<bool, page_stats>(true, page_stats());
+        if (idx_[0] == dimsAlign_[0]) return std::make_pair(true, page_stats{});
 
         do {
             std::array<unsigned, Dims> tileId;

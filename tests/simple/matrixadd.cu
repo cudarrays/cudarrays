@@ -201,9 +201,9 @@ int main(int argc, char *argv[])
     init_lib();
 
     for (unsigned gpus : {1, 2, 4}) {
-        //test_conf<replicate>(gpus);
+        test_conf<replicate>(gpus);
         test_conf<vm>(gpus);
-        //test_conf<reshape>(gpus);
+        test_conf<reshape>(gpus);
 #if 0
         test_conf<reshape_cyclic>(gpus);
         test_conf<reshape_block_cyclic>(gpus);
