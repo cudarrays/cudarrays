@@ -3,7 +3,7 @@ aux_source_directory(include LIB_INCLUDE)
 set(LIB_INCLUDE ${CMAKE_SOURCE_DIR}/include)
 include_directories(${LIB_INCLUDE})
 
-set(CUDA_PROPAGATE_HOST_FLAGS OFF)
+set(CUDA_PROPAGATE_HOST_FLAGS ON)
 set(CUDA_SEPARABLE_COMPILATION ON)
 
 option(CUDA_DEBUG "Compile CUDA code with debug support" ON)
