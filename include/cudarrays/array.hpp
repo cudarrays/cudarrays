@@ -26,374 +26,341 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. */
 
-#ifndef CUDARRAYS_ARRAY_
-#define CUDARRAYS_ARRAY_
+#ifndef CUDARRAYS_ARRAY_HPP_
+#define CUDARRAYS_ARRAY_HPP_
 
-#if 0
-
-#include <cassert>
 #include <cstdlib>
 #include <cstring>
 
-#ifndef __CUDACC__
-#include <array>
-#endif
+#include <limits>
+#include <type_traits>
 
-#include <memory>
 #include <utility>
 
 #include "compiler.hpp"
+#include "utils.hpp"
 #include "common.hpp"
+#include "memory.hpp"
 #include "storage.hpp"
-#include "dist_storage.hpp"
+#include "storage_impl.hpp"
+
+#include "gpu.cuh"
+
+#include "detail/dynarray/iterator.hpp"
+#include "detail/coherence/default.hpp"
+
+#include "traits.hpp"
 
 namespace cudarrays {
 
-template <typename T, size_t Size, bool Const = false, storage_type Storage = DISTRIBUTED_ALLOC>
-class array;
-
-template <typename T, size_t Size, bool Const, storage_type Storage>
+template <typename T,
+          typename StorageType = layout::rmo,
+          typename PartConf = automatic::none,
+          template <typename> class CoherencePolicy = default_coherence>
 class array :
-    public array_storage<T[Size], Storage> {
+    public coherent,
+    public array_traits<T> {
 public:
-#ifndef __CUDACC__
-    static const storage_type storage = Storage;
+    using traits = array_traits<T>;
 
-    typedef extents<Size>                   extents_type;
-    typedef array_storage<T[Size], Storage> parent_storage;
+    using dim_order_type = typename make_dim_order<traits::dimensions, StorageType>::type;
+    using  permuter_type = utils::permuter<traits::dimensions, dim_order_type>;
 
-    array(const extents_type &extents,
-          const extents_type &alignment = fill<Size, ssize_t, 0>()) :
-        parent_storage(extents, alignment)
+    using   host_storage_type = host_storage<typename traits::value_type>;
+    using device_storage_type =
+        dynarray_storage<typename traits::value_type, traits::dimensions, PartConf::final_impl,
+                         typename reorder_gather_static< // User-provided dimension ordering
+                             traits::dimensions,
+                             bool,
+                             typename PartConf::template part_type<traits::dimensions>,
+                             dim_order_type
+                         >::type>;
+
+    using       difference_type = array_index_t;
+    using coherence_policy_type = CoherencePolicy<array>;
+    using          indexer_type = linearizer_static<T>;
+
+    __host__
+    explicit array(const align_t &align = align_t{0, 0},
+                   coherence_policy_type coherence = coherence_policy_type()) :
+        device_(permuter_type::reorder(traits::extents_type::get()), align),
+        coherencePolicy_(coherence)
+    {
+        coherencePolicy_.bind(this);
+
+        // Alloc host memory
+        host_.alloc(device_.get_dim_manager().get_elems_align(), device_.get_dim_manager().offset());
+        // TODO: Move this to a better place
+        register_range(this->get_host_storage().base_addr(),
+                       this->get_host_storage().size());
+    }
+
+    __host__
+    explicit array(const array &a) :
+        device_(a.device_),
+        coherencePolicy_(a.coherencePolicy_)
     {
     }
 
-    array(array &&a) :
-        parent_storage(std::forward<parent_storage>(a))
+    __host__
+    array &operator=(const array &a)
     {
+        if (&a != this) {
+            device_          = a.device_;
+            coherencePolicy_ = a.coherencePolicy_;
+        }
+
+        return *this;
     }
 
-    template <bool Const2>
-    __host__ __device__
-    __forceinline__
-    array(const typename enable_if<Const && !Const2,
-                                   array<T[Size], Const2, Storage> >::type &a) :
-        parent_storage(a)
-    {
-        abort();
-    }
-#endif
-
-    __host__ __device__
-    __forceinline__
+    __host__
     virtual ~array()
     {
+        unregister_range(this->get_host_storage().base_addr());
     }
-};
 
-template <typename T, size_t Size, bool Const>
-class array<T[Size], Const, DISTRIBUTED> :
-    public array_storage<T[Size], DISTRIBUTED> {
-public:
-#ifndef __CUDACC__
-    static const storage_type storage = DISTRIBUTED;
-
-    typedef extents<Size>                       extents_type;
-    typedef array_storage<T[Size], DISTRIBUTED> parent_storage;
-
-    array(const extents_type &extents, size_t chunks,
-          const extents_type &alignment = fill<Size, ssize_t, 0>()) :
-        parent_storage(extents, chunks, alignment)
+    __array_index__
+    typename traits::value_type &operator()(array_index_t idx)
     {
-    }
-
-    array(array &&a) :
-        parent_storage(std::move(a))
-    {
-    }
-
-    template <bool Const2>
-    __host__ __device__
-    __forceinline__
-    array(const typename enable_if<Const && !Const2,
-                                   array<T[Size], Const2, DISTRIBUTED> >::type &a) :
-        parent_storage(a)
-    {
-        abort();
-    }
-#endif
-
-    __host__ __device__
-    __forceinline__
-    virtual ~array()
-    {
-    }
-};
-
-template <typename T, size_t Size, bool Const>
-class array<T[Size], Const, DISTRIBUTED_INDEXDIM> :
-    public array_storage<T[Size], DISTRIBUTED_INDEXDIM> {
-public:
-#ifndef __CUDACC__
-    static const storage_type storage = DISTRIBUTED_INDEXDIM;
-
-    typedef extents<Size>                                extents_type;
-    typedef array_storage<T[Size], DISTRIBUTED_INDEXDIM> parent_storage;
-
-    array(const extents_type &extents, size_t chunks, const extents_type &alignment = fill<Size, ssize_t, 0>()) :
-        parent_storage(extents, chunks, alignment)
-    {
-    }
-
-    __host__ __device__
-    __forceinline__
-    array(array &&a) :
-        parent_storage(std::move(a))
-    {
-    }
-
-    template <bool Const2>
-    __host__ __device__
-    __forceinline__
-    array(const typename enable_if<Const && !Const2,
-                                   array<T[Size], Const2, DISTRIBUTED_INDEXDIM> >::type &a) :
-        parent_storage(a)
-    {
-        abort();
-    }
-#endif
-
-    __host__ __device__
-    __forceinline__
-    virtual ~array()
-    {
-    }
-};
-
-template <typename T, size_t Size, bool Const>
-class array<T[Size], Const, DISTRIBUTED_ALLOC> :
-    public array_storage<T[Size], DISTRIBUTED_ALLOC> {
-public:
-#ifndef __CUDACC__
-    static const storage_type storage = DISTRIBUTED_ALLOC;
-
-    typedef extents<Size>                             extents_type;
-    typedef array_storage<T[Size], DISTRIBUTED_ALLOC> parent_storage;
-
-    array(const extents_type &extents, size_t chunks,
-             const extents_type &alignment = fill<Size, ssize_t, 0>()) :
-        parent_storage(extents, chunks, alignment)
-    {
-    }
-
-    array(array &&a) :
-        parent_storage(std::move(a))
-    {
-    }
-
-    template <bool Const2>
-    __host__ __device__
-    __forceinline__
-    array(const typename enable_if<Const && !Const2,
-                                   array<T[Size], Const2, DISTRIBUTED_ALLOC> >::type &a) :
-        parent_storage(a)
-    {
-        abort();
-    }
-#endif
-
-    __host__ __device__
-    __forceinline__
-    virtual ~array()
-    {
-    }
-};
-
-template <typename T, size_t Size, bool Const>
-class array<T[Size], Const, DISTRIBUTED_ALLOCB> :
-    public array_storage<T[Size], DISTRIBUTED_ALLOCB> {
-public:
-#ifndef __CUDACC__
-    static const storage_type storage = DISTRIBUTED_ALLOCB;
-
-    typedef extents<Size>                              extents_type;
-    typedef array_storage<T[Size], DISTRIBUTED_ALLOCB> parent_storage;
-
-#ifdef GENERIC_INDEX
-    array(const extents_type &extents, size_t chunks,
-             const extents_type &alignment = fill<Size, ssize_t, 0>(),
-             const std::array<size_t, Size> &order = generate<Size, size_t, seq::dec>()) :
-        parent_storage(extents, chunks, alignment, order)
+#ifdef __CUDA_ARCH__
+        return device_.access_pos(0, 0, idx);
 #else
-    array(const extents_type &extents, size_t chunks,
-             const extents_type &alignment = fill<Size, ssize_t, 0>()) :
-        parent_storage(extents, chunks, alignment)
+        return host_.addr()[idx];
 #endif
-    {
     }
 
-    array(array &&a) :
-        parent_storage(std::move(a))
+    __array_index__
+    const typename traits::value_type &operator()(array_index_t idx) const
     {
-    }
-
-    template <bool Const2>
-    __host__ __device__
-    __forceinline__
-    array(const typename enable_if<Const && !Const2,
-                                      array<T[Size], Const2, DISTRIBUTED_ALLOCB> >::type &a) :
-        parent_storage(a)
-    {
-    }
-#endif
-
-    __host__ __device__
-    __forceinline__
-    virtual ~array()
-    {
-    }
-};
-
-template <typename T, size_t Size, bool Const>
-class array<T[Size], Const, DISTRIBUTED_ALLOCC> :
-    public array_storage<T[Size], DISTRIBUTED_ALLOCC> {
-public:
-#ifndef __CUDACC__
-    typedef extents<Size>                              extents_type;
-    typedef array_storage<T[Size], DISTRIBUTED_ALLOCC> parent_storage;
-
-#ifdef GENERIC_INDEX
-    array(const extents_type &extents, size_t chunks,
-             const extents_type &alignment = fill<Size, ssize_t, 0>(),
-             const std::array<size_t, Size> &order = generate<Size, size_t, seq::dec>(),
-             size_t dim = Size - 1) :
-        parent_storage(extents, chunks, alignment, order, dim)
+#ifdef __CUDA_ARCH__
+        return device_.access_pos(0, 0, idx);
 #else
-    array(const extents_type &extents, size_t chunks,
-             const extents_type &alignment = fill<Size, ssize_t, 0>(),
-             size_t dim = Size - 1) :
-        parent_storage(extents, chunks, alignment, dim)
+        return host_.addr()[idx];
 #endif
-    {
     }
 
-    array(array &&a) :
-        parent_storage(std::move(a))
+    __array_index__
+    typename traits::value_type &operator()(array_index_t idx1, array_index_t idx2)
     {
-    }
+        array_index_t i1 = permuter_type::template select<0>(idx1, idx2);
+        array_index_t i2 = permuter_type::template select<1>(idx1, idx2);
 
-    template <bool Const2>
-    __host__ __device__
-    __forceinline__
-    array(const typename enable_if<Const && !Const2,
-                                      array<T[Size], Const2, DISTRIBUTED_ALLOCC> >::type &a) :
-        parent_storage(a)
-    {
-    }
-#endif
-
-    __host__ __device__
-    __forceinline__
-    virtual ~array()
-    {
-    }
-};
-
-
-template <typename T, size_t Size, bool Const>
-class array<T[Size], Const, REPLICATED> :
-    public array_storage<T[Size], REPLICATED> {
-public:
-#ifndef __CUDACC__
-    typedef extents<Size>                      extents_type;
-    typedef array_storage<T[Size], REPLICATED> parent_storage;
-
-#ifdef GENERIC_INDEX
-    array(const extents_type &extents, size_t chunks,
-             const extents_type &alignment = fill<Size, ssize_t, 0>(),
-             const std::array<size_t, Size> order = generate<Size, size_t, seq::dec>()) :
-        parent_storage(extents, chunks, alignment, order)
+#ifdef __CUDA_ARCH__
+        return device_.access_pos(0, i1, i2);
 #else
-    array(const extents_type &extents, size_t gpus,
-             const extents_type &alignment = fill<Size, ssize_t, 0>()) :
-        parent_storage(extents, gpus, alignment)
+        auto idx = indexer_type::access_pos(i1, i2);
+        return host_.addr()[idx];
 #endif
-    {
     }
 
-    array(array &&a) :
-        parent_storage(std::move(a))
+    __array_index__
+    const typename traits::value_type &operator()(array_index_t idx1, array_index_t idx2) const
     {
-    }
+        array_index_t i1 = permuter_type::template select<0>(idx1, idx2);
+        array_index_t i2 = permuter_type::template select<1>(idx1, idx2);
 
-    template <bool Const2>
-    __host__ __device__
-    __forceinline__
-    array(const typename enable_if<Const && !Const2,
-                                      array<T[Size], Const2, REPLICATED> >::type &a) :
-        parent_storage(a)
-    {
-        abort();
-    }
+#ifdef __CUDA_ARCH__
+        return device_.access_pos(0, i1, i2);
+#else
+        auto idx = indexer_type::access_pos(i1, i2);
+        return host_.addr()[idx];
 #endif
-
-    __host__ __device__
-    __forceinline__
-    virtual ~array()
-    {
     }
 
+    __array_index__
+    typename traits::value_type &operator()(array_index_t idx1, array_index_t idx2, array_index_t idx3)
+    {
+        array_index_t i1 = permuter_type::template select<0>(idx1, idx2, idx3);
+        array_index_t i2 = permuter_type::template select<1>(idx1, idx2, idx3);
+        array_index_t i3 = permuter_type::template select<2>(idx1, idx2, idx3);
+
+#ifdef __CUDA_ARCH__
+        return device_.access_pos(i1, i2, i3);
+#else
+        auto idx = indexer_type::access_pos(i1, i2, i3);
+        return host_.addr()[idx];
+#endif
+    }
+
+    __array_index__
+    const typename traits::value_type &operator()(array_index_t idx1, array_index_t idx2, array_index_t idx3) const
+    {
+        array_index_t i1 = permuter_type::template select<0>(idx1, idx2, idx3);
+        array_index_t i2 = permuter_type::template select<1>(idx1, idx2, idx3);
+        array_index_t i3 = permuter_type::template select<2>(idx1, idx2, idx3);
+
+#ifdef __CUDA_ARCH__
+        return device_.access_pos(i1, i2, i3);
+#else
+        auto idx = indexer_type::access_pos(i1, i2, i3);
+        return host_.addr()[idx];
+#endif
+    }
+
+    template <unsigned DimsComp>
+    __host__ bool
+    distribute(compute_mapping<DimsComp, traits::dimensions> mapping)
+    {
+        auto mapping2 = mapping;
+        mapping2.info = permuter_type::reorder(mapping2.info);
+
+        return device_.template distribute<DimsComp>(mapping2);
+    }
+
+    __host__ bool
+    distribute(const std::vector<unsigned> &gpus)
+    {
+        return device_.distribute(gpus);
+    }
+
+    __host__ bool
+    is_distributed()
+    {
+        return device_.is_distributed();
+    }
+
+    template <unsigned Orig>
+    __array_bounds__
+    array_size_t dim() const
+    {
+        auto new_dim = permuter_type::template dim_index<Orig>();
+        return device_.get_dim_manager().dim(new_dim);
+    }
+
+    __array_bounds__
+    array_size_t dim(unsigned dim) const
+    {
+        auto new_dim = permuter_type::dim_index(dim);
+        return device_.get_dim_manager().dim(new_dim);
+    }
+
+    void
+    set_current_gpu(unsigned idx)
+    {
+        device_.set_current_gpu(idx);
+    }
+
+    coherence_policy &get_coherence_policy()
+    {
+        return coherencePolicy_;
+    }
+
+    host_storage_type &get_host_storage()
+    {
+        return host_;
+    }
+
+    void to_device()
+    {
+        device_.to_device(host_);
+    }
+
+    void to_host()
+    {
+        device_.to_host(host_);
+    }
+
+    //
+    // Common operations
+    //
+
+    //
+    // Iterator interface
+    //
+    using       iterator = myiterator<array, false>;
+    using const_iterator = myiterator<array, true>;
+
+    using       reverse_iterator = std::reverse_iterator<iterator>;
+    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
+    iterator begin()
+    {
+        array_index_t dims[traits::dimensions];
+        std::fill(dims, dims + traits::dimensions, 0);
+        return iterator(*this, dims);
+    }
+
+    const_iterator begin() const
+    {
+        return cbegin();
+    }
+
+    const_iterator cbegin() const
+    {
+        array_index_t dims[traits::dimensions];
+        std::fill(dims, dims + traits::dimensions, 0);
+        return const_iterator(*this, dims);
+    }
+
+    reverse_iterator rbegin()
+    {
+        array_index_t dims[traits::dimensions];
+        for (unsigned i = 0; i < traits::dimensions; ++i) {
+            dims[i] = this->dim(i) - 1;
+        }
+        return reverse_iterator(iterator(*this, dims));
+    }
+
+    iterator end()
+    {
+        array_index_t dims[traits::dimensions];
+        dims[0] = this->dim(0);
+        if (traits::dimensions > 1) {
+            std::fill(dims + 1, dims + traits::dimensions, 0);
+        }
+        return iterator(*this, dims);
+    }
+
+    const_iterator end() const
+    {
+        return cend();
+    }
+
+    const_iterator cend() const
+    {
+        array_index_t dims[traits::dimensions];
+        dims[0] = this->dim(0);
+        if (traits::dimensions > 1) {
+            std::fill(dims + 1, dims + traits::dimensions, 0);
+        }
+        return const_iterator(*this, dims);
+    }
+
+    reverse_iterator rend()
+    {
+        array_index_t dims[traits::dimensions];
+        dims[0] = -1;
+        for (unsigned i = 0; i < traits::dimensions; ++i) {
+            dims[i] = this->dim(i) - 1;
+        }
+        return reverse_iterator(iterator(*this, dims));
+    }
+
+    const_reverse_iterator rend() const
+    {
+        return crend();
+    }
+
+    const_reverse_iterator crend() const
+    {
+        array_index_t dims[traits::dimensions];
+        dims[0] = -1;
+        for (unsigned i = 0; i < traits::dimensions; ++i) {
+            dims[i] = this->dim(i) - 1;
+        }
+        return const_reverse_iterator(const_iterator(*this, dims));
+    }
+
+    friend myiterator<array, false>;
+    friend myiterator<array, true>;
+
+private:
+    coherence_policy_type coherencePolicy_;
+    host_storage_type     host_;
+    device_storage_type   device_;
 };
 
 }
-
-namespace std {
-
-#ifndef __CUDACC__
-template <typename T, size_t Size, bool Const, storage_type Storage>
-struct is_const< cudarrays::array<T[Size], Const, Storage> > {
-    static const bool value = Const;
-
-    typedef bool                                value_type;
-    typedef std::integral_constant<bool, value>       type;
-
-    operator bool()
-    {
-        return value;
-    }
-};
-
-template <typename T1, typename T2>
-struct is_cuda_convertible {
-    static const bool value = (sizeof(T1) == sizeof(T2)) && is_convertible<T1, T2>::value;
-
-    typedef bool                                value_type;
-    typedef std::integral_constant<bool, value>       type;
-
-    operator bool()
-    {
-        return value;
-    }
-};
-
-template <typename T, size_t Size, bool Const, bool Const2, storage_type Storage>
-struct is_cuda_convertible<cudarrays::array<T[Size], Const,  Storage>,
-                           cudarrays::array<T[Size], Const2, Storage> > {
-    static const bool value = (Const == Const2) || (!Const && Const2);
-
-    typedef bool                                value_type;
-    typedef std::integral_constant<bool, value>       type;
-
-    operator bool()
-    {
-        return value;
-    }
-};
-#endif
-
-}
-
-#endif
 
 #endif
 

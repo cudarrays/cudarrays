@@ -15,6 +15,8 @@ if(CMAKE_COMPILER_IS_GNUCC)
     endif(CUDA_DEBUG)
 endif(CMAKE_COMPILER_IS_GNUCC)
 
+cuda_add_executable(array array.cu ${LIB_INCLUDE})
+target_link_libraries(array ${CMAKE_IMPORT_LIBRARY_PREFIX}cudarrays${CMAKE_IMPORT_LIBRARY_SUFFIX} ${CUDA_LIBRARIES})
 cuda_add_executable(default default.cu ${LIB_INCLUDE})
 target_link_libraries(default ${CMAKE_IMPORT_LIBRARY_PREFIX}cudarrays${CMAKE_IMPORT_LIBRARY_SUFFIX} ${CUDA_LIBRARIES})
 cuda_add_executable(matrixadd matrixadd.cu matrixadd_kernel.cuh ${LIB_INCLUDE})

@@ -38,15 +38,6 @@
 
 namespace cudarrays {
 
-template <unsigned Dims>
-using extents = std::array<array_size_t, Dims>;
-
-template <typename... T>
-auto make_extents(T... values) -> extents<sizeof...(T)>
-{
-    return extents<sizeof...(T)>{array_size_t(values)...};
-}
-
 struct align_t {
     array_size_t alignment;
     array_size_t position;

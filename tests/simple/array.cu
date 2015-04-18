@@ -26,51 +26,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. */
 
-#pragma once
-#ifndef CUDARRAYS_CONFIG_HPP_
-#define CUDARRAYS_CONFIG_HPP_
+#include <cassert>
+#include <iostream>
 
-#include <array>
-#include <cstdint>
+#include <cudarrays/types.hpp>
+#include <cudarrays/launch.hpp>
+#include <cudarrays/gpu.cuh>
 
-namespace cudarrays {
-#ifdef LONG_INDEX
-using array_index_t = int64_t;
-using array_size_t = uint64_t;
-#else
-using array_index_t = int32_t;
-using array_size_t = uint32_t;
-#endif
+using namespace cudarrays;
 
-template <unsigned Dims>
-using extents = std::array<array_size_t, Dims>;
-
-template <typename... T>
-auto make_extents(T... values) -> extents<sizeof...(T)>
+int main()
 {
-    return extents<sizeof...(T)>{array_size_t(values)...};
+    init_lib();
+
+    static const array_size_t ELEMS = 32000;
+    array<float[ELEMS + 1][ELEMS - 1]> A;
+    array<float[ELEMS + 1][ELEMS - 1]> B;
+    array<float[ELEMS + 1][ELEMS - 1]> C;
+    // Initialize input vectors
+    for (unsigned i = 0; i < ELEMS; ++i) {
+        for (unsigned j = 0; j < ELEMS; ++j) {
+            A(i, j) = float(i * ELEMS + j);
+            B(i, j) = float(i * ELEMS + j + 1.f);
+
+            C(i, j) = A(i, j) + B(i, j);
+        }
+    }
+
+    for (unsigned i = 0; i < ELEMS; ++i) {
+        for (unsigned j = 0; j < ELEMS; ++j) {
+            //std::cout << C(i, j) << " ";
+            assert(C(i, j) == float(i * ELEMS + j) + float(i * ELEMS + j + 1.f));
+        }
+    }
+    std::cout << "\n";
+
+    return 0;
 }
 
-namespace config {
-extern bool OPTION_DEBUG;
-
-extern unsigned MAX_GPUS;
-extern unsigned PEER_GPUS;
-
-extern array_size_t CUDA_VM_ALIGN;
-extern array_size_t PAGE_ALIGN;
-extern array_size_t PAGES_PER_ARENA;
-
-template <typename T>
-static inline array_size_t
-CUDA_VM_ALIGN_ELEMS()
-{
-    return CUDA_VM_ALIGN/sizeof(T);
-}
-
-}
-}
-
-#endif
-
-/* vim:set ft=cpp backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab: */
+/* vim:set backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab: */

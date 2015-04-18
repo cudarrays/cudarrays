@@ -28,6 +28,7 @@ set(CUDARRAYS_HEADERS array.hpp
                       launch.hpp
                       launch_cpu.hpp
                       memory.hpp
+                      traits.hpp
                       trace.hpp
                       types.hpp
                       utils.hpp)

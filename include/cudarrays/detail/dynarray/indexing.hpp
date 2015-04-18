@@ -31,14 +31,47 @@
 #define CUDARRAYS_DETAIL_DYNARRAY_INDEXING_HPP_
 
 #include "../../common.hpp"
+#include "../../traits.hpp"
 #include "../../utils.hpp"
 
 namespace cudarrays {
 
-enum indexer_type {
-    INDEX_NAIVE = 1,
-    INDEX_VM    = 2,
-    INDEX_PTR_TABLE = 3
+template <typename T, unsigned Dim = 0>
+struct linearizer_static {
+    using traits = array_traits<T>;
+
+    template <typename... Idxs>
+    static __host__ __device__ inline
+    array_index_t access_pos(const array_index_t &idx, const Idxs &...idxs)
+    {
+        array_index_t ret = traits::offsets_type::get()[Dim + 1] * idx;
+
+        return ret + linearizer_static<T, Dim + 1>::access_pos(idxs...);
+    }
+
+    static __host__ __device__ inline
+    array_index_t access_pos(const array_index_t &idx)
+    {
+        return idx;
+    }
+};
+
+template <unsigned Dim = 0>
+struct linearizer2 {
+    template <typename... Idxs>
+    static __host__ __device__ inline
+    array_index_t access_pos(const array_size_t *offs, const array_index_t &idx, const Idxs &...idxs)
+    {
+        array_index_t ret = offs[Dim] * idx;
+
+        return ret + linearizer2<Dim + 1>::access_pos(offs, idxs...);
+    }
+
+    static __host__ __device__ inline
+    array_index_t access_pos(const array_size_t *, const array_index_t &idx)
+    {
+        return idx;
+    }
 };
 
 template <unsigned Dims, unsigned Idx>

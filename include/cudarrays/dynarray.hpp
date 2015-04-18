@@ -51,6 +51,8 @@
 #include "detail/dynarray/iterator.hpp"
 #include "detail/coherence/default.hpp"
 
+#include "array.hpp"
+
 namespace cudarrays {
 
 template <typename T, unsigned Dims,
@@ -60,16 +62,18 @@ template <typename T, unsigned Dims,
 class dynarray :
     public coherent {
 public:
-    using dim_order_type = typename make_dim_order<Dims, StorageType>::type;
-    using  permuter_type = utils::permuter<Dims, dim_order_type>;
+    static constexpr unsigned dimensions = Dims;
+
+    using dim_order_type = typename make_dim_order<dimensions, StorageType>::type;
+    using  permuter_type = utils::permuter<dimensions, dim_order_type>;
 
     using   host_storage_type = host_storage<T>;
     using device_storage_type =
-        dynarray_storage<T, Dims, PartConf::final_impl,
+        dynarray_storage<T, dimensions, PartConf::final_impl,
                          typename reorder_gather_static< // User-provided dimension ordering
-                             Dims,
+                             dimensions,
                              bool,
-                             typename PartConf::template part_type<Dims>,
+                             typename PartConf::template part_type<dimensions>,
                              dim_order_type
                          >::type>;
 
@@ -78,12 +82,10 @@ public:
 
     using coherence_policy_type = CoherencePolicy<dynarray>;
 
-    using indexer_type = linearizer<Dims>;
-
-    static constexpr unsigned dimensions = Dims;
+    using indexer_type = linearizer2<>;
 
     __host__
-    explicit dynarray(const extents<Dims> &extents,
+    explicit dynarray(const extents<dimensions> &extents,
                       const align_t &align = align_t{0, 0},
                       coherence_policy_type coherence = coherence_policy_type()) :
         device_(permuter_type::reorder(extents), align),
@@ -151,7 +153,7 @@ public:
 #ifdef __CUDA_ARCH__
         return device_.access_pos(0, i1, i2);
 #else
-        auto idx = indexer_type::access_pos(device_.get_dim_manager().get_offs_align(), 0, i1, i2);
+        auto idx = indexer_type::access_pos(device_.get_dim_manager().get_offs_align(), i1, i2);
         return host_.addr()[idx];
 #endif
     }
@@ -165,7 +167,7 @@ public:
 #ifdef __CUDA_ARCH__
         return device_.access_pos(0, i1, i2);
 #else
-        auto idx = indexer_type::access_pos(device_.get_dim_manager().get_offs_align(), 0, i1, i2);
+        auto idx = indexer_type::access_pos(device_.get_dim_manager().get_offs_align(), i1, i2);
         return host_.addr()[idx];
 #endif
     }
@@ -202,7 +204,7 @@ public:
 
     template <unsigned DimsComp>
     __host__ bool
-    distribute(compute_mapping<DimsComp, Dims> mapping)
+    distribute(compute_mapping<DimsComp, dimensions> mapping)
     {
         auto mapping2 = mapping;
         mapping2.info = permuter_type::reorder(mapping2.info);
@@ -278,8 +280,8 @@ public:
 
     iterator begin()
     {
-        array_index_t dims[Dims];
-        std::fill(dims, dims + Dims, 0);
+        array_index_t dims[dimensions];
+        std::fill(dims, dims + dimensions, 0);
         return iterator(*this, dims);
     }
 
@@ -290,15 +292,15 @@ public:
 
     const_iterator cbegin() const
     {
-        array_index_t dims[Dims];
-        std::fill(dims, dims + Dims, 0);
+        array_index_t dims[dimensions];
+        std::fill(dims, dims + dimensions, 0);
         return const_iterator(*this, dims);
     }
 
     reverse_iterator rbegin()
     {
-        array_index_t dims[Dims];
-        for (unsigned i = 0; i < Dims; ++i) {
+        array_index_t dims[dimensions];
+        for (unsigned i = 0; i < dimensions; ++i) {
             dims[i] = this->dim(i) - 1;
         }
         return reverse_iterator(iterator(*this, dims));
@@ -306,10 +308,10 @@ public:
 
     iterator end()
     {
-        array_index_t dims[Dims];
+        array_index_t dims[dimensions];
         dims[0] = this->dim(0);
-        if (Dims > 1) {
-            std::fill(dims + 1, dims + Dims, 0);
+        if (dimensions > 1) {
+            std::fill(dims + 1, dims + dimensions, 0);
         }
         return iterator(*this, dims);
     }
@@ -321,19 +323,19 @@ public:
 
     const_iterator cend() const
     {
-        array_index_t dims[Dims];
+        array_index_t dims[dimensions];
         dims[0] = this->dim(0);
-        if (Dims > 1) {
-            std::fill(dims + 1, dims + Dims, 0);
+        if (dimensions > 1) {
+            std::fill(dims + 1, dims + dimensions, 0);
         }
         return const_iterator(*this, dims);
     }
 
     reverse_iterator rend()
     {
-        array_index_t dims[Dims];
+        array_index_t dims[dimensions];
         dims[0] = -1;
-        for (unsigned i = 0; i < Dims; ++i) {
+        for (unsigned i = 0; i < dimensions; ++i) {
             dims[i] = this->dim(i) - 1;
         }
         return reverse_iterator(iterator(*this, dims));
@@ -346,9 +348,9 @@ public:
 
     const_reverse_iterator crend() const
     {
-        array_index_t dims[Dims];
+        array_index_t dims[dimensions];
         dims[0] = -1;
-        for (unsigned i = 0; i < Dims; ++i) {
+        for (unsigned i = 0; i < dimensions; ++i) {
             dims[i] = this->dim(i) - 1;
         }
         return const_reverse_iterator(const_iterator(*this, dims));
