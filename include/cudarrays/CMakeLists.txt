@@ -3,9 +3,6 @@ set(CUDARRAYS_HEADERS coherence.hpp
                       config.hpp
                       compiler.hpp
                       compute.hpp
-                      host.hpp
-                      storage.hpp
-                      storage_impl.hpp
                       detail/coherence/default.hpp
                       detail/dynarray/base.hpp
                       detail/dynarray/helpers.hpp
@@ -23,10 +20,13 @@ set(CUDARRAYS_HEADERS coherence.hpp
                       detail/utils/permute.hpp
                       detail/utils/stl.hpp
                       dynarray.hpp
+                      host.hpp
                       gpu.cuh
                       launch.hpp
                       launch_cpu.hpp
                       memory.hpp
+                      storage.hpp
+                      storage_impl.hpp
                       traits.hpp
                       trace.hpp
                       types.hpp
