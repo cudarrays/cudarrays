@@ -30,6 +30,7 @@
 #ifndef CUDARRAYS_DETAIL_UTILS_MISC_HPP_
 #define CUDARRAYS_DETAIL_UTILS_MISC_HPP_
 
+#include <cstddef>
 #include <type_traits>
 #include <vector>
 
@@ -100,6 +101,19 @@ template <typename T, unsigned Size, T FillValue, template <T...> class S, T... 
 struct seq_append {
     using append_values_type = typename fill<T, Size - sizeof...(Rest), FillValue, S>::type;
     using type = typename merge<T, S<Rest...>, append_values_type>::type;
+};
+
+template <size_t N, typename T, T... Values>
+struct seq_at;
+
+template <size_t N, typename T, T Current, T... Values>
+struct seq_at<N, T, Current, Values...> {
+    static constexpr T value = seq_at<N - 1, T, Values...>::value;
+};
+
+template <typename T, T Current, T... Values>
+struct seq_at<0, T, Current, Values...> {
+    static constexpr T value = Current;
 };
 
 }

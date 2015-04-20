@@ -44,22 +44,28 @@ int main()
     array<float[ELEMS + 1][ELEMS - 1]> B;
     array<float[ELEMS + 1][ELEMS - 1]> C;
     // Initialize input vectors
-    for (unsigned i = 0; i < ELEMS; ++i) {
-        for (unsigned j = 0; j < ELEMS; ++j) {
-            A(i, j) = float(i * ELEMS + j);
-            B(i, j) = float(i * ELEMS + j + 1.f);
+    for (unsigned i = 0; i < ELEMS + 1; ++i) {
+        for (unsigned j = 0; j < ELEMS - 1; ++j) {
+            A(i, j) = float(i * (ELEMS + 2) + j);
+            B(i, j) = float(i * (ELEMS + 2) + j + 1.f);
 
             C(i, j) = A(i, j) + B(i, j);
         }
     }
 
-    for (unsigned i = 0; i < ELEMS; ++i) {
-        for (unsigned j = 0; j < ELEMS; ++j) {
-            //std::cout << C(i, j) << " ";
-            assert(C(i, j) == float(i * ELEMS + j) + float(i * ELEMS + j + 1.f));
+    for (unsigned i = 0; i < ELEMS + 1; ++i) {
+        for (unsigned j = 0; j < ELEMS - 1; ++j) {
+            if (C(i, j) != float(i * (ELEMS + 2) + j) + float(i * (ELEMS + 2)+ j + 1.f)) {
+                printf("ERROR at %u, %u: %f vs %f - (%f + %f) vs (%f + %f)\n",
+                        i, j, C(i, j),
+                        float(i * ELEMS + j) + float(i * ELEMS + j + 1.f),
+                        float(i * ELEMS + j), float(i * ELEMS + j + 1.f),
+                        A(i, j), B(i, j));
+                abort();
+            }
         }
     }
-    std::cout << "\n";
+    std::cout << "Passed\n";
 
     return 0;
 }

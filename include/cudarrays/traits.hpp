@@ -33,6 +33,7 @@
 
 #include "common.hpp"
 #include "config.hpp"
+#include "utils.hpp"
 
 namespace cudarrays {
 
@@ -46,14 +47,25 @@ struct array_type_helper<T[Elems]> {
     using type = typename array_type_helper<T>::type;
 };
 
-template <typename T, unsigned Dims>
+template <typename T>
+struct array_type_helper<T *> {
+    using type = typename array_type_helper<T>::type;
+};
+
+template <typename T, unsigned Dims = 0>
 struct array_dim_helper {
-    static constexpr unsigned dimensions = Dims;
+    using type = array_dim_helper;
+    static constexpr unsigned get() { return Dims; }
 };
 
 template <typename T, size_t Elems, unsigned Dims>
 struct array_dim_helper<T[Elems], Dims> {
-    static constexpr unsigned dimensions = array_dim_helper<T, Dims + 1>::dimensions;
+    using type = typename array_dim_helper<T, Dims + 1>::type;
+};
+
+template <typename T, unsigned Dims>
+struct array_dim_helper<T *, Dims> {
+    using type = typename array_dim_helper<T, Dims + 1>::type;
 };
 
 template <typename T, array_size_t... Extents>
@@ -68,27 +80,45 @@ struct array_extents_helper {
 
 template <typename T, size_t Elems, array_size_t... Extents>
 struct array_extents_helper<T[Elems], Extents...> {
-    using type = typename array_extents_helper<T, Elems, Extents...>::type;
+    // Array elements are interpreted differently, pushing dimension size at the end
+    using type = typename array_extents_helper<T, Extents..., Elems>::type;
 };
 
-template <typename T, array_size_t... Offsets>
-struct array_offsets_helper {
+template <typename T, array_size_t... Extents>
+struct array_extents_helper<T *, Extents...> {
+    using type = typename array_extents_helper<T, 0, Extents...>::type;
+};
+
+template <typename T, T A, T B>
+struct multiply {
+    static constexpr T value = A * B;
+};
+
+template <typename T, array_size_t... Offset>
+struct array_offsets_helper;
+
+template <typename T, array_size_t Offset, array_size_t... Offsets>
+struct array_offsets_helper<T, Offset, Offsets...> {
     using type = array_offsets_helper;
 
-    static constexpr extents<sizeof...(Offsets)> get()
+    template <size_t Idx>
+    static constexpr array_size_t get()
     {
-        return extents<sizeof...(Offsets)>{Offsets...};
-    };
+        return utils::mpl::seq_at<Idx, array_size_t, Offsets...>::value;
+    }
 };
 
 template <typename T, size_t Elems, array_size_t Offset, array_size_t... Offsets>
 struct array_offsets_helper<T[Elems], Offset, Offsets...> {
-    using type = typename array_offsets_helper<T, Elems * Offset, Offset, Offsets...>::type;
+    using type = typename array_offsets_helper<T,
+                                              multiply<array_size_t, Offsets, Elems>::value ...,
+                                              multiply<array_size_t, Offset, Elems>::value,
+                                              Elems>::type;
 };
 
-template <typename T, size_t Elems, array_size_t Offset>
-struct array_offsets_helper<T[Elems], Offset> {
-    using type = typename array_offsets_helper<T, Elems * Offset, Offset>::type;
+template <typename T,  array_size_t Offset, array_size_t... Offsets>
+struct array_offsets_helper<T *, Offset, Offsets...> {
+    using type = typename array_offsets_helper<T, 0, Offset, Offsets...>::type;
 };
 
 template <typename T, size_t Elems>
@@ -96,10 +126,15 @@ struct array_offsets_helper<T[Elems]> {
     using type = typename array_offsets_helper<T, Elems>::type;
 };
 
+template <typename T>
+struct array_offsets_helper<T *> {
+    using type = typename array_offsets_helper<T, 0>::type;
+};
+
 
 template <typename T>
 struct array_traits {
-    static constexpr unsigned dimensions = array_dim_helper<T, 0>::dimensions;
+    static constexpr unsigned dimensions = array_dim_helper<T>::type::get();
 
     using   value_type = typename array_type_helper<T>::type;
     using extents_type = typename array_extents_helper<T>::type;

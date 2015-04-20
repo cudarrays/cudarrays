@@ -35,11 +35,11 @@
 namespace cudarrays {
 
 template <typename T, typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence>
-using dynarray1d = dynarray<T, 1, layout::rmo, PartConf, CoherencePolicy>;
+using dynarray1d = dynarray<T *, layout::rmo, PartConf, CoherencePolicy>;
 template <typename T, typename StorageType = layout::rmo, typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence>
-using dynarray2d = dynarray<T, 2, StorageType, PartConf, CoherencePolicy>;
+using dynarray2d = dynarray<T **, StorageType, PartConf, CoherencePolicy>;
 template <typename T, typename StorageType = layout::rmo, typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence>
-using dynarray3d = dynarray<T, 3, StorageType, PartConf, CoherencePolicy>;
+using dynarray3d = dynarray<T ***, StorageType, PartConf, CoherencePolicy>;
 
 template <typename T, typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence>
 using vector = dynarray1d<T, PartConf, CoherencePolicy>;

@@ -1,5 +1,4 @@
-set(CUDARRAYS_HEADERS array.hpp
-                      coherence.hpp
+set(CUDARRAYS_HEADERS coherence.hpp
                       common.hpp
                       config.hpp
                       compiler.hpp

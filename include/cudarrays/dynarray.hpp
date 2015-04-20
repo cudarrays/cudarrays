@@ -51,41 +51,41 @@
 #include "detail/dynarray/iterator.hpp"
 #include "detail/coherence/default.hpp"
 
-#include "array.hpp"
-
 namespace cudarrays {
 
-template <typename T, unsigned Dims,
+template <typename T,
           typename StorageType = layout::rmo,
           typename PartConf = automatic::none,
           template <typename> class CoherencePolicy = default_coherence>
 class dynarray :
     public coherent {
 public:
-    static constexpr unsigned dimensions = Dims;
+    using     array_type = T;
+    using         traits = array_traits<array_type>;
 
-    using dim_order_type = typename make_dim_order<dimensions, StorageType>::type;
-    using  permuter_type = utils::permuter<dimensions, dim_order_type>;
+    using dim_order_type = typename make_dim_order<traits::dimensions, StorageType>::type;
+    using  permuter_type = utils::permuter<traits::dimensions, dim_order_type>;
 
-    using   host_storage_type = host_storage<T>;
+    using   host_storage_type = host_storage<typename traits::value_type>;
+
     using device_storage_type =
-        dynarray_storage<T, dimensions, PartConf::final_impl,
+        dynarray_storage<typename traits::value_type, traits::dimensions, PartConf::final_impl,
                          typename reorder_gather_static< // User-provided dimension ordering
-                             dimensions,
+                             traits::dimensions,
                              bool,
-                             typename PartConf::template part_type<dimensions>,
+                             typename PartConf::template part_type<traits::dimensions>,
                              dim_order_type
                          >::type>;
 
-    using      value_type = T;
-    using difference_type = array_index_t;
-
+    using       difference_type = array_index_t;
+    using            value_type = typename traits::value_type;
     using coherence_policy_type = CoherencePolicy<dynarray>;
+    using          indexer_type = linearizer_hybrid<array_type>;
 
-    using indexer_type = linearizer2<>;
+    static constexpr auto dimensions = traits::dimensions;
 
     __host__
-    explicit dynarray(const extents<dimensions> &extents,
+    explicit dynarray(const extents<traits::dimensions> &extents,
                       const align_t &align = align_t{0, 0},
                       coherence_policy_type coherence = coherence_policy_type()) :
         device_(permuter_type::reorder(extents), align),
@@ -125,7 +125,7 @@ public:
     }
 
     __array_index__
-    T &operator()(array_index_t idx)
+    typename traits::value_type &operator()(array_index_t idx)
     {
 #ifdef __CUDA_ARCH__
         return device_.access_pos(0, 0, idx);
@@ -135,7 +135,7 @@ public:
     }
 
     __array_index__
-    const T &operator()(array_index_t idx) const
+    const typename traits::value_type &operator()(array_index_t idx) const
     {
 #ifdef __CUDA_ARCH__
         return device_.access_pos(0, 0, idx);
@@ -145,7 +145,7 @@ public:
     }
 
     __array_index__
-    T &operator()(array_index_t idx1, array_index_t idx2)
+    typename traits::value_type &operator()(array_index_t idx1, array_index_t idx2)
     {
         array_index_t i1 = permuter_type::template select<0>(idx1, idx2);
         array_index_t i2 = permuter_type::template select<1>(idx1, idx2);
@@ -159,7 +159,7 @@ public:
     }
 
     __array_index__
-    const T &operator()(array_index_t idx1, array_index_t idx2) const
+    const typename traits::value_type &operator()(array_index_t idx1, array_index_t idx2) const
     {
         array_index_t i1 = permuter_type::template select<0>(idx1, idx2);
         array_index_t i2 = permuter_type::template select<1>(idx1, idx2);
@@ -173,7 +173,7 @@ public:
     }
 
     __array_index__
-    T &operator()(array_index_t idx1, array_index_t idx2, array_index_t idx3)
+    typename traits::value_type &operator()(array_index_t idx1, array_index_t idx2, array_index_t idx3)
     {
         array_index_t i1 = permuter_type::template select<0>(idx1, idx2, idx3);
         array_index_t i2 = permuter_type::template select<1>(idx1, idx2, idx3);
@@ -188,7 +188,7 @@ public:
     }
 
     __array_index__
-    const T &operator()(array_index_t idx1, array_index_t idx2, array_index_t idx3) const
+    const typename traits::value_type  &operator()(array_index_t idx1, array_index_t idx2, array_index_t idx3) const
     {
         array_index_t i1 = permuter_type::template select<0>(idx1, idx2, idx3);
         array_index_t i2 = permuter_type::template select<1>(idx1, idx2, idx3);
@@ -204,7 +204,7 @@ public:
 
     template <unsigned DimsComp>
     __host__ bool
-    distribute(compute_mapping<DimsComp, dimensions> mapping)
+    distribute(compute_mapping<DimsComp, traits::dimensions> mapping)
     {
         auto mapping2 = mapping;
         mapping2.info = permuter_type::reorder(mapping2.info);
@@ -280,8 +280,8 @@ public:
 
     iterator begin()
     {
-        array_index_t dims[dimensions];
-        std::fill(dims, dims + dimensions, 0);
+        array_index_t dims[traits::dimensions];
+        std::fill(dims, dims + traits::dimensions, 0);
         return iterator(*this, dims);
     }
 
@@ -292,15 +292,15 @@ public:
 
     const_iterator cbegin() const
     {
-        array_index_t dims[dimensions];
-        std::fill(dims, dims + dimensions, 0);
+        array_index_t dims[traits::dimensions];
+        std::fill(dims, dims + traits::dimensions, 0);
         return const_iterator(*this, dims);
     }
 
     reverse_iterator rbegin()
     {
-        array_index_t dims[dimensions];
-        for (unsigned i = 0; i < dimensions; ++i) {
+        array_index_t dims[traits::dimensions];
+        for (unsigned i = 0; i < traits::dimensions; ++i) {
             dims[i] = this->dim(i) - 1;
         }
         return reverse_iterator(iterator(*this, dims));
@@ -308,10 +308,10 @@ public:
 
     iterator end()
     {
-        array_index_t dims[dimensions];
+        array_index_t dims[traits::dimensions];
         dims[0] = this->dim(0);
-        if (dimensions > 1) {
-            std::fill(dims + 1, dims + dimensions, 0);
+        if (traits::dimensions > 1) {
+            std::fill(dims + 1, dims + traits::dimensions, 0);
         }
         return iterator(*this, dims);
     }
@@ -323,19 +323,19 @@ public:
 
     const_iterator cend() const
     {
-        array_index_t dims[dimensions];
+        array_index_t dims[traits::dimensions];
         dims[0] = this->dim(0);
-        if (dimensions > 1) {
-            std::fill(dims + 1, dims + dimensions, 0);
+        if (traits::dimensions > 1) {
+            std::fill(dims + 1, dims + traits::dimensions, 0);
         }
         return const_iterator(*this, dims);
     }
 
     reverse_iterator rend()
     {
-        array_index_t dims[dimensions];
+        array_index_t dims[traits::dimensions];
         dims[0] = -1;
-        for (unsigned i = 0; i < dimensions; ++i) {
+        for (unsigned i = 0; i < traits::dimensions; ++i) {
             dims[i] = this->dim(i) - 1;
         }
         return reverse_iterator(iterator(*this, dims));
@@ -348,9 +348,9 @@ public:
 
     const_reverse_iterator crend() const
     {
-        array_index_t dims[dimensions];
+        array_index_t dims[traits::dimensions];
         dims[0] = -1;
-        for (unsigned i = 0; i < dimensions; ++i) {
+        for (unsigned i = 0; i < traits::dimensions; ++i) {
             dims[i] = this->dim(i) - 1;
         }
         return const_reverse_iterator(const_iterator(*this, dims));
@@ -382,14 +382,12 @@ private:
     dynarray_type &array_;
 #endif
 public:
-    using host_storage_type = typename dynarray_type::host_storage_type;
+    using     host_storage_type = typename dynarray_type::host_storage_type;
 
-    using      value_type = typename dynarray_type::value_type;
-    using difference_type = typename dynarray_type::difference_type;
+    using            value_type = typename dynarray_type::traits::value_type;
+    using       difference_type = typename dynarray_type::difference_type;
 
     using coherence_policy_type = typename dynarray_type::coherence_policy_type;
-
-    static constexpr unsigned dimensions = dynarray_type::dimensions;
 
     // Forward calls to the parent array
     template <typename... T>
@@ -455,12 +453,10 @@ private:
 public:
     using host_storage_type = typename dynarray_type::host_storage_type;
 
-    using      value_type = typename dynarray_type::value_type;
+    using      value_type = typename dynarray_type::traits::value_type;
     using difference_type = typename dynarray_type::difference_type;
 
     using coherence_policy_type = typename dynarray_type::coherence_policy_type;
-
-    static constexpr unsigned dimensions = dynarray_type::dimensions;
 
     // Forward calls to constant methods only
     template <typename... T>
@@ -487,9 +483,9 @@ public:
 }
 
 namespace std {
-template <typename T, unsigned Dims, typename StorageType, class PartConf, template <typename> class CoherencePolicy>
-struct is_convertible<cudarrays::dynarray<T, Dims, StorageType, PartConf, CoherencePolicy>,
-                      cudarrays::dynarray_ref<cudarrays::dynarray<T, Dims, StorageType, PartConf, CoherencePolicy>>> {
+template <typename T, typename StorageType, class PartConf, template <typename> class CoherencePolicy>
+struct is_convertible<cudarrays::dynarray<T, StorageType, PartConf, CoherencePolicy>,
+                      cudarrays::dynarray_ref<cudarrays::dynarray<T, StorageType, PartConf, CoherencePolicy>>> {
     static constexpr bool value = true;
 
     using value_type = bool;
@@ -501,9 +497,9 @@ struct is_convertible<cudarrays::dynarray<T, Dims, StorageType, PartConf, Cohere
     }
 };
 
-template <typename T, unsigned Dims, typename StorageType, class PartConf, template <typename> class CoherencePolicy>
-struct is_convertible<cudarrays::dynarray<T, Dims, StorageType, PartConf, CoherencePolicy>,
-                      cudarrays::dynarray_cref<cudarrays::dynarray<T, Dims, StorageType, PartConf, CoherencePolicy>>> {
+template <typename T, typename StorageType, class PartConf, template <typename> class CoherencePolicy>
+struct is_convertible<cudarrays::dynarray<T, StorageType, PartConf, CoherencePolicy>,
+                      cudarrays::dynarray_cref<cudarrays::dynarray<T, StorageType, PartConf, CoherencePolicy>>> {
     static constexpr bool value = true;
 
     using value_type = bool;

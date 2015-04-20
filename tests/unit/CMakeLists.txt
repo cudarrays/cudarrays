@@ -13,6 +13,7 @@ set (standalone_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/common.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/iterator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/storage.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/traits.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utils.cpp
 )
 
