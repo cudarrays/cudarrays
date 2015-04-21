@@ -42,42 +42,72 @@ protected:
 
 TEST_F(traits_test, array_dim_helper)
 {
-    ASSERT_EQ(cudarrays::array_dim_helper<int>::type::get(), 0);
+    ASSERT_EQ(cudarrays::array_extents_helper<int>::type::dimensions, 0);
 
-    ASSERT_EQ(cudarrays::array_dim_helper<int[1]>::type::get(), 1);
-    ASSERT_EQ(cudarrays::array_dim_helper<int[1][2]>::type::get(), 2);
-    ASSERT_EQ(cudarrays::array_dim_helper<int[1][2][3]>::type::get(), 3);
+    ASSERT_EQ(cudarrays::array_extents_helper<int[1]>::type::dimensions, 1);
+    ASSERT_EQ(cudarrays::array_extents_helper<int[1]>::type::static_dimensions, 1);
+    ASSERT_EQ(cudarrays::array_extents_helper<int[1]>::type::dynamic_dimensions, 0);
+    ASSERT_EQ(cudarrays::array_extents_helper<int[1][2]>::type::dimensions, 2);
+    ASSERT_EQ(cudarrays::array_extents_helper<int[1][2]>::type::static_dimensions, 2);
+    ASSERT_EQ(cudarrays::array_extents_helper<int[1][2]>::type::dynamic_dimensions, 0);
+    ASSERT_EQ(cudarrays::array_extents_helper<int[1][2][3]>::type::dimensions, 3);
+    ASSERT_EQ(cudarrays::array_extents_helper<int[1][2][3]>::type::static_dimensions, 3);
+    ASSERT_EQ(cudarrays::array_extents_helper<int[1][2][3]>::type::dynamic_dimensions, 0);
 
-    ASSERT_EQ(cudarrays::array_dim_helper<int*>::type::get(), 1);
-    ASSERT_EQ(cudarrays::array_dim_helper<int**>::type::get(), 2);
-    ASSERT_EQ(cudarrays::array_dim_helper<int***>::type::get(), 3);
+    ASSERT_EQ(cudarrays::array_extents_helper<int*>::type::dimensions, 1);
+    ASSERT_EQ(cudarrays::array_extents_helper<int*>::type::static_dimensions, 0);
+    ASSERT_EQ(cudarrays::array_extents_helper<int*>::type::dynamic_dimensions, 1);
+    ASSERT_EQ(cudarrays::array_extents_helper<int**>::type::dimensions, 2);
+    ASSERT_EQ(cudarrays::array_extents_helper<int**>::type::static_dimensions, 0);
+    ASSERT_EQ(cudarrays::array_extents_helper<int**>::type::dynamic_dimensions, 2);
+    ASSERT_EQ(cudarrays::array_extents_helper<int***>::type::dimensions, 3);
+    ASSERT_EQ(cudarrays::array_extents_helper<int***>::type::static_dimensions, 0);
+    ASSERT_EQ(cudarrays::array_extents_helper<int***>::type::dynamic_dimensions, 3);
 
-    ASSERT_EQ(cudarrays::array_dim_helper<int**[3]>::type::get(), 3);
+    ASSERT_EQ(cudarrays::array_extents_helper<int**[3]>::type::dimensions, 3);
+    ASSERT_EQ(cudarrays::array_extents_helper<int**[3]>::type::static_dimensions, 1);
+    ASSERT_EQ(cudarrays::array_extents_helper<int**[3]>::type::dynamic_dimensions, 2);
 }
 
 TEST_F(traits_test, array_extents_helper)
 {
-    ASSERT_EQ(cudarrays::array_extents_helper<int[1]>::type::get()[0], 1);
+    ASSERT_EQ(cudarrays::array_extents_helper<int[1]>::type::get<0>(), 1);
 
-    ASSERT_EQ(cudarrays::array_extents_helper<int[1][2]>::type::get()[0], 1);
-    ASSERT_EQ(cudarrays::array_extents_helper<int[1][2]>::type::get()[1], 2);
+    ASSERT_EQ(cudarrays::array_extents_helper<int[1][2]>::type::get<0>(), 1);
+    ASSERT_EQ(cudarrays::array_extents_helper<int[1][2]>::type::get<1>(), 2);
 
-    ASSERT_EQ(cudarrays::array_extents_helper<int[1][2][3]>::type::get()[0], 1);
-    ASSERT_EQ(cudarrays::array_extents_helper<int[1][2][3]>::type::get()[1], 2);
-    ASSERT_EQ(cudarrays::array_extents_helper<int[1][2][3]>::type::get()[2], 3);
+    ASSERT_EQ(cudarrays::array_extents_helper<int[1][2][3]>::type::get<0>(), 1);
+    ASSERT_EQ(cudarrays::array_extents_helper<int[1][2][3]>::type::get<1>(), 2);
+    ASSERT_EQ(cudarrays::array_extents_helper<int[1][2][3]>::type::get<2>(), 3);
 
-    ASSERT_EQ(cudarrays::array_extents_helper<int*>::type::get()[0], 0);
+    ASSERT_EQ(cudarrays::array_extents_helper<int*>::type::get<0>(), 0);
 
-    ASSERT_EQ(cudarrays::array_extents_helper<int**>::type::get()[0], 0);
-    ASSERT_EQ(cudarrays::array_extents_helper<int**>::type::get()[1], 0);
+    ASSERT_EQ(cudarrays::array_extents_helper<int**>::type::get<0>(), 0);
+    ASSERT_EQ(cudarrays::array_extents_helper<int**>::type::get<1>(), 0);
 
-    ASSERT_EQ(cudarrays::array_extents_helper<int***>::type::get()[0], 0);
-    ASSERT_EQ(cudarrays::array_extents_helper<int***>::type::get()[1], 0);
-    ASSERT_EQ(cudarrays::array_extents_helper<int***>::type::get()[2], 0);
+    ASSERT_EQ(cudarrays::array_extents_helper<int***>::type::get<0>(), 0);
+    ASSERT_EQ(cudarrays::array_extents_helper<int***>::type::get<1>(), 0);
+    ASSERT_EQ(cudarrays::array_extents_helper<int***>::type::get<2>(), 0);
 
-    ASSERT_EQ(cudarrays::array_extents_helper<int**[3]>::type::get()[0], 0);
-    ASSERT_EQ(cudarrays::array_extents_helper<int**[3]>::type::get()[1], 0);
-    ASSERT_EQ(cudarrays::array_extents_helper<int**[3]>::type::get()[2], 3);
+    ASSERT_EQ(cudarrays::array_extents_helper<int**[3]>::type::get<0>(), 0);
+    ASSERT_EQ(cudarrays::array_extents_helper<int**[3]>::type::get<1>(), 0);
+    ASSERT_EQ(cudarrays::array_extents_helper<int**[3]>::type::get<2>(), 3);
+}
+
+TEST_F(traits_test, array_extents_helper2)
+{
+    ASSERT_EQ(cudarrays::array_extents_helper<int*>::type::get({1})[0], 1);
+
+    ASSERT_EQ(cudarrays::array_extents_helper<int**>::type::get({1, 2})[0], 1);
+    ASSERT_EQ(cudarrays::array_extents_helper<int**>::type::get({1, 2})[1], 2);
+
+    ASSERT_EQ(cudarrays::array_extents_helper<int***>::type::get({1, 2, 3})[0], 1);
+    ASSERT_EQ(cudarrays::array_extents_helper<int***>::type::get({1, 2, 3})[1], 2);
+    ASSERT_EQ(cudarrays::array_extents_helper<int***>::type::get({1, 2, 3})[2], 3);
+
+    ASSERT_EQ(cudarrays::array_extents_helper<int**[3]>::type::get({1, 2})[0], 1);
+    ASSERT_EQ(cudarrays::array_extents_helper<int**[3]>::type::get({1, 2})[1], 2);
+    ASSERT_EQ(cudarrays::array_extents_helper<int**[3]>::type::get({1, 2})[2], 3);
 }
 
 TEST_F(traits_test, array_offsets_helper)

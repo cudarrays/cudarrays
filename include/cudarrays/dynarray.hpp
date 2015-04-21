@@ -85,10 +85,10 @@ public:
     static constexpr auto dimensions = traits::dimensions;
 
     __host__
-    explicit dynarray(const extents<traits::dimensions> &extents,
+    explicit dynarray(const extents<traits::dynamic_dimensions> &extents,
                       const align_t &align = align_t{0, 0},
                       coherence_policy_type coherence = coherence_policy_type()) :
-        device_(permuter_type::reorder(extents), align),
+        device_(permuter_type::reorder(traits::extents_type::type::get(extents)), align),
         coherencePolicy_(coherence)
     {
         coherencePolicy_.bind(this);

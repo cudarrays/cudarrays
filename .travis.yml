@@ -1,0 +1,44 @@
+# Use a build matrix to do two builds in parallel:
+# one using CMake, and one using make.
+env:
+  matrix:
+    - BUILD_DEBUG
+    - BUILD_RELEASE
+
+language: cpp
+
+# Cache Ubuntu apt packages.
+cache: apt
+
+compiler: gcc
+
+before_install:
+  - export NUM_THREADS=4
+  - export SCRIPTS=./scripts/travis
+
+install:
+  - sudo -E $SCRIPTS/install_build_env.sh
+
+before_script:
+  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/local/cuda/lib64
+  - export PATH=/usr/local/cuda/bin:$PATH
+
+script: $SCRIPTS/build.sh
+
+notifications:
+# Emails are sent to the committer's git-configured email address by default,
+# but only if they have access to the repository.  To enable Travis on your
+# public fork of Caffe, just go to travis-ci.org and flip the switch on for
+# your Caffe fork.  To configure your git email address, use:
+#     git config --global user.email me@example.com
+  email:
+    on_success: always
+    on_failure: always
+
+# IRC notifications disabled by default.
+# Uncomment next 5 lines to send notifications to chat.freenode.net#caffe
+#   irc:
+#     channels:
+#       - "chat.freenode.net#caffe"
+#     template:
+#       - "%{repository}/%{branch} (%{commit} - %{author}): %{message}"

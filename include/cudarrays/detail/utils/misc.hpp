@@ -116,6 +116,29 @@ struct seq_at<0, T, Current, Values...> {
     static constexpr T value = Current;
 };
 
+template <typename T, T Value, T... Values>
+struct seq_count;
+
+template <typename T, T Value, T Current, T... Values>
+struct seq_count<T, Value, Current, Values...> {
+    static constexpr T value = seq_count<T, Value, Values...>::value;
+};
+
+template <typename T, T Value, T... Values>
+struct seq_count<T, Value, Value, Values...> {
+    static constexpr T value = seq_count<T, Value, Values...>::value + 1;
+};
+
+template <typename T, T Value, T Current>
+struct seq_count<T, Value, Current> {
+    static constexpr T value = 0;
+};
+
+template <typename T, T Value>
+struct seq_count<T, Value, Value> {
+    static constexpr T value = 1;
+};
+
 }
 
 template <typename T>

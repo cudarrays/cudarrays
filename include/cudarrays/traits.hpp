@@ -44,6 +44,7 @@ struct array_type_helper {
 
 template <typename T, size_t Elems>
 struct array_type_helper<T[Elems]> {
+    static_assert(Elems != 0, "Bounds of a static dimension cannot be zero.");
     using type = typename array_type_helper<T>::type;
 };
 
@@ -52,41 +53,57 @@ struct array_type_helper<T *> {
     using type = typename array_type_helper<T>::type;
 };
 
-template <typename T, unsigned Dims = 0>
-struct array_dim_helper {
-    using type = array_dim_helper;
-    static constexpr unsigned get() { return Dims; }
-};
+template <typename T, unsigned StaticDims, unsigned DynamicDims, array_size_t... Extents>
+struct array_extents_helper_internal {
+    using type = array_extents_helper_internal;
+    static constexpr unsigned dimensions         = StaticDims + DynamicDims;
 
-template <typename T, size_t Elems, unsigned Dims>
-struct array_dim_helper<T[Elems], Dims> {
-    using type = typename array_dim_helper<T, Dims + 1>::type;
-};
+    static constexpr unsigned static_dimensions  = StaticDims;
+    static constexpr unsigned dynamic_dimensions = DynamicDims;
 
-template <typename T, unsigned Dims>
-struct array_dim_helper<T *, Dims> {
-    using type = typename array_dim_helper<T, Dims + 1>::type;
-};
-
-template <typename T, array_size_t... Extents>
-struct array_extents_helper {
-    using type = array_extents_helper;
-
-    static constexpr extents<sizeof...(Extents)> get()
+    template <unsigned Idx>
+    static constexpr array_size_t get()
     {
-        return extents<sizeof...(Extents)>{Extents...};
-    };
+        return utils::mpl::seq_at<Idx, array_size_t, Extents...>::value;
+    }
+
+    static extents<dimensions> get(const extents<dynamic_dimensions> &ext)
+    {
+        extents<dimensions> ret{Extents...};
+
+        unsigned idx = 0;
+        for (auto &e: ret) {
+            if (e == 0)
+                e = ext[idx++];
+        }
+
+        return ret;
+    }
 };
 
-template <typename T, size_t Elems, array_size_t... Extents>
-struct array_extents_helper<T[Elems], Extents...> {
+template <typename T, unsigned StaticDims, unsigned DynamicDims, array_size_t... Extents>
+constexpr unsigned array_extents_helper_internal<T, StaticDims, DynamicDims, Extents...>::dimensions;
+template <typename T, unsigned StaticDims, unsigned DynamicDims, array_size_t... Extents>
+constexpr unsigned array_extents_helper_internal<T, StaticDims, DynamicDims, Extents...>::static_dimensions;
+template <typename T, unsigned StaticDims, unsigned DynamicDims, array_size_t... Extents>
+constexpr unsigned array_extents_helper_internal<T, StaticDims, DynamicDims, Extents...>::dynamic_dimensions;
+
+template <typename T, unsigned StaticDims, unsigned DynamicDims, size_t Elems, array_size_t... Extents>
+struct array_extents_helper_internal<T[Elems], StaticDims, DynamicDims, Extents...> {
+    static_assert(Elems != 0, "Bounds of a static dimension cannot be zero.");
+
     // Array elements are interpreted differently, pushing dimension size at the end
-    using type = typename array_extents_helper<T, Extents..., Elems>::type;
+    using type = typename array_extents_helper_internal<T, StaticDims + 1, DynamicDims, Extents..., Elems>::type;
 };
 
-template <typename T, array_size_t... Extents>
-struct array_extents_helper<T *, Extents...> {
-    using type = typename array_extents_helper<T, 0, Extents...>::type;
+template <typename T, unsigned StaticDims, unsigned DynamicDims, array_size_t... Extents>
+struct array_extents_helper_internal<T *, StaticDims, DynamicDims, Extents...> {
+    using type = typename array_extents_helper_internal<T, StaticDims, DynamicDims + 1, 0, Extents...>::type;
+};
+
+template <typename T>
+struct array_extents_helper {
+    using type = typename array_extents_helper_internal<T, 0, 0>::type;
 };
 
 template <typename T, T A, T B>
@@ -110,6 +127,8 @@ struct array_offsets_helper<T, Offset, Offsets...> {
 
 template <typename T, size_t Elems, array_size_t Offset, array_size_t... Offsets>
 struct array_offsets_helper<T[Elems], Offset, Offsets...> {
+    static_assert(Elems != 0, "Bounds of a static dimension cannot be zero.");
+
     using type = typename array_offsets_helper<T,
                                               multiply<array_size_t, Offsets, Elems>::value ...,
                                               multiply<array_size_t, Offset, Elems>::value,
@@ -123,6 +142,8 @@ struct array_offsets_helper<T *, Offset, Offsets...> {
 
 template <typename T, size_t Elems>
 struct array_offsets_helper<T[Elems]> {
+    static_assert(Elems != 0, "Bounds of a static dimension cannot be zero.");
+
     using type = typename array_offsets_helper<T, Elems>::type;
 };
 
@@ -131,10 +152,11 @@ struct array_offsets_helper<T *> {
     using type = typename array_offsets_helper<T, 0>::type;
 };
 
-
 template <typename T>
 struct array_traits {
-    static constexpr unsigned dimensions = array_dim_helper<T>::type::get();
+    static constexpr unsigned         dimensions = array_extents_helper<T>::type::dimensions;
+    static constexpr unsigned  static_dimensions = array_extents_helper<T>::type::static_dimensions;
+    static constexpr unsigned dynamic_dimensions = array_extents_helper<T>::type::dynamic_dimensions;
 
     using   value_type = typename array_type_helper<T>::type;
     using extents_type = typename array_extents_helper<T>::type;
