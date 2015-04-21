@@ -13,6 +13,7 @@ cache: apt
 compiler: gcc
 
 before_install:
+  - cd cudarrays
   - export NUM_THREADS=4
   - export SCRIPTS=./scripts/travis
 
