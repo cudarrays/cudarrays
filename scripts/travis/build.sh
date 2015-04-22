@@ -6,7 +6,7 @@ export PATH=/usr/local/cmake/bin:$PATH
 set -e
 MAKE="make --jobs=$NUM_THREADS --keep-going"
 
-CONFIGURE="../configure --with-gcc=g++-4.9"
+CONFIGURE="../configure --with-gcc=`which g++-4.9`"
 
 if $BUILD_DEBUG
 then
