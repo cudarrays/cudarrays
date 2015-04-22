@@ -14,7 +14,7 @@ apt-get install \
     gcc-4.9
 
 wget http://www.cmake.org/files/v3.1/cmake-3.1.3-Linux-x86_64.sh
-sh cmake-3.1.3-Linux-x86_64.sh --skip-license --prefix=software/cmake
+sh cmake-3.1.3-Linux-x86_64.sh --skip-license --prefix=/usr/local/cmake
 find . -type d -exec chmod a+rx {} \;
 chmod -R a+r software/cmake
 chmod -R a+x software/cmake/bin
