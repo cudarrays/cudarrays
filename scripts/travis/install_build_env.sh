@@ -14,7 +14,7 @@ apt-get install \
     gcc-4.9
 
 # Install CUDA
-CUDA_URL=http://developer.download.nvidia.com/compute/cuda/7_0/Prod/local_installers/rpmdeb/cuda-repo-ubuntu1204-7-0-local_7.0-28_amd64.deb
+CUDA_URL=http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1204/x86_64/cuda-repo-ubuntu1204_7.0-28_amd64.deb
 CUDA_FILE=/tmp/cuda_install.deb
 curl $CUDA_URL -o $CUDA_FILE
 dpkg -i $CUDA_FILE
