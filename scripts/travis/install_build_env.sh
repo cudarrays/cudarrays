@@ -8,7 +8,7 @@ MAKE="make --jobs=$NUM_THREADS"
 # Install apt packages where the Ubuntu 12.04 default and ppa works for Caffe
 
 # This ppa is for gcc-4.9
-add-apt-repository ppa:ubuntu-toolchain-r/test
+add-apt-repository -y ppa:ubuntu-toolchain-r/test
 apt-get -y update
 apt-get install \
     gcc-4.9
