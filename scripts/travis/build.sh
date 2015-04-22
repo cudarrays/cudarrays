@@ -1,6 +1,8 @@
 #!/bin/bash
 # Script called by Travis to build CUDArrays
 
+export PATH=`pwd`/software/cmake/bin:$PATH
+
 set -e
 MAKE="make --jobs=$NUM_THREADS --keep-going"
 

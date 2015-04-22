@@ -18,6 +18,13 @@ add-apt-repository -y ppa:chewing/travis-ci
 apt-get -y update
 apt-get -y install cmake
 
+wget http://www.cmake.org/files/v3.1/cmake-3.1.3-Linux-x86_64.sh
+sh cmake-3.1.3-Linux-x86_64.sh --skip-license --prefix=software/cmake
+find . -type d -exec chmod a+rx {} \;
+chmod -R a+r software/cmake
+chmod -R a+x software/cmake/bin
+chmod -R a+x software/cmake/share
+
 # Install CUDA
 CUDA_URL=http://developer.download.nvidia.com/compute/cuda/7_0/Prod/local_installers/rpmdeb/cuda-repo-ubuntu1204-7-0-local_7.0-28_amd64.deb
 CUDA_FILE=/tmp/cuda_install.deb
