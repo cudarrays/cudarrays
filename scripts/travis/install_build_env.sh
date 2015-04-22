@@ -13,11 +13,6 @@ apt-get -y update
 apt-get install \
     gcc-4.9
 
-# Add a special apt-repository to install CMake 3.0
-add-apt-repository -y ppa:chewing/travis-ci
-apt-get -y update
-apt-get -y install cmake
-
 wget http://www.cmake.org/files/v3.1/cmake-3.1.3-Linux-x86_64.sh
 sh cmake-3.1.3-Linux-x86_64.sh --skip-license --prefix=software/cmake
 find . -type d -exec chmod a+rx {} \;
