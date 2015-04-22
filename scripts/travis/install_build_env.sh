@@ -11,7 +11,7 @@ MAKE="make --jobs=$NUM_THREADS"
 add-apt-repository -y ppa:ubuntu-toolchain-r/test
 apt-get -y update
 apt-get install \
-    gcc-4.9
+    gcc-4.9 g++-4.9
 
 # Install CUDA
 CUDA_URL=http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1204/x86_64/cuda-repo-ubuntu1204_7.0-28_amd64.deb
