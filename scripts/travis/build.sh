@@ -4,6 +4,7 @@
 export PATH=/usr/local/cmake/bin:$PATH
 
 set -e
+set -x
 MAKE="make --jobs=$NUM_THREADS --keep-going"
 
 CONFIGURE="../configure --with-gcc=`which g++-4.9`"
