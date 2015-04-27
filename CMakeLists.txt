@@ -23,7 +23,7 @@ else(CUDA_FOUND)
     message(FATAL_ERROR "NVIDIA CUDA Compiler is required")
 endif(CUDA_FOUND)
 
-set(COMMON_CXX_FLAGS "-Wall -Wextra -Werror -std=c++11 -g")
+set(COMMON_CXX_FLAGS "-Wall -Wextra -Werror -Wformat -Wformat-security -std=c++11 -g")
 
 if(OPENMP_FOUND)
     set(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} -fopenmp")

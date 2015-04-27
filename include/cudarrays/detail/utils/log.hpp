@@ -36,8 +36,8 @@
 
 #include "../../common.hpp"
 
-namespace detail {
 namespace cudarrays {
+namespace detail {
     template <typename... Args>
     static void
     print(FILE *out, std::string msg, Args &&...args)
@@ -46,9 +46,15 @@ namespace cudarrays {
         fprintf(out, msg_nl.c_str(), args...);
     }
 
+    static void inline
+    print(FILE *out, std::string msg)
+    {
+        fprintf(out, "%s\n", msg.c_str());
+    }
+
     template <typename... Args>
     static void
-    print(FILE *)
+    print(FILE * /*out*/)
     {
     }
 
@@ -61,9 +67,6 @@ namespace cudarrays {
         abort();
     }
 }
-}
-
-namespace cudarrays {
 
 template <typename... Args>
 static void
@@ -71,20 +74,20 @@ DEBUG(std::string msg, Args &&...args)
 {
     if (!config::OPTION_DEBUG) return;
 
-    detail::cudarrays::print(stdout, msg, std::forward<Args>(args)...);
+    detail::print(stdout, msg, std::forward<Args>(args)...);
 }
 
 #define FATAL(...) do {                             \
-    detail::cudarrays::print(stderr, "%s:%d\n", __FILE__, __LINE__); \
-    detail::cudarrays::fatal(__VA_ARGS__);       \
+    cudarrays::detail::print(stderr, "%s:%d\n", __FILE__, __LINE__); \
+    cudarrays::detail::fatal(__VA_ARGS__);       \
     } while (0)
 
 
 #define ASSERT(c,...) do {                                                   \
         if (!(c)) {                                                          \
-            detail::cudarrays::print(stderr,##__VA_ARGS__);                  \
-            detail::cudarrays::print(stderr, "%s:%d\n", __FILE__, __LINE__); \
-            detail::cudarrays::fatal("Condition '"#c"' failed");             \
+            cudarrays::detail::print(stderr,##__VA_ARGS__);                  \
+            cudarrays::detail::print(stderr, "%s:%d\n", __FILE__, __LINE__); \
+            cudarrays::detail::fatal("Condition '"#c"' failed");             \
         }                                                                    \
     } while (0)
 }
