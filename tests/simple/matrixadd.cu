@@ -76,9 +76,9 @@ launch_test_matrixadd(compute_conf<3> gpus, std::array<int, 3> infoC,
     array3D_matrixadd &C_host = *(array3D_matrixadd *) new float[ELEMS_Z * ELEMS_Y * ELEMS_X];
 
     {
-        for (int i = 0; i < ELEMS_Z; ++i) {
-            for (int j = 0; j < ELEMS_Y; ++j) {
-                for (int k = 0; k < ELEMS_X; ++k) {
+        for (auto i = 0u; i < ELEMS_Z; ++i) {
+            for (auto j = 0u; j < ELEMS_Y; ++j) {
+                for (auto k = 0u; k < ELEMS_X; ++k) {
                     A(i, j, k)      = float(i * ELEMS_Y * ELEMS_X) + j * ELEMS_X + k;
                     A_host[i][j][k] = float(i * ELEMS_Y * ELEMS_X) + j * ELEMS_X + k;
 
@@ -104,9 +104,9 @@ launch_test_matrixadd(compute_conf<3> gpus, std::array<int, 3> infoC,
     if (TEST)
     {
         #pragma omp parallel for
-        for (int i = 0; i < ELEMS_Z; ++i) {
-            for (int j = 0; j < ELEMS_Y; ++j) {
-                for (int k = 0; k < ELEMS_X; ++k) {
+        for (auto i = 0u; i < ELEMS_Z; ++i) {
+            for (auto j = 0u; j < ELEMS_Y; ++j) {
+                for (auto k = 0u; k < ELEMS_X; ++k) {
                     C_host[i][j][k] = A_host[i][j][k] + B_host[i][j][k];
                 }
             }
@@ -116,9 +116,9 @@ launch_test_matrixadd(compute_conf<3> gpus, std::array<int, 3> infoC,
     bool ok = true;
     if (TEST && launched.get())
     {
-        for (int i = 0; i < ELEMS_Z; ++i) {
-            for (int j = 0; j < ELEMS_Y; ++j) {
-                for (int k = 0; k < ELEMS_X; ++k) {
+        for (auto i = 0u; i < ELEMS_Z; ++i) {
+            for (auto j = 0u; j < ELEMS_Y; ++j) {
+                for (auto k = 0u; k < ELEMS_X; ++k) {
                     if (C_host[i][j][k] != C(i, j, k)) {
                         std::cout << "C: Position {" << i << ", " << j << ", " << k << "} "
                                                      << C_host[i][j][k]
@@ -139,11 +139,11 @@ launch_test_matrixadd(compute_conf<3> gpus, std::array<int, 3> infoC,
     return ok;
 }
 
+static const int NONE = -1;
 
 template <typename Impl>
 void test_conf(unsigned gpus)
 {
-    static const int NONE = -1;
     bool ok = false;
 
     ok = launch_test_matrixadd<typename Impl::x>({partition::x, gpus},
@@ -196,7 +196,7 @@ void test_conf(unsigned gpus)
     }
 }
 
-int main(int argc, char *argv[])
+int main()
 {
     init_lib();
 

@@ -39,7 +39,7 @@ using namespace cudarrays;
 template <typename Layout>
 using my_array = dynarray<float ***, Layout, replicate::none>;
 
-int main(int argc, char *argv[])
+int main()
 {
     init_lib();
 

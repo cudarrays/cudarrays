@@ -61,6 +61,10 @@ int main()
     // Launch vecadd kernel. The kernel is executed on all GPUs.
     // The computation grid is decomposed on its X dimension.
     bool status = launch(vecadd_kernel, conf, compute_conf<1>{partition::x})(C, A, B);
+    if (!status) {
+        fprintf(stderr, "Error launching kernel 'vecadd_kernel'\n");
+        abort();
+    }
 
     for (unsigned i = 0; i < ELEMS; ++i) {
         std::cout << C(i) << " ";

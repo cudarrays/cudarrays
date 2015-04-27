@@ -46,16 +46,9 @@ namespace cudarrays {
         fprintf(out, msg_nl.c_str(), args...);
     }
 
-    static void
-    print(FILE *out, std::string msg)
-    {
-        std::string msg_nl = msg + "\n";
-        fprintf(out, "%s", msg_nl.c_str());
-    }
-
     template <typename... Args>
     static void
-    print(FILE *out)
+    print(FILE *)
     {
     }
 
@@ -66,12 +59,6 @@ namespace cudarrays {
         print(stderr, msg, args...);
 
         abort();
-    }
-
-    static void
-    fatal(std::string _msg)
-    {
-        fatal(_msg, "");
     }
 }
 }
@@ -85,12 +72,6 @@ DEBUG(std::string msg, Args &&...args)
     if (!config::OPTION_DEBUG) return;
 
     detail::cudarrays::print(stdout, msg, std::forward<Args>(args)...);
-}
-
-static void
-DEBUG(std::string _msg)
-{
-    DEBUG(_msg, "");
 }
 
 #define FATAL(...) do {                             \

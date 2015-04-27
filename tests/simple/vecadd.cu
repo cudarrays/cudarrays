@@ -91,6 +91,10 @@ launch_test_vecadd(compute_conf<1> gpus, mapping1D infoC,
         cuda_conf conf{ELEMS / 512, 512};
 
         bool status = launch(vecadd_kernel<Storage, Storage>, conf, gpus)(C, A, B);
+        if (!status) {
+            fprintf(stderr, "Error launching kernel 'vecadd_kernel'\n");
+            abort();
+        }
     }
 
     if (TEST)
@@ -127,11 +131,9 @@ void dead_code()
 }
 
 
-int main(int argc, char *argv[])
+int main()
 {
     init_lib();
-
-    static const int NONE = -1;
 
     bool ok = false;
 

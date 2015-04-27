@@ -100,8 +100,8 @@ public:
     explicit dynarray(const extents<traits::dynamic_dimensions> &extents,
                       const align_t &align = align_t{0, 0},
                       coherence_policy_type coherence = coherence_policy_type()) :
-        device_(permuter_type::reorder(traits::extents_type::type::get(extents)), align),
-        coherencePolicy_(coherence)
+        coherencePolicy_(coherence),
+        device_(permuter_type::reorder(traits::extents_type::type::get(extents)), align)
     {
         coherencePolicy_.bind(this);
 
@@ -373,8 +373,8 @@ public:
 
 private:
     coherence_policy_type coherencePolicy_;
-    host_storage_type     host_;
     device_storage_type   device_;
+    host_storage_type     host_;
 };
 
 template <typename Array>

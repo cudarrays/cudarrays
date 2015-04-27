@@ -177,9 +177,9 @@ helper_distribution_gpu_get_offs(const std::array<unsigned, DimsComp> &gpuGrid)
     std::array<unsigned, DimsComp> ret;
 
     unsigned gridOff = 1;
-    for (int dim = DimsComp - 1; dim >= 0; --dim) {
+    for (ssize_t dim = DimsComp - 1; dim >= 0; --dim) {
         ret[dim] = gridOff;
-        if (dim < DimsComp) {
+        if (dim < ssize_t(DimsComp)) {
             gridOff *= gpuGrid[dim];
         }
     }

@@ -42,7 +42,7 @@ using namespace cudarrays;
 template <typename StorageImpl>
 using float_array = dynarray<float ***, layout::rmo, StorageImpl>;
 
-int main(int argc, char *argv[])
+int main()
 {
     init_lib();
 

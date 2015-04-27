@@ -56,7 +56,7 @@ struct linearizer_hybrid {
     }
 
     static __host__ __device__ inline
-    array_index_t access_pos(const array_size_t *offs, const array_index_t &idx)
+    array_index_t access_pos(const array_size_t *, const array_index_t &idx)
     {
         return idx;
     }

@@ -94,17 +94,17 @@ TEST_F(storage_test, reorder)
     auto reverse  = permuter_reverse::reorder(std::array<unsigned, 3>{0, 1, 2});
     auto mix      = permuter_mix::reorder(std::array<unsigned, 3>{0, 1, 2});
 
-    ASSERT_EQ(identity[0], 0);
-    ASSERT_EQ(identity[1], 1);
-    ASSERT_EQ(identity[2], 2);
+    ASSERT_EQ(identity[0], 0u);
+    ASSERT_EQ(identity[1], 1u);
+    ASSERT_EQ(identity[2], 2u);
 
-    ASSERT_EQ(reverse[0], 2);
-    ASSERT_EQ(reverse[1], 1);
-    ASSERT_EQ(reverse[2], 0);
+    ASSERT_EQ(reverse[0], 2u);
+    ASSERT_EQ(reverse[1], 1u);
+    ASSERT_EQ(reverse[2], 0u);
 
-    ASSERT_EQ(mix[0], 1);
-    ASSERT_EQ(mix[1], 2);
-    ASSERT_EQ(mix[2], 0);
+    ASSERT_EQ(mix[0], 1u);
+    ASSERT_EQ(mix[1], 2u);
+    ASSERT_EQ(mix[2], 0u);
 }
 
 template <unsigned Dims>
@@ -139,7 +139,7 @@ TEST_F(storage_test, dim_manager)
     ASSERT_EQ(mgr3.dims()[1], extents_big[1]);
     ASSERT_EQ(mgr3.dims_align()[0], extents_big[0]);
     ASSERT_GT(mgr3.dims_align()[1], extents_big[1]);
-    ASSERT_EQ(mgr3.dims_align()[1] % alignment.alignment, 0);
+    ASSERT_EQ(mgr3.dims_align()[1] % alignment.alignment, 0u);
 }
 
 TEST_F(storage_test, dim_manager_offset)
@@ -152,17 +152,17 @@ TEST_F(storage_test, dim_manager_offset)
     cudarrays::align_t alignment1{4};
     my_dim_manager mgr1{extents, alignment1};
 
-    ASSERT_EQ(mgr1.offset(), 0);
+    ASSERT_EQ(mgr1.offset(), 0u);
 
     cudarrays::align_t alignment2{4, 2};
     my_dim_manager mgr2{extents, alignment2};
 
-    ASSERT_EQ(mgr2.offset(), 2);
+    ASSERT_EQ(mgr2.offset(), 2u);
 
     cudarrays::align_t alignment3{4, 5};
     my_dim_manager mgr3{extents, alignment3};
 
-    ASSERT_EQ(mgr3.offset(), 3);
+    ASSERT_EQ(mgr3.offset(), 3u);
 }
 
 TEST_F(storage_test, dim_manager_impl_offset)
@@ -175,12 +175,12 @@ TEST_F(storage_test, dim_manager_impl_offset)
     cudarrays::align_t alignment{4};
     my_dim_manager mgr1{extents, alignment};
 
-    ASSERT_EQ(mgr1.dims()[2],       7);
-    ASSERT_EQ(mgr1.dims_align()[2], 8);
-    ASSERT_EQ(mgr1.dims()[1],       3);
-    ASSERT_EQ(mgr1.dims_align()[1], 3);
-    ASSERT_EQ(mgr1.dims()[0],       5);
-    ASSERT_EQ(mgr1.dims_align()[0], 5);
+    ASSERT_EQ(mgr1.dims()[2],       7u);
+    ASSERT_EQ(mgr1.dims_align()[2], 8u);
+    ASSERT_EQ(mgr1.dims()[1],       3u);
+    ASSERT_EQ(mgr1.dims_align()[1], 3u);
+    ASSERT_EQ(mgr1.dims()[0],       5u);
+    ASSERT_EQ(mgr1.dims_align()[0], 5u);
 
     ASSERT_EQ(mgr1.get_offs_align()[1], mgr1.dims_align()[2]);
 }
@@ -227,41 +227,41 @@ TEST_F(storage_test, vm_page_allocator1)
 
     my_page_allocator page_allocator{6, dims, align, local, arrayDimToGpus, 3};
 
-    ASSERT_EQ(page_allocator.dims_[0], 5);
-    ASSERT_EQ(page_allocator.dims_[1], 7);
-    ASSERT_EQ(page_allocator.dims_[2], 4);
+    ASSERT_EQ(page_allocator.dims_[0], 5u);
+    ASSERT_EQ(page_allocator.dims_[1], 7u);
+    ASSERT_EQ(page_allocator.dims_[2], 4u);
 
     auto ret = page_allocator.advance();
 
-    ASSERT_EQ(page_allocator.idx_[0], 0);
-    ASSERT_EQ(page_allocator.idx_[1], 0);
-    ASSERT_EQ(page_allocator.idx_[2], 3);
+    ASSERT_EQ(page_allocator.idx_[0], 0u);
+    ASSERT_EQ(page_allocator.idx_[1], 0u);
+    ASSERT_EQ(page_allocator.idx_[2], 3u);
 
     ret = page_allocator.advance();
 
-    ASSERT_EQ(page_allocator.idx_[0], 0);
-    ASSERT_EQ(page_allocator.idx_[1], 1);
-    ASSERT_EQ(page_allocator.idx_[2], 2);
+    ASSERT_EQ(page_allocator.idx_[0], 0u);
+    ASSERT_EQ(page_allocator.idx_[1], 1u);
+    ASSERT_EQ(page_allocator.idx_[2], 2u);
 
     ret = page_allocator.advance();
 
-    ASSERT_EQ(page_allocator.idx_[0], 0);
-    ASSERT_EQ(page_allocator.idx_[1], 2);
-    ASSERT_EQ(page_allocator.idx_[2], 1);
+    ASSERT_EQ(page_allocator.idx_[0], 0u);
+    ASSERT_EQ(page_allocator.idx_[1], 2u);
+    ASSERT_EQ(page_allocator.idx_[2], 1u);
 
     ret = page_allocator.advance();
 
-    ASSERT_EQ(page_allocator.idx_[0], 0);
-    ASSERT_EQ(page_allocator.idx_[1], 3);
-    ASSERT_EQ(page_allocator.idx_[2], 0);
+    ASSERT_EQ(page_allocator.idx_[0], 0u);
+    ASSERT_EQ(page_allocator.idx_[1], 3u);
+    ASSERT_EQ(page_allocator.idx_[2], 0u);
 
     while (ret.first == false) {
         ret = page_allocator.advance();
     }
 
-    ASSERT_EQ(page_allocator.idx_[0], 5);
-    ASSERT_EQ(page_allocator.idx_[1], 0);
-    ASSERT_EQ(page_allocator.idx_[2], 0);
+    ASSERT_EQ(page_allocator.idx_[0], 5u);
+    ASSERT_EQ(page_allocator.idx_[1], 0u);
+    ASSERT_EQ(page_allocator.idx_[2], 0u);
 }
 
 TEST_F(storage_test, vm_page_allocator2)
@@ -277,41 +277,41 @@ TEST_F(storage_test, vm_page_allocator2)
 
     my_page_allocator page_allocator{6, dims, align, local, arrayDimToGpus, 4};
 
-    ASSERT_EQ(page_allocator.dims_[0], 5);
-    ASSERT_EQ(page_allocator.dims_[1], 7);
-    ASSERT_EQ(page_allocator.dims_[2], 4);
+    ASSERT_EQ(page_allocator.dims_[0], 5u);
+    ASSERT_EQ(page_allocator.dims_[1], 7u);
+    ASSERT_EQ(page_allocator.dims_[2], 4u);
 
     page_allocator.advance();
 
-    ASSERT_EQ(page_allocator.idx_[0], 0);
-    ASSERT_EQ(page_allocator.idx_[1], 1);
-    ASSERT_EQ(page_allocator.idx_[2], 0);
+    ASSERT_EQ(page_allocator.idx_[0], 0u);
+    ASSERT_EQ(page_allocator.idx_[1], 1u);
+    ASSERT_EQ(page_allocator.idx_[2], 0u);
 
     page_allocator.advance();
-    ASSERT_EQ(page_allocator.idx_[0], 0);
-    ASSERT_EQ(page_allocator.idx_[1], 2);
-    ASSERT_EQ(page_allocator.idx_[2], 0);
-
-    page_allocator.advance();
-
-    ASSERT_EQ(page_allocator.idx_[0], 0);
-    ASSERT_EQ(page_allocator.idx_[1], 3);
-    ASSERT_EQ(page_allocator.idx_[2], 0);
+    ASSERT_EQ(page_allocator.idx_[0], 0u);
+    ASSERT_EQ(page_allocator.idx_[1], 2u);
+    ASSERT_EQ(page_allocator.idx_[2], 0u);
 
     page_allocator.advance();
 
-    ASSERT_EQ(page_allocator.idx_[0], 0);
-    ASSERT_EQ(page_allocator.idx_[1], 4);
-    ASSERT_EQ(page_allocator.idx_[2], 0);
+    ASSERT_EQ(page_allocator.idx_[0], 0u);
+    ASSERT_EQ(page_allocator.idx_[1], 3u);
+    ASSERT_EQ(page_allocator.idx_[2], 0u);
+
+    page_allocator.advance();
+
+    ASSERT_EQ(page_allocator.idx_[0], 0u);
+    ASSERT_EQ(page_allocator.idx_[1], 4u);
+    ASSERT_EQ(page_allocator.idx_[2], 0u);
 
     std::pair<bool, typename my_page_allocator::page_stats> ret;
     do {
         ret = page_allocator.advance();
     } while (ret.first == false);
 
-    ASSERT_EQ(page_allocator.idx_[0], 5);
-    ASSERT_EQ(page_allocator.idx_[1], 0);
-    ASSERT_EQ(page_allocator.idx_[2], 0);
+    ASSERT_EQ(page_allocator.idx_[0], 5u);
+    ASSERT_EQ(page_allocator.idx_[1], 0u);
+    ASSERT_EQ(page_allocator.idx_[2], 0u);
 
     ASSERT_EQ(page_allocator.get_imbalance_ratio(), 0.5);
 }
@@ -319,7 +319,7 @@ TEST_F(storage_test, vm_page_allocator2)
 
 template <unsigned Dims>
 static
-void gpu_grid_conf(const cudarrays::compute_conf<Dims> &conf, const std::array<int, Dims> &result)
+void gpu_grid_conf(const cudarrays::compute_conf<Dims> &conf, const std::array<unsigned, Dims> &result)
 {
     auto grid = cudarrays::helper_distribution_get_gpu_grid(conf);
 
@@ -332,8 +332,6 @@ void gpu_grid_conf(const cudarrays::compute_conf<Dims> &conf, const std::array<i
 
 TEST_F(storage_test, gpu_grid)
 {
-    static const unsigned GPUS = 12;
-
     //
     // 1D decompositions
     //
@@ -379,8 +377,6 @@ void array_grid_conf(const cudarrays::compute_mapping<DimsComp, Dims> &mapping,
 
 TEST_F(storage_test, array_grid)
 {
-    static const unsigned GPUS = 12;
-
     //
     // 1D decompositions
     //
@@ -460,8 +456,6 @@ void array_local_dim_conf(const std::array<cudarrays::array_size_t, Dims> &dims,
 
 TEST_F(storage_test, local_dims)
 {
-    static const unsigned GPUS = 12;
-
     extents<1> dims1{120};
     extents<2> dims2{120, 240};
     extents<3> dims3{120, 180, 240};
@@ -544,7 +538,7 @@ void array_local_off_conf(const std::array<cudarrays::array_size_t, Dims> &dims,
 
 TEST_F(storage_test, array_local_off)
 {
-    array_local_off_conf<1>({4}, {});
+    array_local_off_conf<1>({4}, std::array<unsigned, 0u>());
 
     array_local_off_conf<2>({5, 4}, {4});
 

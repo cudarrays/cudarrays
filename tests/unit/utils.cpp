@@ -50,9 +50,8 @@ utils_test::TearDownTestCase()
 template <typename T, typename U>
 static unsigned do_loop_range(T min, U max)
 {
-    unsigned count;
-    count = 0;
-    for (auto i : utils::make_range(min, max)) {
+    unsigned count = 0;
+    for (auto i __attribute__((unused)) : utils::make_range(min, max)) {
         ++count;
     }
     return count;
@@ -60,22 +59,21 @@ static unsigned do_loop_range(T min, U max)
 
 TEST_F(utils_test, range)
 {
-    ASSERT_EQ(do_loop_range(-1, 2), 3);
-    ASSERT_EQ(do_loop_range(-1, 2u), 3);
-    ASSERT_EQ(do_loop_range(-1, 2l), 3);
+    ASSERT_EQ(do_loop_range(-1, 2), 3u);
+    ASSERT_EQ(do_loop_range(-1, 2u), 3u);
+    ASSERT_EQ(do_loop_range(-1, 2l), 3u);
 
-    ASSERT_EQ(do_loop_range(-1l, 2), 3);
-    ASSERT_EQ(do_loop_range(-1l, 2u), 3);
-    ASSERT_EQ(do_loop_range(-1l, 2l), 3);
-    ASSERT_EQ(do_loop_range(-1l, 2ul), 3);
+    ASSERT_EQ(do_loop_range(-1l, 2), 3u);
+    ASSERT_EQ(do_loop_range(-1l, 2u), 3u);
+    ASSERT_EQ(do_loop_range(-1l, 2l), 3u);
+    ASSERT_EQ(do_loop_range(-1l, 2ul), 3u);
 }
 
 template <typename T>
 static unsigned do_loop_range_low(T max)
 {
-    unsigned count;
-    count = 0;
-    for (auto i : utils::make_range(max)) {
+    unsigned count = 0;
+    for (auto i __attribute__((unused)) : utils::make_range(max)) {
         ++count;
     }
     return count;
@@ -83,10 +81,10 @@ static unsigned do_loop_range_low(T max)
 
 TEST_F(utils_test, range_low)
 {
-    ASSERT_EQ(do_loop_range_low(5), 5);
-    ASSERT_EQ(do_loop_range_low(5u), 5);
-    ASSERT_EQ(do_loop_range_low(5l), 5);
-    ASSERT_EQ(do_loop_range_low(5ul), 5);
+    ASSERT_EQ(do_loop_range_low(5), 5u);
+    ASSERT_EQ(do_loop_range_low(5u), 5u);
+    ASSERT_EQ(do_loop_range_low(5l), 5u);
+    ASSERT_EQ(do_loop_range_low(5ul), 5u);
 }
 
 TEST_F(utils_test, reorder_gather)

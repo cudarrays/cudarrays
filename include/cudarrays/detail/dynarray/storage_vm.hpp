@@ -101,23 +101,22 @@ public:
         do {
             std::array<unsigned, Dims> tileId;
 
-            for (unsigned dim = 0; dim < Dims; ++dim) {
+            for (auto dim : utils::make_range(Dims)) {
                 tileId[dim] = idx_[dim] / dimsLocal_[dim];
             }
             unsigned gpu = 0;
-            for (unsigned dim = 0; dim < Dims; ++dim) {
+            for (auto dim : utils::make_range(Dims)) {
                 gpu += tileId[dim] * arrayDimToGpus_[dim];
             }
 
             // Compute increment until the next tile in the lowest-order dimension
-            array_index_t off = array_index_t(dimsLocal_[Dims - 1]) -
-                                array_index_t(idx_[Dims - 1] % dimsLocal_[Dims - 1]);
+            auto off = dimsLocal_[Dims - 1] - (idx_[Dims - 1] % dimsLocal_[Dims - 1]);
             // Check if array dimensions are not divisible by local tile dimensions
             if (//mayOverflow_[Dims - 1] &&
                 idx_[Dims - 1] + off >= dimsAlign_[Dims - 1])
                 off = dimsAlign_[Dims - 1] - idx_[Dims - 1];
 
-            if (array_index_t(inc) < off) { // We are done
+            if (inc < off) { // We are done
                 idx_[Dims - 1] += inc;
 
                 localStats[gpu] += inc;
@@ -155,13 +154,12 @@ public:
 
                 localStats[gpu] += off;
             }
-            if (idx_[0] == dimsAlign_[0]) break;
-        } while (inc > 0);
+        } while (idx_[0] != dimsAlign_[0] && inc > 0);
 
         // Implement some way to balance allocations on 50% imbalance
         unsigned mgpu = 0;
         array_size_t sum = 0;
-        for (unsigned gpu = 0; gpu < gpus_; ++gpu) {
+        for (auto gpu : utils::make_range(gpus_)) {
             if (localStats[gpu] > localStats[mgpu]) mgpu = gpu;
 
             sum += localStats[gpu];
@@ -199,7 +197,7 @@ private:
 
     std::array<unsigned, Dims> arrayDimToGpus_;
 
-    std::array<array_index_t, Dims> idx_;
+    std::array<array_size_t, Dims> idx_;
 
     array_size_t nelems_;
     array_size_t granularity_;
@@ -262,7 +260,7 @@ public:
     }
 
     __host__ bool
-    distribute(const std::vector<unsigned> &gpus)
+    distribute(const std::vector<unsigned> &)
     {
 #if 0
         if (!dataDev_) {

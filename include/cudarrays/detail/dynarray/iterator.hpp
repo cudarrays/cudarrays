@@ -201,7 +201,7 @@ protected:
     {
         for (int dim = Dims - 1; dim >= 0; --dim) {
             difference_type i = idx_[dim] + off;
-            if (dim > 0 && i >= parent_->dim(dim)) {
+            if (dim > 0 && i >= difference_type(parent_->dim(dim))) {
                 // Next iteration will update dim - 1
                 if (Unit) {
                     idx_[dim] = 0;
@@ -284,7 +284,7 @@ private:
     template <bool Equal>
     bool less(const myiterator_access_detail &it) const
     {
-        for (int dim = 0; dim < Dims; ++dim) {
+        for (auto dim : utils::make_range(Dims)) {
             if (idx_[dim] > it.idx_[dim]) {
                 return false;
             } else if (idx_[dim] < it.idx_[dim]) {
@@ -299,7 +299,7 @@ private:
     inline
     bool greater(const myiterator_access_detail &it) const
     {
-        for (int dim = 0; dim < Dims; ++dim) {
+        for (auto dim : utils::make_range(Dims)) {
             if (idx_[dim] < it.idx_[dim]) {
                 return false;
             } else if (idx_[dim] > it.idx_[dim]) {

@@ -71,9 +71,9 @@ struct storage_part_dim_helper {
     static_assert(sizeof...(PartVals) <= 3,
                   "Up to 3 dimensional arrays are supported so far");
 
-    static constexpr bool X = seq_at_or(sequence_type, (ssize_t(dimensions) - 1) - 0, false);
-    static constexpr bool Y = seq_at_or(sequence_type, (ssize_t(dimensions) - 1) - 1, false);
-    static constexpr bool Z = seq_at_or(sequence_type, (ssize_t(dimensions) - 1) - 2, false);
+    static constexpr bool X = seq_at_or(sequence_type, size_t((ssize_t(dimensions) - 1) - 0), false);
+    static constexpr bool Y = seq_at_or(sequence_type, size_t((ssize_t(dimensions) - 1) - 1), false);
+    static constexpr bool Z = seq_at_or(sequence_type, size_t((ssize_t(dimensions) - 1) - 2), false);
 };
 
 template <partition Part, unsigned Dims>

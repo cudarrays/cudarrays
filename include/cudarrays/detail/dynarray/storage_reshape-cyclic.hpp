@@ -267,7 +267,7 @@ public:
     }
 
     __host__ bool
-    distribute(const std::vector<unsigned> &gpus)
+    distribute(const std::vector<unsigned> &)
     {
         return false;
     }
@@ -337,7 +337,8 @@ public:
         unsigned partY = (Dims > 1)? arrayPartitionGrid_[dim_manager_type::DimIdxY]: 1;
         unsigned partX =             arrayPartitionGrid_[dim_manager_type::DimIdxX];
 
-        cudaMemcpy3DParms myParms = {0};
+        cudaMemcpy3DParms myParms;
+        memset(&myParms, 0, sizeof(myParms));
         myParms.dstPtr = make_cudaPitchedPtr(unaligned,
                                              sizeof(T) * dimMgr.dim_align(dim_manager_type::DimIdxX),
                                                          dimMgr.dim_align(dim_manager_type::DimIdxX),
@@ -412,7 +413,8 @@ public:
         unsigned partY = (Dims > 1)? arrayPartitionGrid_[dim_manager_type::DimIdxY]: 1;
         unsigned partX =             arrayPartitionGrid_[dim_manager_type::DimIdxX];
 
-        cudaMemcpy3DParms myParms = {0};
+        cudaMemcpy3DParms myParms;
+        memset(&myParms, 0, sizeof(myParms));
         myParms.srcPtr = make_cudaPitchedPtr(unaligned,
                                              sizeof(T) * dimMgr.dim_align(dim_manager_type::DimIdxX),
                                                          dimMgr.dim_align(dim_manager_type::DimIdxX),

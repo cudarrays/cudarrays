@@ -74,8 +74,8 @@ launch_test_matrixmul(compute_conf<2> gpus, std::array<int, 2> infoC,
     array2D_matrixmul &C_host = *(array2D_matrixmul *) new float[ELEMS * ELEMS];
 
     {
-        for (unsigned i = 0; i < ELEMS; ++i) {
-            for (unsigned j = 0; j < ELEMS; ++j) {
+        for (auto i = 0u; i < ELEMS; ++i) {
+            for (auto j = 0u; j < ELEMS; ++j) {
                 A(i, j)      = float(i);
                 A_host[i][j] = float(i);
 
@@ -94,16 +94,20 @@ launch_test_matrixmul(compute_conf<2> gpus, std::array<int, 2> infoC,
                        dim3(MATRIXMUL_TILE_N,
                             MATRIXMUL_TILE_TB_HEIGHT), 0, 0};
 
-        auto times_exec = launch(matrixmul_kernel<StorageC, StorageA, StorageB>, conf, gpus)(C, A, B);
+        bool status = launch(matrixmul_kernel<StorageC, StorageA, StorageB>, conf, gpus)(C, A, B);
+        if (!status) {
+            fprintf(stderr, "Error launching kernel 'vecadd_kernel'\n");
+            abort();
+        }
     }
 
     if (TEST)
     {
         #pragma omp parallel for
-        for (unsigned i = 0; i < ELEMS; ++i) {
-            for (unsigned j = 0; j < ELEMS; ++j) {
+        for (auto i = 0u; i < ELEMS; ++i) {
+            for (auto j = 0u; j < ELEMS; ++j) {
                 float tmp = 0.f;
-                for (int k = 0; k < ELEMS; ++k) {
+                for (auto k = 0u; k < ELEMS; ++k) {
                     tmp += A_host[i][k] * B_host[k][j];
                 }
                 C_host[i][j] = tmp;
@@ -113,8 +117,8 @@ launch_test_matrixmul(compute_conf<2> gpus, std::array<int, 2> infoC,
 
     if (TEST)
     {
-        for (unsigned i = 0; i < ELEMS; ++i) {
-            for (unsigned j = 0; j < ELEMS; ++j) {
+        for (auto i = 0u; i < ELEMS; ++i) {
+            for (auto j = 0u; j < ELEMS; ++j) {
                 if (C_host[i][j] != C(i, j)) {
                     std::cout << "C: Position {" << i << ", " << j << "} "
                                                 << C_host[i][j]
@@ -134,7 +138,7 @@ launch_test_matrixmul(compute_conf<2> gpus, std::array<int, 2> infoC,
     return true;
 }
 
-int main(int argc, char *argv[])
+int main()
 {
     init_lib();
 

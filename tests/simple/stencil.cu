@@ -94,7 +94,11 @@ launch_test_stencil(compute_conf<2> gpus, mapping2D infoB,
                        dim3(STENCIL_BLOCK_X,
                             STENCIL_BLOCK_Y)};
 
-        auto times_exec = launch(stencil_kernel<StorageB, StorageA>, conf, gpus)(B, A);
+        bool status = launch(stencil_kernel<StorageB, StorageA>, conf, gpus)(B, A);
+        if (!status) {
+            fprintf(stderr, "Error launching kernel 'stencil_kernel'\n");
+            abort();
+        }
     }
 
     if (TEST)
@@ -163,7 +167,7 @@ void test_conf(unsigned gpus)
     }
 }
 
-int main(int argc, char *argv[])
+int main()
 {
     init_lib();
     bool ok;

@@ -57,9 +57,6 @@ template <typename T>
 static T
 deduce(T...) {}
 
-static void
-deduce() {}
-
 #define seq(v,...) utils::mpl::sequence<decltype(utils::mpl::deduce(v)),v,##__VA_ARGS__>
 
 #define seq_empty(t) utils::mpl::sequence<t>
@@ -198,10 +195,10 @@ struct seq_gen_dec {
     using type = typename seq_gen_dec_detail<T, Size, Size - 1>::type;
 };
 
-template <ssize_t N, typename T, typename S>
+template <size_t N, typename T, typename S>
 struct seq_at_detail;
 
-template <ssize_t N, typename T, T Current, T... Values>
+template <size_t N, typename T, T Current, T... Values>
 struct seq_at_detail<N, T, sequence<T, Current, Values...>> {
     static constexpr T value = seq_at_detail<N - 1, T, sequence<T, Values...>>::value;
 };
@@ -211,23 +208,23 @@ struct seq_at_detail<0, T, sequence<T, Current, Values...>> {
     static constexpr T value = Current;
 };
 
-template <typename S, ssize_t N>
+template <typename S, size_t N>
 struct seq_at {
-    static_assert(N >= 0 && N < seq_size<S>::value, "Out of bounds");
+    static_assert(N < seq_size<S>::value, "Out of bounds");
     static constexpr auto value = seq_at_detail<N, typename seq_type<S>::type, S>::value;
 };
 
-template <bool ValidIndex, ssize_t N, typename T, typename S, T Value>
+template <bool ValidIndex, size_t N, typename T, typename S, T Value>
 struct seq_at_or_detail {
     static constexpr auto value = seq_at<S, N>::value;
 };
 
-template <ssize_t N, typename T, typename S, T Value>
+template <size_t N, typename T, typename S, T Value>
 struct seq_at_or_detail<false, N, T, S, Value> {
     static constexpr T value = Value;
 };
 
-template <typename S, ssize_t N, typename seq_type<S>::type Value>
+template <typename S, size_t N, typename seq_type<S>::type Value>
 struct seq_at_or {
     static constexpr auto value = seq_at_or_detail<N >= 0 && N < seq_size<S>::value, N,
                                                    typename seq_type<S>::type, S, Value>::value;

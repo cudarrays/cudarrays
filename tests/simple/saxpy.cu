@@ -72,7 +72,7 @@ launch_test_saxpy(compute_conf<1> gpus, mapping1D infoB,
     array1D_saxpy &B_host = *(array1D_saxpy *) new float[ELEMS];
 
     {
-        for (int i = 0; i < ELEMS; ++i) {
+        for (auto i = 0u; i < ELEMS; ++i) {
             A(i)      = float(i);
             A_host[i] = float(i);
 
@@ -85,18 +85,22 @@ launch_test_saxpy(compute_conf<1> gpus, mapping1D infoB,
         cuda_conf conf(ELEMS / 512, 512);
 
         bool status = launch(saxpy_kernel<Storage, Storage>, conf, gpus)(B, A, c);
+        if (!status) {
+            fprintf(stderr, "Error launching kernel 'vecadd_kernel'\n");
+            abort();
+        }
     }
 
     if (TEST)
     {
-        for (int i = 0; i < ELEMS; ++i) {
+        for (auto i = 0u; i < ELEMS; ++i) {
             B_host[i] = A_host[i] * c;
         }
     }
 
     if (TEST)
     {
-        for (unsigned i = 0; i < ELEMS; ++i) {
+        for (auto i = 0u; i < ELEMS; ++i) {
             if (B_host[i] != B(i)) {
                 std::cout << "B: Position " << i << " "
                                             << B_host[i]
@@ -113,11 +117,9 @@ launch_test_saxpy(compute_conf<1> gpus, mapping1D infoB,
     return true;
 }
 
-int main(int argc, char *argv[])
+int main()
 {
     init_lib();
-
-    static const int NONE = -1;
 
     bool ok = false;
 

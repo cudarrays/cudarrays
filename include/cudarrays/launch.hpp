@@ -127,7 +127,7 @@ using coherence_info = std::pair<coherent *, bool>;
 template <typename To>
 struct check_arg_type {
     template <typename From>
-    static constexpr bool against(const From &arg)
+    static constexpr bool against(const From &)
     {
         static_assert(std::is_convertible<From, To>::value, "Incompatible types");
         return true;
@@ -137,7 +137,7 @@ struct check_arg_type {
 template <typename To>
 struct check_arg_type <To *> {
     template <typename From>
-    static constexpr bool against(From * const& arg)
+    static constexpr bool against(From * const&)
     {
         static_assert(std::is_convertible<From *, To *>::value, "Incompatible types");
         return true;
@@ -152,7 +152,7 @@ struct argument_manager {
 
     template <typename T>
     static void
-    set_coherent_arg(T &&/*arg*/, bool Const)
+    set_coherent_arg(T &&/*arg*/, bool /*Const*/)
     {
         // Not coherent. Do nothing
     }
