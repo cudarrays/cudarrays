@@ -35,6 +35,7 @@
 #include "../../compiler.hpp"
 
 #include "log.hpp"
+#include "misc.hpp"
 #include "stl.hpp"
 
 namespace utils {
@@ -74,146 +75,11 @@ make_array(const T(&array)[Elems])
     return ret;
 }
 
-// TODO: Life will be much more easier when NVCC compiles this
-#if 0
-template <typename T, class U, class M>
-struct reorder_gather_static;
-
-template <typename T, T... Vals,
-          template <T...> class U,
-          unsigned... Idxs,
-          template <unsigned...> class M>
-struct reorder_gather_static<T, U<Vals...>, M<Idxs...>> {
-    static_assert(sizeof...(Vals) == sizeof...(Idxs),
-                  "Wrong reorder configuration");
-    static constexpr array_dev<T, sizeof...(Vals)> my_vals{Vals...};
-    static constexpr array_dev<unsigned, sizeof...(Idxs)> my_idxs{Idxs...};
-
-    using type = U<my_vals[Idxs]...>;
-};
-#else
-
-template <typename T, size_t Elems>
-struct array_dev {
-    T data_[Elems];
-
-    __hostdevice__
-    constexpr
-    T operator[](size_t idx) const
-    {
-        return data_[idx];
-    }
-
-    __hostdevice__
-    constexpr
-    const T &at(size_t idx) const
-    {
-        return data_[idx];
-    }
-
-    template <size_t Idx>
-    __hostdevice__
-    constexpr
-    const typename std::enable_if<(Idx < Elems), T>::type at() const
-    {
-        return data_[Idx];
-    }
-
-    template <size_t Idx>
-    __hostdevice__
-    constexpr
-    const typename std::enable_if<(Idx >= Elems), T>::type at() const
-    {
-        return T(0);
-    }
-
-    __hostdevice__
-    constexpr
-    size_t size() const
-    {
-        return Elems;
-    }
-};
-
-template <unsigned Idx, typename T, T...>
-struct selector;
-
-template <typename T, T Val0>
-struct selector<0, T, Val0> {
-    static constexpr T value = Val0;
-};
-
-template <typename T, T Val0, T... ValsPost>
-struct selector<0, T, Val0, ValsPost...> {
-    static constexpr T value = Val0;
-};
-
-template <typename T, T Val0, T Val1>
-struct selector<1, T, Val0, Val1> {
-    static constexpr T value = Val1;
-};
-
-template <typename T, T Val0, T Val1, T... Vals>
-struct selector<1, T, Val0, Val1, Vals...> {
-    static constexpr T value = Val1;
-};
-
-template <typename T, T Val0, T Val1, T Val2>
-struct selector<2, T, Val0, Val1, Val2> {
-    static constexpr T value = Val2;
-};
-
-template <typename T, T Val0, T Val1, T Val2, T... Vals>
-struct selector<2, T, Val0, Val1, Val2, Vals...> {
-    static constexpr T value = Val2;
-};
-
-template <unsigned N, typename T, class U, class M>
-struct reorder_gather_static;
-
-template <typename T, T... Vals,
-          template <T...> class U,
-          unsigned Idx0,
-          template <unsigned...> class M>
-struct reorder_gather_static<1, T, U<Vals...>, M<Idx0>> {
-    static_assert(sizeof...(Vals) == 1,
-                  "Wrong reorder configuration");
-    using order_type = M<Idx0>;
-    using type = U<Vals...>;
-};
-
-template <typename T, T... Vals,
-          template <T...> class U,
-          unsigned Idx0, unsigned Idx1,
-          template <unsigned...> class M>
-struct reorder_gather_static<2, T, U<Vals...>, M<Idx0, Idx1>> {
-    static_assert(sizeof...(Vals) == 2,
-                  "Wrong reorder configuration");
-    using order_type = M<Idx0, Idx1>;
-    using type = U<selector<Idx0, T, Vals...>::value,
-                   selector<Idx1, T, Vals...>::value>;
-};
-
-template <typename T, T... Vals,
-          template <T...> class U,
-          unsigned Idx0, unsigned Idx1, unsigned Idx2,
-          template <unsigned...> class M>
-struct reorder_gather_static<3, T, U<Vals...>, M<Idx0, Idx1, Idx2>> {
-    static_assert(sizeof...(Vals) == 3,
-                  "Wrong reorder configuration");
-    using order_type = M<Idx0, Idx1, Idx2>;
-    using type = U<selector<Idx0, T, Vals...>::value,
-                   selector<Idx1, T, Vals...>::value,
-                   selector<Idx2, T, Vals...>::value>;
-};
-#endif
-
 template <unsigned N, class M>
-struct permuter;
+struct permuter_detail;
 
-template <unsigned Idx0,
-          template <unsigned...> class M>
-struct permuter<1, M<Idx0>> {
+template <unsigned Idx0>
+struct permuter_detail<1, mpl::sequence<unsigned, Idx0>> {
     template <unsigned IdxSelect, typename IdxType>
     static inline __hostdevice__
     IdxType select(IdxType idx)
@@ -245,9 +111,8 @@ struct permuter<1, M<Idx0>> {
 
 };
 
-template <unsigned Idx0, unsigned Idx1,
-          template <unsigned...> class M>
-struct permuter<2, M<Idx0, Idx1>> {
+template <unsigned Idx0, unsigned Idx1>
+struct permuter_detail<2, mpl::sequence<unsigned, Idx0, Idx1>> {
     static inline __host__
     std::array<unsigned, 2> as_array()
     {
@@ -293,9 +158,8 @@ struct permuter<2, M<Idx0, Idx1>> {
     }
 };
 
-template <unsigned Idx0, unsigned Idx1, unsigned Idx2,
-          template <unsigned...> class M>
-struct permuter<3, M<Idx0, Idx1, Idx2>> {
+template <unsigned Idx0, unsigned Idx1, unsigned Idx2>
+struct permuter_detail<3, mpl::sequence<unsigned, Idx0, Idx1, Idx2>> {
     static inline __host__
     std::array<unsigned, 3> as_array()
     {
@@ -320,7 +184,7 @@ struct permuter<3, M<Idx0, Idx1, Idx2>> {
     static inline __host__
     C reorder(const C &cont)
     {
-        return reorder_gather(cont, permuter::as_array());
+        return reorder_gather(cont, as_array());
     }
 
     template <unsigned Orig>
@@ -346,6 +210,9 @@ struct permuter<3, M<Idx0, Idx1, Idx2>> {
             return 2;
     }
 };
+
+template <typename M>
+using permuter = permuter_detail<seq_size(M), M>;
 
 }
 

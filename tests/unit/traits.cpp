@@ -28,6 +28,7 @@
 
 #include <iostream>
 
+#include "cudarrays/storage.hpp"
 #include "cudarrays/traits.hpp"
 
 #include "gtest/gtest.h"
@@ -42,8 +43,6 @@ protected:
 
 TEST_F(traits_test, array_dim_helper)
 {
-    ASSERT_EQ(cudarrays::array_extents_helper<int>::type::dimensions, 0);
-
     ASSERT_EQ(cudarrays::array_extents_helper<int[1]>::type::dimensions, 1);
     ASSERT_EQ(cudarrays::array_extents_helper<int[1]>::type::static_dimensions, 1);
     ASSERT_EQ(cudarrays::array_extents_helper<int[1]>::type::dynamic_dimensions, 0);
@@ -125,4 +124,39 @@ TEST_F(traits_test, array_offsets_helper)
 
     ASSERT_EQ(cudarrays::array_offsets_helper<int *[2][3]>::type::get<0>(), 6);
     ASSERT_EQ(cudarrays::array_offsets_helper<int *[2][3]>::type::get<1>(), 3);
+}
+
+TEST_F(traits_test, array_dim_reorder_helper)
+{
+    using traits = cudarrays::array_traits<int[1][2][3]>;
+
+    using rmo_type = seq_wrap(unsigned, typename cudarrays::make_dim_order<traits::dimensions, cudarrays::layout::rmo>::type);
+    using cmo_type = seq_wrap(unsigned, typename cudarrays::make_dim_order<traits::dimensions, cudarrays::layout::cmo>::type);
+
+    using reorder_rmo_type =
+        seq_reorder( // User-provided dimension ordering
+            traits::extents_type::static_extents_type,
+            rmo_type);
+
+    using reorder_cmo_type =
+        seq_reorder( // User-provided dimension ordering
+            traits::extents_type::static_extents_type,
+            cmo_type);
+
+    using reorder_custom_type =
+        seq_reorder( // User-provided dimension ordering
+            traits::extents_type::static_extents_type,
+            seq_wrap(unsigned, cudarrays::layout::custom<1u, 2u, 0u>));
+
+    ASSERT_EQ(reorder_rmo_type::as_array()[0], 1);
+    ASSERT_EQ(reorder_rmo_type::as_array()[1], 2);
+    ASSERT_EQ(reorder_rmo_type::as_array()[2], 3);
+
+    ASSERT_EQ(reorder_cmo_type::as_array()[0], 3);
+    ASSERT_EQ(reorder_cmo_type::as_array()[1], 2);
+    ASSERT_EQ(reorder_cmo_type::as_array()[2], 1);
+
+    ASSERT_EQ(reorder_custom_type::as_array()[0], 2);
+    ASSERT_EQ(reorder_custom_type::as_array()[1], 3);
+    ASSERT_EQ(reorder_custom_type::as_array()[2], 1);
 }

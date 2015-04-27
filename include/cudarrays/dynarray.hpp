@@ -60,22 +60,34 @@ template <typename T,
 class dynarray :
     public coherent {
 public:
-    using     array_type = T;
-    using         traits = array_traits<array_type>;
-
-    using dim_order_type = typename make_dim_order<traits::dimensions, StorageType>::type;
-    using  permuter_type = utils::permuter<traits::dimensions, dim_order_type>;
+    using           array_type = T;
+    using               traits = array_traits<array_type>;
+     // User-provided dimension ordering
+    using       dim_order_type = seq_wrap(unsigned,
+                                          typename make_dim_order<
+                                              traits::dimensions,
+                                              StorageType>::type);
+    // Sort array extents
+    using ordered_extents_type =
+        seq_reorder(
+            typename traits::extents_type::static_extents_type,
+            dim_order_type);
+    // Sort dimension partitioning configuration
+    using ordered_partitioning_type =
+        seq_reorder(
+            seq_wrap(bool, typename PartConf::template part_type<traits::dimensions>),
+            dim_order_type);
 
     using   host_storage_type = host_storage<typename traits::value_type>;
 
     using device_storage_type =
-        dynarray_storage<typename traits::value_type, traits::dimensions, PartConf::final_impl,
-                         typename reorder_gather_static< // User-provided dimension ordering
-                             traits::dimensions,
-                             bool,
-                             typename PartConf::template part_type<traits::dimensions>,
-                             dim_order_type
-                         >::type>;
+        dynarray_storage<typename traits::value_type,
+                         traits::dimensions,
+                         PartConf::final_impl,
+                         seq_unwrap(ordered_partitioning_type,
+                                    storage_part_dim_helper<>)>;
+
+    using         permuter_type = utils::permuter<dim_order_type>;
 
     using       difference_type = array_index_t;
     using            value_type = typename traits::value_type;

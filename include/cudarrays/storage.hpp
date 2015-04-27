@@ -65,15 +65,15 @@ enum class storage_tag {
 template <bool... PartVals>
 struct storage_part_dim_helper {
     static constexpr size_t dimensions = sizeof...(PartVals);
-    using array_type = utils::array_dev<bool, sizeof...(PartVals)>;
-    static constexpr array_type Pos{PartVals...};
+
+    using sequence_type = seq(PartVals...);
 
     static_assert(sizeof...(PartVals) <= 3,
                   "Up to 3 dimensional arrays are supported so far");
 
-    static constexpr bool X = Pos.template at<(dimensions - 1) - 0>();
-    static constexpr bool Y = Pos.template at<(dimensions - 1) - 1>();
-    static constexpr bool Z = Pos.template at<(dimensions - 1) - 2>();
+    static constexpr bool X = seq_at_or(sequence_type, (ssize_t(dimensions) - 1) - 0, false);
+    static constexpr bool Y = seq_at_or(sequence_type, (ssize_t(dimensions) - 1) - 1, false);
+    static constexpr bool Z = seq_at_or(sequence_type, (ssize_t(dimensions) - 1) - 2, false);
 };
 
 template <partition Part, unsigned Dims>

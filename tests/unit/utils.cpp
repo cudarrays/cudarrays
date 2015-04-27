@@ -116,75 +116,35 @@ TEST_F(utils_test, reorder_scatter)
     ASSERT_EQ(utils::reorder_scatter(a, a_mix), res_mix);
 }
 
-template <unsigned _Val0, unsigned _Val1>
-struct fake_type2 {
-    const static unsigned Val0 = _Val0;
-    const static unsigned Val1 = _Val1;
-
-    static const std::array<unsigned, 2> as_array()
-    {
-        return {Val0, Val1};
-    }
-};
-
-template <unsigned Val0, unsigned Val1>
-const unsigned fake_type2<Val0, Val1>::Val0;
-template <unsigned Val0, unsigned Val1>
-const unsigned fake_type2<Val0, Val1>::Val1;
-
-template <unsigned _Val0, unsigned _Val1, unsigned _Val2>
-struct fake_type3 {
-    const static unsigned Val0 = _Val0;
-    const static unsigned Val1 = _Val1;
-    const static unsigned Val2 = _Val2;
-
-    static const std::array<unsigned, 3> as_array()
-    {
-        return {Val0, Val1, Val2};
-    }
-};
-template <unsigned Val0, unsigned Val1, unsigned Val2>
-const unsigned fake_type3<Val0, Val1, Val2>::Val0;
-template <unsigned Val0, unsigned Val1, unsigned Val2>
-const unsigned fake_type3<Val0, Val1, Val2>::Val1;
-template <unsigned Val0, unsigned Val1, unsigned Val2>
-const unsigned fake_type3<Val0, Val1, Val2>::Val2;
-
 TEST_F(utils_test, reorder_gather_static)
 {
-    using base2 = fake_type2<0u, 1u>;
-    using reorder_2a = utils::reorder_gather_static<2, unsigned, base2,
-                                                                 fake_type2<0u, 1u> >;
-    ASSERT_EQ(reorder_2a::type::Val0, 0u);
-    ASSERT_EQ(reorder_2a::type::Val1, 1u);
+    using base2 = seq(0u, 1u);
+    using reorder_2a = seq_reorder(base2, seq(0u, 1u));
+    ASSERT_EQ(reorder_2a::as_array()[0], 0u);
+    ASSERT_EQ(reorder_2a::as_array()[1], 1u);
 
-    using reorder_2b = utils::reorder_gather_static<2, unsigned, base2,
-                                                                  fake_type2<1u, 0u> >;
-    ASSERT_EQ(reorder_2b::type::Val0, 1u);
-    ASSERT_EQ(reorder_2b::type::Val1, 0u);
+    using reorder_2b = seq_reorder(base2, seq(1u, 0u));
+    ASSERT_EQ(reorder_2b::as_array()[0], 1u);
+    ASSERT_EQ(reorder_2b::as_array()[1], 0u);
 
-    using base3 = fake_type3<0u, 1u, 2u>;
-    using reorder_3a = utils::reorder_gather_static<3, unsigned, base3,
-                                                                 fake_type3<0u, 1u, 2u> >;
-    ASSERT_EQ(reorder_3a::type::Val0, 0u);
-    ASSERT_EQ(reorder_3a::type::Val1, 1u);
-    ASSERT_EQ(reorder_3a::type::Val2, 2u);
+    using base3 = seq(0u, 1, 2);
+    using reorder_3a = seq_reorder(base3, seq(0u, 1u, 2u));
+    ASSERT_EQ(reorder_3a::as_array()[0], 0u);
+    ASSERT_EQ(reorder_3a::as_array()[1], 1u);
+    ASSERT_EQ(reorder_3a::as_array()[2], 2u);
 
-    using reorder_3b = utils::reorder_gather_static<3, unsigned, base3,
-                                                                 fake_type3<2u, 1u, 0u> >;
-    ASSERT_EQ(reorder_3b::type::Val0, 2u);
-    ASSERT_EQ(reorder_3b::type::Val1, 1u);
-    ASSERT_EQ(reorder_3b::type::Val2, 0u);
+    using reorder_3b = seq_reorder(base3, seq(2u, 1u, 0u));
+    ASSERT_EQ(reorder_3b::as_array()[0], 2u);
+    ASSERT_EQ(reorder_3b::as_array()[1], 1u);
+    ASSERT_EQ(reorder_3b::as_array()[2], 0u);
 
-    using reorder_3c = utils::reorder_gather_static<3, unsigned, base3,
-                                                                 fake_type3<1u, 2u, 0u> >;
-    ASSERT_EQ(reorder_3c::type::Val0, 1u);
-    ASSERT_EQ(reorder_3c::type::Val1, 2u);
-    ASSERT_EQ(reorder_3c::type::Val2, 0u);
+    using reorder_3c = seq_reorder(base3, seq(1u, 2u, 0u));
+    ASSERT_EQ(reorder_3c::as_array()[0], 1u);
+    ASSERT_EQ(reorder_3c::as_array()[1], 2u);
+    ASSERT_EQ(reorder_3c::as_array()[2], 0u);
 
     auto arr1 = base3::as_array();
-    auto arr2 = reorder_3c::type::as_array();
-    auto conf = reorder_3c::order_type::as_array();
-    auto arr3 = utils::reorder_gather(arr1, conf);
+    auto arr2 = reorder_3c::as_array();
+    auto arr3 = utils::reorder_gather(arr1, std::array<unsigned, 3>{1u, 2u, 0u});
     ASSERT_EQ(arr2, arr3);
 }

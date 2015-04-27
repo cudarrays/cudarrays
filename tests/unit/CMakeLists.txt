@@ -1,6 +1,6 @@
 include(FindThreads)
 
-add_compile_options(-DCUDARRAYS_UNITTEST=1)
+add_definitions(-DCUDARRAYS_UNITTEST=1)
 
 include_directories("../../include")
 

@@ -45,6 +45,7 @@ using array_size_t = uint32_t;
 template <unsigned Dims>
 using extents = std::array<array_size_t, Dims>;
 
+
 template <typename... T>
 auto make_extents(T... values) -> extents<sizeof...(T)>
 {

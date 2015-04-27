@@ -40,18 +40,15 @@ protected:
     static void TearDownTestCase() {}
 };
 
-template <unsigned... Idxs>
-class Reorder;
-
 TEST_F(storage_test, permute_indices1)
 {
-    using conf_identity = Reorder<0u, 1u, 2u>;
-    using conf_reverse  = Reorder<2u, 1u, 0u>;
-    using conf_mix      = Reorder<1u, 2u, 0u>;
+    using conf_identity = seq_wrap(unsigned, cudarrays::layout::custom<0u, 1u, 2u>);
+    using conf_reverse  = seq_wrap(unsigned, cudarrays::layout::custom<2u, 1u, 0u>);
+    using conf_mix      = seq_wrap(unsigned, cudarrays::layout::custom<1u, 2u, 0u>);
 
-    using permuter_identity = permuter<3, conf_identity>;
-    using permuter_reverse  = permuter<3, conf_reverse>;
-    using permuter_mix      = permuter<3, conf_mix>;
+    using permuter_identity = permuter<conf_identity>;
+    using permuter_reverse  = permuter<conf_reverse>;
+    using permuter_mix      = permuter<conf_mix>;
 
     ASSERT_EQ(permuter_identity::template select<0>(0, 1, 2), 0);
     ASSERT_EQ(permuter_identity::template select<1>(0, 1, 2), 1);
@@ -68,11 +65,11 @@ TEST_F(storage_test, permute_indices1)
 
 TEST_F(storage_test, permute_indices2)
 {
-    using conf_rmo = typename cudarrays::make_dim_order<3, cudarrays::layout::rmo>::type;
-    using conf_cmo = typename cudarrays::make_dim_order<3, cudarrays::layout::cmo>::type;
+    using conf_rmo = seq_wrap(unsigned, typename cudarrays::make_dim_order<3, cudarrays::layout::rmo>::type);
+    using conf_cmo = seq_wrap(unsigned, typename cudarrays::make_dim_order<3, cudarrays::layout::cmo>::type);
 
-    using permuter_rmo = permuter<3, conf_rmo>;
-    using permuter_cmo = permuter<3, conf_cmo>;
+    using permuter_rmo = permuter<conf_rmo>;
+    using permuter_cmo = permuter<conf_cmo>;
 
     ASSERT_EQ(permuter_rmo::template select<0>(0, 1, 2), 0);
     ASSERT_EQ(permuter_rmo::template select<1>(0, 1, 2), 1);
@@ -85,13 +82,13 @@ TEST_F(storage_test, permute_indices2)
 
 TEST_F(storage_test, reorder)
 {
-    using conf_identity = Reorder<0u, 1u, 2u>;
-    using conf_reverse  = Reorder<2u, 1u, 0u>;
-    using conf_mix      = Reorder<1u, 2u, 0u>;
+    using conf_identity = seq_wrap(unsigned, cudarrays::layout::custom<0u, 1u, 2u>);
+    using conf_reverse  = seq_wrap(unsigned, cudarrays::layout::custom<2u, 1u, 0u>);
+    using conf_mix      = seq_wrap(unsigned, cudarrays::layout::custom<1u, 2u, 0u>);
 
-    using permuter_identity = permuter<3, conf_identity>;
-    using permuter_reverse  = permuter<3, conf_reverse>;
-    using permuter_mix      = permuter<3, conf_mix>;
+    using permuter_identity = permuter<conf_identity>;
+    using permuter_reverse  = permuter<conf_reverse>;
+    using permuter_mix      = permuter<conf_mix>;
 
     auto identity = permuter_identity::reorder(std::array<unsigned, 3>{0, 1, 2});
     auto reverse  = permuter_reverse::reorder(std::array<unsigned, 3>{0, 1, 2});
