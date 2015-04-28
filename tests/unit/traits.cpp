@@ -130,23 +130,23 @@ TEST_F(traits_test, array_dim_reorder_helper)
 {
     using traits = cudarrays::array_traits<int[1][2][3]>;
 
-    using rmo_type = seq_wrap(unsigned, typename cudarrays::make_dim_order<traits::dimensions, cudarrays::layout::rmo>::type);
-    using cmo_type = seq_wrap(unsigned, typename cudarrays::make_dim_order<traits::dimensions, cudarrays::layout::cmo>::type);
+    using rmo_type = typename cudarrays::make_dim_order<traits::dimensions, cudarrays::layout::rmo>::seq_type;
+    using cmo_type = typename cudarrays::make_dim_order<traits::dimensions, cudarrays::layout::cmo>::seq_type;
 
     using reorder_rmo_type =
-        seq_reorder( // User-provided dimension ordering
-            traits::extents_type::static_extents_type,
+        SEQ_REORDER( // User-provided dimension ordering
+            traits::extents_type::extents_seq_type,
             rmo_type);
 
     using reorder_cmo_type =
-        seq_reorder( // User-provided dimension ordering
-            traits::extents_type::static_extents_type,
+        SEQ_REORDER( // User-provided dimension ordering
+            traits::extents_type::extents_seq_type,
             cmo_type);
 
     using reorder_custom_type =
-        seq_reorder( // User-provided dimension ordering
-            traits::extents_type::static_extents_type,
-            seq_wrap(unsigned, cudarrays::layout::custom<1u, 2u, 0u>));
+        SEQ_REORDER( // User-provided dimension ordering
+            traits::extents_type::extents_seq_type,
+            SEQ_WRAP(unsigned, cudarrays::layout::custom<1u, 2u, 0u>));
 
     ASSERT_EQ(reorder_rmo_type::as_array()[0], 1u);
     ASSERT_EQ(reorder_rmo_type::as_array()[1], 2u);

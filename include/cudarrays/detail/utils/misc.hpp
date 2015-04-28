@@ -57,9 +57,9 @@ template <typename T>
 static T
 deduce(T...) {}
 
-#define seq(v,...) utils::mpl::sequence<decltype(utils::mpl::deduce(v)),v,##__VA_ARGS__>
+#define SEQ(v,...) utils::mpl::sequence<decltype(utils::mpl::deduce(v)),v,##__VA_ARGS__>
 
-#define seq_empty(t) utils::mpl::sequence<t>
+#define SEQ_EMPTY(t) utils::mpl::sequence<t>
 
 namespace detail {
 
@@ -167,15 +167,15 @@ struct seq_reverse {
 
 template <typename T, unsigned Size, T Current, T... Generated>
 struct seq_gen_inc_detail {
-    using type = typename seq_gen_inc_detail<T, Size - 1, Current + 1, Current, Generated...>::type;
+    using type = typename seq_gen_inc_detail<T, Size - 1, Current + 1, Generated..., Current>::type;
 };
 
 template <typename T, T Current, T... Generated>
-struct seq_gen_inc_detail<T, 1, Current, Generated...> {
+struct seq_gen_inc_detail<T, 0, Current, Generated...> {
     using type = sequence<T, Generated...>;
 };
 
-template <typename T, unsigned Size>
+template <typename T, T Size>
 struct seq_gen_inc {
     using type = typename seq_gen_inc_detail<T, Size, 0>::type;
 };
@@ -296,44 +296,45 @@ struct seq_find_last {
 
 }
 
-#define seq_t_op(o,...) typename utils::mpl::detail::seq_##o<__VA_ARGS__>::type
-#define seq_v_op(o,...) (utils::mpl::detail::seq_##o<__VA_ARGS__>::value)
+#define SEQ_T_OP(o,...) typename utils::mpl::detail::seq_##o<__VA_ARGS__>::type
+#define SEQ_V_OP(o,...) (utils::mpl::detail::seq_##o<__VA_ARGS__>::value)
 
-#define seq_append(...)  seq_t_op(append,##__VA_ARGS__)
-#define seq_prepend(...) seq_t_op(prepend,##__VA_ARGS__)
+#define SEQ_APPEND(...)   SEQ_T_OP(append,##__VA_ARGS__)
+#define SEQ_PREPEND(...)  SEQ_T_OP(prepend,##__VA_ARGS__)
+#define SEQ_REVERSE(...)  SEQ_T_OP(reverse,##__VA_ARGS__)
 
-#define seq_gen_fill(...) seq_t_op(fill,##__VA_ARGS__)
-#define seq_gen_dec(...)  seq_t_op(fill,##__VA_ARGS__)
-#define seq_gen_inc(...)  seq_t_op(fill,##__VA_ARGS__)
+#define SEQ_GEN_FILL(...) SEQ_T_OP(fill,##__VA_ARGS__)
+#define SEQ_GEN_DEC(...)  SEQ_T_OP(gen_dec,##__VA_ARGS__)
+#define SEQ_GEN_INC(...)  SEQ_T_OP(gen_inc,##__VA_ARGS__)
 
-#define seq_wrap(...)    seq_t_op(wrap,##__VA_ARGS__)
-#define seq_unwrap(...)  seq_t_op(unwrap,##__VA_ARGS__)
+#define SEQ_WRAP(...)    SEQ_T_OP(wrap,##__VA_ARGS__)
+#define SEQ_UNWRAP(...)  SEQ_T_OP(unwrap,##__VA_ARGS__)
 
-#define seq_type(...)    seq_t_op(type,##__VA_ARGS__)
+#define SEQ_TYPE(...)    SEQ_T_OP(type,##__VA_ARGS__)
 
-#define seq_at(...)         (seq_v_op(at,##__VA_ARGS__))
-#define seq_at_or(...)      (seq_v_op(at_or,##__VA_ARGS__))
-#define seq_count(...)      (seq_v_op(count,##__VA_ARGS__))
-#define seq_has(...)        (seq_v_op(count,##__VA_ARGS__) > 0)
-#define seq_size(...)       (seq_v_op(size,##__VA_ARGS__))
-#define seq_find_first(...) (seq_v_op(find_first,##__VA_ARGS__))
-#define seq_find_last(...)  (seq_v_op(find_last,##__VA_ARGS__))
+#define SEQ_AT(...)         (SEQ_V_OP(at,##__VA_ARGS__))
+#define SEQ_AT_OR(...)      (SEQ_V_OP(at_or,##__VA_ARGS__))
+#define SEQ_COUNT(...)      (SEQ_V_OP(count,##__VA_ARGS__))
+#define SEQ_HAS(...)        (SEQ_V_OP(count,##__VA_ARGS__) > 0)
+#define SEQ_SIZE(...)       (SEQ_V_OP(size,##__VA_ARGS__))
+#define SEQ_FIND_FIRST(...) (SEQ_V_OP(find_first,##__VA_ARGS__))
+#define SEQ_FIND_LAST(...)  (SEQ_V_OP(find_last,##__VA_ARGS__))
 
 template <typename T, typename T2, class U, class M>
 struct reorder_gather_static_detail;
 
 template <typename T, typename T2, T... Vals, T2... Idxs>
 struct reorder_gather_static_detail<T, T2, mpl::sequence<T, Vals...>, mpl::sequence<T2, Idxs...>> {
-    using       type = seq(seq_at(seq(Vals...), Idxs)...);
+    using       type = SEQ(SEQ_AT(SEQ(Vals...), Idxs)...);
 };
 
 template <class U, class M>
 struct reorder_gather_static {
-    static_assert(seq_size(U) == seq_size(M), "Wrong reorder configuration");
-    using type = typename reorder_gather_static_detail<seq_type(U), seq_type(M), U, M>::type;
+    static_assert(SEQ_SIZE(U) == SEQ_SIZE(M), "Wrong reorder configuration");
+    using type = typename reorder_gather_static_detail<SEQ_TYPE(U), SEQ_TYPE(M), U, M>::type;
 };
 
-#define seq_reorder(...) typename utils::mpl::reorder_gather_static<__VA_ARGS__>::type
+#define SEQ_REORDER(...) typename utils::mpl::reorder_gather_static<__VA_ARGS__>::type
 
 }
 

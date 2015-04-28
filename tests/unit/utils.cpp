@@ -116,27 +116,27 @@ TEST_F(utils_test, reorder_scatter)
 
 TEST_F(utils_test, reorder_gather_static)
 {
-    using base2 = seq(0u, 1u);
-    using reorder_2a = seq_reorder(base2, seq(0u, 1u));
+    using base2 = SEQ(0u, 1u);
+    using reorder_2a = SEQ_REORDER(base2, SEQ(0u, 1u));
     ASSERT_EQ(reorder_2a::as_array()[0], 0u);
     ASSERT_EQ(reorder_2a::as_array()[1], 1u);
 
-    using reorder_2b = seq_reorder(base2, seq(1u, 0u));
+    using reorder_2b = SEQ_REORDER(base2, SEQ(1u, 0u));
     ASSERT_EQ(reorder_2b::as_array()[0], 1u);
     ASSERT_EQ(reorder_2b::as_array()[1], 0u);
 
-    using base3 = seq(0u, 1, 2);
-    using reorder_3a = seq_reorder(base3, seq(0u, 1u, 2u));
+    using base3 = SEQ(0u, 1, 2);
+    using reorder_3a = SEQ_REORDER(base3, SEQ(0u, 1u, 2u));
     ASSERT_EQ(reorder_3a::as_array()[0], 0u);
     ASSERT_EQ(reorder_3a::as_array()[1], 1u);
     ASSERT_EQ(reorder_3a::as_array()[2], 2u);
 
-    using reorder_3b = seq_reorder(base3, seq(2u, 1u, 0u));
+    using reorder_3b = SEQ_REORDER(base3, SEQ(2u, 1u, 0u));
     ASSERT_EQ(reorder_3b::as_array()[0], 2u);
     ASSERT_EQ(reorder_3b::as_array()[1], 1u);
     ASSERT_EQ(reorder_3b::as_array()[2], 0u);
 
-    using reorder_3c = seq_reorder(base3, seq(1u, 2u, 0u));
+    using reorder_3c = SEQ_REORDER(base3, SEQ(1u, 2u, 0u));
     ASSERT_EQ(reorder_3c::as_array()[0], 1u);
     ASSERT_EQ(reorder_3c::as_array()[1], 2u);
     ASSERT_EQ(reorder_3c::as_array()[2], 0u);

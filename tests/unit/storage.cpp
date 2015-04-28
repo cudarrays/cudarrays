@@ -42,9 +42,9 @@ protected:
 
 TEST_F(storage_test, permute_indices1)
 {
-    using conf_identity = seq_wrap(unsigned, cudarrays::layout::custom<0u, 1u, 2u>);
-    using conf_reverse  = seq_wrap(unsigned, cudarrays::layout::custom<2u, 1u, 0u>);
-    using conf_mix      = seq_wrap(unsigned, cudarrays::layout::custom<1u, 2u, 0u>);
+    using conf_identity = SEQ_WRAP(unsigned, cudarrays::layout::custom<0u, 1u, 2u>);
+    using conf_reverse  = SEQ_WRAP(unsigned, cudarrays::layout::custom<2u, 1u, 0u>);
+    using conf_mix      = SEQ_WRAP(unsigned, cudarrays::layout::custom<1u, 2u, 0u>);
 
     using permuter_identity = permuter<conf_identity>;
     using permuter_reverse  = permuter<conf_reverse>;
@@ -65,8 +65,8 @@ TEST_F(storage_test, permute_indices1)
 
 TEST_F(storage_test, permute_indices2)
 {
-    using conf_rmo = seq_wrap(unsigned, typename cudarrays::make_dim_order<3, cudarrays::layout::rmo>::type);
-    using conf_cmo = seq_wrap(unsigned, typename cudarrays::make_dim_order<3, cudarrays::layout::cmo>::type);
+    using conf_rmo = typename cudarrays::make_dim_order<3, cudarrays::layout::rmo>::seq_type;
+    using conf_cmo = typename cudarrays::make_dim_order<3, cudarrays::layout::cmo>::seq_type;
 
     using permuter_rmo = permuter<conf_rmo>;
     using permuter_cmo = permuter<conf_cmo>;
@@ -82,9 +82,9 @@ TEST_F(storage_test, permute_indices2)
 
 TEST_F(storage_test, reorder)
 {
-    using conf_identity = seq_wrap(unsigned, cudarrays::layout::custom<0u, 1u, 2u>);
-    using conf_reverse  = seq_wrap(unsigned, cudarrays::layout::custom<2u, 1u, 0u>);
-    using conf_mix      = seq_wrap(unsigned, cudarrays::layout::custom<1u, 2u, 0u>);
+    using conf_identity = SEQ_WRAP(unsigned, cudarrays::layout::custom<0u, 1u, 2u>);
+    using conf_reverse  = SEQ_WRAP(unsigned, cudarrays::layout::custom<2u, 1u, 0u>);
+    using conf_mix      = SEQ_WRAP(unsigned, cudarrays::layout::custom<1u, 2u, 0u>);
 
     using permuter_identity = permuter<conf_identity>;
     using permuter_reverse  = permuter<conf_reverse>;

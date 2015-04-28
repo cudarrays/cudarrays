@@ -212,7 +212,7 @@ struct permuter_detail<3, mpl::sequence<unsigned, Idx0, Idx1, Idx2>> {
 };
 
 template <typename M>
-using permuter = permuter_detail<seq_size(M), M>;
+using permuter = permuter_detail<SEQ_SIZE(M), M>;
 
 }
 

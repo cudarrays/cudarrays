@@ -66,14 +66,14 @@ template <bool... PartVals>
 struct storage_part_dim_helper {
     static constexpr size_t dimensions = sizeof...(PartVals);
 
-    using sequence_type = seq(PartVals...);
+    using sequence_type = SEQ(PartVals...);
 
     static_assert(sizeof...(PartVals) <= 3,
                   "Up to 3 dimensional arrays are supported so far");
 
-    static constexpr bool X = seq_at_or(sequence_type, size_t((ssize_t(dimensions) - 1) - 0), false);
-    static constexpr bool Y = seq_at_or(sequence_type, size_t((ssize_t(dimensions) - 1) - 1), false);
-    static constexpr bool Z = seq_at_or(sequence_type, size_t((ssize_t(dimensions) - 1) - 2), false);
+    static constexpr bool X = SEQ_AT_OR(sequence_type, size_t((ssize_t(dimensions) - 1) - 0), false);
+    static constexpr bool Y = SEQ_AT_OR(sequence_type, size_t((ssize_t(dimensions) - 1) - 1), false);
+    static constexpr bool Z = SEQ_AT_OR(sequence_type, size_t((ssize_t(dimensions) - 1) - 2), false);
 };
 
 template <partition Part, unsigned Dims>
@@ -82,102 +82,66 @@ struct storage_part_helper;
 // Predefined partition classes
 template <>
 struct storage_part_helper<partition::none, 1> {
-    using type = storage_part_dim_helper<false>;
+    using type = SEQ(false);
 };
 template <>
 struct storage_part_helper<partition::none, 2> {
-    using type = storage_part_dim_helper<false, false>;
+    using type = SEQ(false, false);
 };
 template <>
 struct storage_part_helper<partition::none, 3> {
-    using type = storage_part_dim_helper<false, false, false>;
+    using type = SEQ(false, false, false);
 };
 
 template <>
 struct storage_part_helper<partition::x, 1> {
-    using type = storage_part_dim_helper<true>;
+    using type = SEQ(true);
 };
 template <>
 struct storage_part_helper<partition::x, 2> {
-    using type = storage_part_dim_helper<false, true>;
+    using type = SEQ(false, true);
 };
 template <>
 struct storage_part_helper<partition::x, 3> {
-    using type = storage_part_dim_helper<false, false, true>;
+    using type = SEQ(false, false, true);
 };
 
 template <>
 struct storage_part_helper<partition::y, 2> {
-    using type = storage_part_dim_helper<true, false>;
+    using type = SEQ(true, false);
 };
 template <>
 struct storage_part_helper<partition::y, 3> {
-    using type = storage_part_dim_helper<false, true, false>;
+    using type = SEQ(false, true, false);
 };
 
 template <>
 struct storage_part_helper<partition::z, 3> {
-    using type = storage_part_dim_helper<true, false, false>;
+    using type = SEQ(true, false, false);
 };
 
 template <>
 struct storage_part_helper<partition::xy, 2> {
-    using type = storage_part_dim_helper<true, true>;
+    using type = SEQ(true, true);
 };
 template <>
 struct storage_part_helper<partition::xy, 3> {
-    using type = storage_part_dim_helper<false, true, true>;
+    using type = SEQ(false, true, true);
 };
 
 template <>
 struct storage_part_helper<partition::xz, 3> {
-    using type = storage_part_dim_helper<true, false, true>;
+    using type = SEQ(true, false, true);
 };
 
 template <>
 struct storage_part_helper<partition::yz, 3> {
-    using type = storage_part_dim_helper<true, true, false>;
+    using type = SEQ(true, true, false);
 };
 
 template <>
 struct storage_part_helper<partition::xyz, 3> {
-    using type = storage_part_dim_helper<true, true, true>;
-};
-
-template <unsigned... PosVals>
-struct storage_dim_order;
-
-// Predefined reorder classes
-template <unsigned Dims>
-struct storage_dim_order_default;
-
-template <>
-struct storage_dim_order_default<1u> {
-    using type = storage_dim_order<0u>;
-};
-template <>
-struct storage_dim_order_default<2u> {
-    using type = storage_dim_order<0u, 1u>;
-};
-template <>
-struct storage_dim_order_default<3u> {
-    using type = storage_dim_order<0u, 1u, 2u>;
-};
-
-template <unsigned Dims>
-struct storage_dim_order_inverse;
-
-template <>
-struct storage_dim_order_inverse<1u> {
-    using type = storage_dim_order<0u>;
-};
-template <>
-struct storage_dim_order_inverse<2u> {
-    using type = storage_dim_order<1u, 0u>;
-};
-template <>
-struct storage_dim_order_inverse<3u> {
-    using type = storage_dim_order<2u, 1u, 0u>;
+    using type = SEQ(true, true, true);
 };
 
 template <unsigned Dims, typename StorageType>
@@ -185,17 +149,17 @@ struct make_dim_order;
 
 template <unsigned Dims>
 struct make_dim_order<Dims, layout::rmo> {
-    using type = typename storage_dim_order_default<Dims>::type;
+    using seq_type = SEQ_GEN_INC(unsigned, Dims);
 };
 
 template <unsigned Dims>
 struct make_dim_order<Dims, layout::cmo> {
-    using type = typename storage_dim_order_inverse<Dims>::type;
+    using seq_type = SEQ_REVERSE(SEQ_GEN_INC(unsigned, Dims));
 };
 
 template <unsigned Dims, unsigned... Order>
 struct make_dim_order<Dims, layout::custom<Order...>> {
-    using type = storage_dim_order<Order...>;
+    using seq_type = SEQ(Order...);
 };
 
 template <storage_tag Storage>
@@ -210,16 +174,16 @@ struct select_auto_impl<storage_tag::AUTO> {
 
 template <storage_tag Storage, partition Part, template <partition, unsigned> class PartConf>
 struct storage_conf {
-    static constexpr storage_tag impl = Storage;
+    static constexpr storage_tag       impl = Storage;
     static constexpr storage_tag final_impl = select_auto_impl<Storage>::impl;
     template <unsigned Dims>
-    using part_type = typename PartConf<Part, Dims>::type;
+    using part_seq_type = typename PartConf<Part, Dims>::type;
 };
 
 template <storage_tag Impl>
 struct storage_part
 {
-    static constexpr storage_tag impl = Impl;
+    static constexpr storage_tag       impl = Impl;
     static constexpr storage_tag final_impl = select_auto_impl<Impl>::impl;
 
     using none = storage_conf<Impl, partition::none, storage_part_helper>;

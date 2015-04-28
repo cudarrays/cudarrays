@@ -61,12 +61,12 @@ struct array_extents_helper_internal {
     static constexpr unsigned static_dimensions  = StaticDims;
     static constexpr unsigned dynamic_dimensions = DynamicDims;
 
-    using static_extents_type = seq(Extents...);
+    using extents_seq_type = SEQ(Extents...);
 
     template <unsigned Idx>
     static constexpr array_size_t get()
     {
-        return seq_at(static_extents_type, Idx);
+        return SEQ_AT(extents_seq_type, Idx);
     }
 
     static extents<dimensions> get(const extents<dynamic_dimensions> &ext)
@@ -123,7 +123,7 @@ struct array_offsets_helper<T, Offset, Offsets...> {
     template <size_t Idx>
     static constexpr array_size_t get()
     {
-        return seq_at(seq(Offsets...), Idx);
+        return SEQ_AT(SEQ(Offsets...), Idx);
     }
 };
 
