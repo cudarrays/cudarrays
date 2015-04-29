@@ -11,6 +11,7 @@ message(STATUS "CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "CUDA_LIBRARIES: ${CUDA_LIBRARIES}")
 
 option(CUDA_DEBUG "Compile CUDA code with debug support" OFF)
+option(ENABLE_GCOV "Compile with support for code coverage analysis" OFF)
 
 # Default compilation for CUDA
 find_path(NVCC nvcc${CMAKE_EXECUTABLE_SUFFIX}
@@ -37,11 +38,16 @@ endif(CUDA_DEBUG)
 if(CMAKE_COMPILER_IS_GNUCC)
     set(CMAKE_CXX_FLAGS_DEBUG "${COMMON_CXX_FLAGS} -O0")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -g -O0")
-else(CMAKE_COMPILER_IS_GNUCC)
-    set(CMAKE_CXX_FLAGS_DEBUG "${COMMON_CXX_FLAGS} -O0")
-endif(CMAKE_COMPILER_IS_GNUCC)
 
-set(CMAKE_CXX_FLAGS_RELEASE "${COMMON_CXX_FLAGS} -O3 -march=native")
+    if(ENABLE_GCOV)
+        if(${CMAKE_BUILD_TYPE} MATCHES "Release")
+            message(FATAL_ERROR "Code coverage analysis only supported in debug build type")
+        endif(${CMAKE_BUILD_TYPE} MATCHES "Release")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} --coverage")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+    endif(ENABLE_GCOV)
+    set(CMAKE_CXX_FLAGS_RELEASE "${COMMON_CXX_FLAGS} -O3 -march=native")
+endif(CMAKE_COMPILER_IS_GNUCC)
 
 set(GPU_ARCH "-arch" "sm_35"
              CACHE INTERNAL "")

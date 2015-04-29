@@ -42,12 +42,10 @@ do
         echo "Setting compiler: ${compiler}"
         CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_CXX_COMPILER=${compiler} -DCMAKE_C_COMPILER=${compiler/\+\+/cc}"
         ;;
-    --with-clang=*)
-        compiler=`echo $i | sed 's/[-a-zA-Z0-9]*=//'`
-        echo "Setting compiler: ${compiler}"
-        CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_CXX_COMPILER=${compiler} -DCMAKE_C_COMPILER=${compiler/\+\+/}"
-    ;;
-        --prefix=*)
+    --enable-gcov)
+        CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_GCOV=ON"
+        ;;
+    --prefix=*)
         prefix=`echo $i | sed 's/[-a-zA-Z0-9]*=//'`
         CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_INSTALL_PREFIX=${prefix}"
         ;;
