@@ -1,4 +1,8 @@
 ![Travis-CI](https://travis-ci.org/cudarrays/cudarrays.svg?branch=master)
+<a href="https://scan.coverity.com/projects/4910">
+<img alt="Coverity Scan Build Status"
+src="https://scan.coverity.com/projects/4910/badge.svg"/>
+</a>
 
 ![CUDArrays](https://raw.githubusercontent.com/wiki/cudarrays/cudarrays/images/cudarrays_logo_300x75.png)
 
