@@ -36,23 +36,22 @@
 
 namespace cudarrays {
 
-template <typename T, unsigned Dim = 0>
+template <typename OffsetsSeq, unsigned Dim = 0>
 struct linearizer_hybrid {
-    using traits = array_traits<T>;
-
     template <typename... Idxs>
     static __host__ __device__ inline
     array_index_t access_pos(const array_size_t *offs, const array_index_t &idx, const Idxs &...idxs)
     {
         array_index_t ret;
-        if (std::is_same<std::integral_constant<array_size_t, traits::offsets_type::template get<Dim>()>,
+        constexpr auto Offset = SEQ_AT(OffsetsSeq, Dim);
+        if (std::is_same<std::integral_constant<array_size_t, Offset>,
                          std::integral_constant<array_size_t, 0>>::value) {
             ret = offs[Dim] * idx;
         } else {
-            ret = traits::offsets_type::template get<Dim>() * idx;
+            ret = Offset * idx;
         }
 
-        return ret + linearizer_hybrid<T, Dim + 1>::access_pos(offs, idxs...);
+        return ret + linearizer_hybrid<OffsetsSeq, Dim + 1>::access_pos(offs, idxs...);
     }
 
     static __host__ __device__ inline
@@ -62,51 +61,31 @@ struct linearizer_hybrid {
     }
 };
 
-template <unsigned Dims, unsigned Idx>
-struct linearizer_impl {
-    static constexpr unsigned FirstDim = 3 - Dims;
-    static __host__ __device__ inline
-    array_index_t access_pos(const array_size_t *offs,
-                             const array_index_t &idx1, const array_index_t &idx2, const array_index_t &idx3)
-    {
-        array_index_t ret;
-        if (Idx == 0)
-            ret = offs[0 - FirstDim] * idx1;
-        else if (Idx == 1)
-            ret = offs[1 - FirstDim] * idx2;
-        else // Not going to happen
-            ret = -1;
+struct indexer_utils {
 
-        return ret + linearizer_impl<Dims, Idx + 1>::access_pos(offs, idx1, idx2, idx3);
-    }
+template <typename... Idxs>
+static __host__ __device__ inline
+array_index_t sum(array_index_t idx, Idxs... idxs)
+{
+    return idx + sum(idxs...);
+}
+
+static __host__ __device__ inline
+array_index_t sum(array_index_t idx)
+{
+    return idx;
+}
+
 };
 
-template <unsigned Dims>
-struct linearizer_impl<Dims, 2> {
-    static __host__ __device__ inline
-    array_index_t access_pos(const array_size_t *,
-                             const array_index_t &, const array_index_t &, const array_index_t &idx3)
-    {
-        return idx3;
-    }
-};
+template <typename OffsetsSeq, typename PartSeq, typename DimIdxSeq>
+struct index_block_detail;
 
-template <unsigned Dims>
-struct linearizer {
-    static constexpr unsigned FirstDim = 3 - Dims;
-
-    static __host__ __device__ inline
-    array_index_t access_pos(const array_size_t *offs,
-                             const array_index_t &idx1, const array_index_t &idx2, const array_index_t &idx3)
-    {
-        return linearizer_impl<Dims, FirstDim>::access_pos(offs, idx1, idx2, idx3);
-    }
-};
-
-template <typename PartConf>
-struct index_block {
-    static constexpr unsigned Dims     = PartConf::dimensions;
-    static constexpr unsigned FirstDim = 3 - Dims;
+template <typename OffsetsSeq, bool... PartSeq, unsigned... DimIdxSeq>
+struct index_block_detail<OffsetsSeq,
+                          utils::mpl::sequence<bool, PartSeq...>,
+                          utils::mpl::sequence<unsigned, DimIdxSeq...>> {
+    static constexpr unsigned Dims = sizeof...(PartSeq);
 
     template <bool Part>
     static __host__ __device__ inline
@@ -122,31 +101,33 @@ struct index_block {
         return Part? (idx / elemsDim) * elemsChunk: 0;
     }
 
+    template <typename... Idxs>
     static __host__ __device__ inline
     array_index_t access_pos(const array_size_t offs[Dims - 1],
                              const array_size_t elems[Dims],
                              const array_size_t offsProcs[Dims],
-                             array_index_t idx1, array_index_t idx2, array_index_t idx3)
+                             Idxs... idxs)
     {
-        using my_linearizer = linearizer<Dims>;
+        using my_linearizer = linearizer_hybrid<OffsetsSeq>;
 
-        auto local = my_linearizer::access_pos(offs,
-                                               local_idx<PartConf::Z>(idx1, elems[0 - FirstDim]),
-                                               local_idx<PartConf::Y>(idx2, elems[1 - FirstDim]),
-                                               local_idx<PartConf::X>(idx3, elems[2 - FirstDim]));
-        auto global = proc_off<PartConf::Z>(idx1, elems[0 - FirstDim], offsProcs[0 - FirstDim]) +
-                      proc_off<PartConf::Y>(idx2, elems[1 - FirstDim], offsProcs[1 - FirstDim]) +
-                      proc_off<PartConf::X>(idx3, elems[2 - FirstDim], offsProcs[2 - FirstDim]);
+        auto local  = my_linearizer::access_pos(offs, local_idx<PartSeq>(idxs, elems[DimIdxSeq])...);
+        auto global = indexer_utils::sum(proc_off<PartSeq>(idxs, elems[DimIdxSeq], offsProcs[DimIdxSeq])...);
 
         return local + global;
     }
 };
 
+template <typename OffsetsSeq, typename PartSeq>
+using index_block = index_block_detail<OffsetsSeq, PartSeq, SEQ_GEN_INC(unsigned, SEQ_SIZE(PartSeq))>;
 
-template <typename PartConf>
-struct index_cyclic {
-    static constexpr unsigned Dims     = PartConf::dimensions;
-    static constexpr unsigned FirstDim = 3 - Dims;
+template <typename OffsetsSeq, typename PartSeq, typename DimIdxSeq>
+struct index_cyclic_detail;
+
+template <typename OffsetsSeq, bool... PartSeq, unsigned... DimIdxSeq>
+struct index_cyclic_detail<OffsetsSeq,
+                           utils::mpl::sequence<bool, PartSeq...>,
+                           utils::mpl::sequence<unsigned, DimIdxSeq...>> {
+    static constexpr unsigned Dims = sizeof...(PartSeq);
 
     template <bool Part>
     static __host__ __device__ inline
@@ -164,32 +145,34 @@ struct index_cyclic {
         else      return 0;
     }
 
+    template <typename... Idxs>
     static __host__ __device__ inline
     array_index_t access_pos(const array_size_t offs[Dims - 1],
                              const array_size_t procs[Dims],
                              const array_size_t offsProcs[Dims],
-                             array_index_t idx1, array_index_t idx2, array_index_t idx3)
+                             Idxs... idxs)
     {
-        using my_linearizer = linearizer<Dims>;
+        using my_linearizer = linearizer_hybrid<OffsetsSeq>;
 
-        array_index_t local;
-        local = my_linearizer::access_pos(offs,
-                                          local_idx<PartConf::Z>(idx1, procs[0 - FirstDim]),
-                                          local_idx<PartConf::Y>(idx2, procs[1 - FirstDim]),
-                                          local_idx<PartConf::X>(idx3, procs[2 - FirstDim]));
-        array_index_t global;
-        global = proc_off<PartConf::Z>(idx1, procs[0 - FirstDim], offsProcs[0 - FirstDim]) +
-                 proc_off<PartConf::Y>(idx2, procs[1 - FirstDim], offsProcs[1 - FirstDim]) +
-                 proc_off<PartConf::X>(idx3, procs[2 - FirstDim], offsProcs[2 - FirstDim]);
+        auto local  = my_linearizer::access_pos(offs, local_idx<PartSeq>(idxs, procs[DimIdxSeq])...);
+        auto global = indexer_utils::sum(proc_off<PartSeq>(idxs, procs[DimIdxSeq], offsProcs[DimIdxSeq])...);
 
         return local + global;
     }
 };
 
-template <typename PartConf, unsigned BlockSize>
-struct index_block_cyclic {
-    static constexpr unsigned Dims     = PartConf::dimensions;
-    static constexpr unsigned FirstDim = 3 - Dims;
+template <typename OffsetsSeq, typename PartSeq>
+using index_cyclic = index_cyclic_detail<OffsetsSeq, PartSeq, SEQ_GEN_INC(unsigned, SEQ_SIZE(PartSeq))>;
+
+template <typename OffsetsSeq, typename PartSeq, typename DimIdxSeq, unsigned BlockSize>
+struct index_block_cyclic_detail;
+
+template <typename OffsetsSeq, bool... PartSeq, unsigned... DimIdxSeq, unsigned BlockSize>
+struct index_block_cyclic_detail<OffsetsSeq,
+                                 utils::mpl::sequence<bool, PartSeq...>,
+                                 utils::mpl::sequence<unsigned, DimIdxSeq...>,
+                                 BlockSize> {
+    static constexpr unsigned Dims = sizeof...(PartSeq);
 
     template <bool Part>
     static __host__ __device__ inline
@@ -215,100 +198,27 @@ struct index_block_cyclic {
         else      return 0;
     }
 
+    template <typename... Idxs>
     static __host__ __device__ inline
     array_index_t access_pos(const array_size_t offs[Dims - 1],
                              const array_size_t blocks[Dims],
                              const array_size_t blockDims[Dims],
                              const array_size_t procs[Dims],
                              const array_size_t offsProcs[Dims],
-                             array_index_t idx1, array_index_t idx2, array_index_t idx3)
+                             Idxs... idxs)
     {
-        using block_linearizer = linearizer<Dims>;
+        using my_linearizer = linearizer_hybrid<OffsetsSeq>;
 
-        array_index_t local;
-        local = block_linearizer::access_pos(offs,
-                                             local_idx<PartConf::Z>(idx1, blockDims[0 - FirstDim]),
-                                             local_idx<PartConf::Y>(idx2, blockDims[1 - FirstDim]),
-                                             local_idx<PartConf::X>(idx3, blockDims[2 - FirstDim]));
-
-        using my_linearizer = linearizer<Dims>;
-
-        array_index_t block;
-        block = my_linearizer::access_pos(offs,
-                                          block_idx<PartConf::Z>(idx1, blockDims[0 - FirstDim], procs[0 - FirstDim]),
-                                          block_idx<PartConf::Y>(idx2, blockDims[1 - FirstDim], procs[1 - FirstDim]),
-                                          block_idx<PartConf::X>(idx3, blockDims[2 - FirstDim], procs[2 - FirstDim]));
-        array_index_t global;
-        global = proc_off<PartConf::Z>(idx1, blocks[0 - FirstDim], procs[0 - FirstDim], offsProcs[0 - FirstDim]) +
-                 proc_off<PartConf::Y>(idx2, blocks[1 - FirstDim], procs[1 - FirstDim], offsProcs[1 - FirstDim]) +
-                 proc_off<PartConf::X>(idx3, blocks[2 - FirstDim], procs[2 - FirstDim], offsProcs[2 - FirstDim]);
+        auto local = my_linearizer::access_pos(offs, local_idx<PartSeq>(idxs, blockDims[DimIdxSeq])...);
+        auto block = my_linearizer::access_pos(offs, block_idx<PartSeq>(idxs, blockDims[DimIdxSeq], procs[DimIdxSeq])...);
+        auto global = indexer_utils::sum(proc_off<PartSeq>(idxs, blocks[DimIdxSeq], procs[DimIdxSeq], offsProcs[DimIdxSeq])...);
 
         return local + block + global;
     }
 };
 
-#if 0
-template <typename T, unsigned Dims, bool PartZ, bool PartY, bool PartX, unsigned Idx>
-struct index_ptr {
-    static constexpr unsigned FirstDim = 3 - Dims;
-
-    static __host__ __device__ inline
-    array_index_t access_chunk(const array_size_t chunks_offs[Dims],
-                               const array_size_t elems[Dims],
-                               array_index_t idx1, array_index_t idx2, array_index_t idx3)
-    {
-        if (Idx == 0) {
-            return (PartZ? (idx1 / elems[Idx - (3 - Dims)]) * chunks_offs[Idx] : 1) +
-                                          index_ptr<T, Dims, PartZ, PartY, PartX, Idx + 1>::access_chunk(chunks_offs,
-                                                                                                         elems,
-                                                                                                         idx1, idx2, idx3);
-        } else if (Idx == 1) {
-            return (PartY? (idx2 / elems[Idx - (3 - Dims)]) * chunks_offs[Idx] : 1) +
-                                          index_ptr<T, Dims, PartZ, PartY, PartX, Idx + 1>::access_chunk(chunks_offs,
-                                                                                                         elems,
-                                                                                                         idx1, idx2, idx3);
-        } else if (Idx == 2) {
-            return (PartX? (idx3 / elems[Idx - (3 - Dims)]) * chunks_offs[Idx] : 1) +
-                                          index_ptr<T, Dims, PartZ, PartY, PartX, Idx + 1>::access_chunk(chunks_offs,
-                                                                                                         elems,
-                                                                                                         idx1, idx2, idx3);
-        } else {
-            return 0;
-        }
-    }
-
-    template <bool Part>
-    static __host__ __device__ inline
-    array_index_t local_idx(array_index_t idx, array_index_t elemsDim)
-    {
-        if (Part) return idx % elemsDim;
-        else      return idx;
-    }
-
-    static __host__ __device__ inline
-    array_index_t access_local(const array_size_t offs[Dims],
-                               const array_size_t elems[Dims],
-                               array_index_t idx1, array_index_t idx2, array_index_t idx3)
-    {
-
-        return indexer<T, Dims, INDEX_VM, Idx>::access_pos(offs, local_idx<PartZ>(idx1, elems[0 - (3 - Dims)]),
-                                                                 local_idx<PartY>(idx2, elems[1 - (3 - Dims)]),
-                                                                 local_idx<PartX>(idx3, elems[2 - (3 - Dims)]));
-    }
-};
-
-template <typename T, unsigned Dims, bool PartZ, bool PartY, bool PartX>
-struct index_ptr<T, Dims, PartZ, PartY, PartX, 3>
-{
-    static __host__ __device__ inline
-    array_index_t access_chunk(const array_size_t [Dims],
-                               const array_size_t [Dims],
-                               array_index_t , array_index_t , array_index_t )
-    {
-        return 0;
-    }
-};
-#endif
+template <typename OffsetsSeq, typename PartSeq, unsigned BlockSize>
+using index_block_cyclic = index_block_cyclic_detail<OffsetsSeq, PartSeq, SEQ_GEN_INC(unsigned, SEQ_SIZE(PartSeq)), BlockSize>;
 
 }
 

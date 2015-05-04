@@ -57,15 +57,6 @@ namespace detail {
     print(FILE * /*out*/)
     {
     }
-
-    template <typename... Args>
-    static void
-    fatal(std::string msg, Args &&...args)
-    {
-        print(stderr, msg, args...);
-
-        abort();
-    }
 }
 
 template <typename... Args>
@@ -77,9 +68,10 @@ DEBUG(std::string msg, Args &&...args)
     detail::print(stdout, msg, std::forward<Args>(args)...);
 }
 
-#define FATAL(...) do {                             \
-    cudarrays::detail::print(stderr, "%s:%d\n", __FILE__, __LINE__); \
-    cudarrays::detail::fatal(__VA_ARGS__);       \
+#define FATAL(...) do {                                                  \
+        cudarrays::detail::print(stderr, "%s:%d\n", __FILE__, __LINE__); \
+        cudarrays::detail::print(stderr, __VA_ARGS__);                   \
+        abort();                                                         \
     } while (0)
 
 
@@ -87,7 +79,8 @@ DEBUG(std::string msg, Args &&...args)
         if (!(c)) {                                                          \
             cudarrays::detail::print(stderr,##__VA_ARGS__);                  \
             cudarrays::detail::print(stderr, "%s:%d\n", __FILE__, __LINE__); \
-            cudarrays::detail::fatal("Condition '"#c"' failed");             \
+            cudarrays::detail::print(stderr, "Condition '"#c"' not met");    \
+            abort();                                                         \
         }                                                                    \
     } while (0)
 }

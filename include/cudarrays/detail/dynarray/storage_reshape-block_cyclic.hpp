@@ -37,28 +37,35 @@
 
 namespace cudarrays {
 
-template <typename T, unsigned Dims, typename PartConf>
-class dynarray_storage<T, Dims, storage_tag::RESHAPE_BLOCK_CYCLIC, PartConf> :
-    public dynarray_base<T, Dims>
+template <typename T, typename StorageTraits>
+class dynarray_storage<T, storage_tag::RESHAPE_BLOCK_CYCLIC, StorageTraits> :
+    public dynarray_base<T, StorageTraits::dimensions>
 {
+    static constexpr unsigned dimensions = StorageTraits::dimensions;
+
+    using PartConf = SEQ_UNWRAP(typename StorageTraits::partitioning_seq,
+                                storage_part_dim_helper<>);
+
     static constexpr array_size_t BlockSize = 1;
 
-    using base_storage_type = dynarray_base<T, Dims>;
+    using base_storage_type = dynarray_base<T, dimensions>;
     using  dim_manager_type = typename base_storage_type::dim_manager_type;
 
-    using indexer_type = index_block_cyclic<PartConf, BlockSize>;
+    using indexer_type = index_block_cyclic<typename StorageTraits::offsets_seq,
+                                            typename StorageTraits::partitioning_seq,
+                                            BlockSize>;
 
     __host__
     void alloc()
     {
         // Array grid layout
-        unsigned partZ = (Dims > 2)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxZ]: 1;
-        unsigned partY = (Dims > 1)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxY]: 1;
-        unsigned partX =             hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxX];
+        unsigned partZ = (dimensions > 2)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxZ]: 1;
+        unsigned partY = (dimensions > 1)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxY]: 1;
+        unsigned partX =                   hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxX];
         // Array-to-GPU translation
-        unsigned gpuDimForArrayZ = (Dims > 2)? hostInfo_->arrayDimToGpus[dim_manager_type::DimIdxZ]: 1;
-        unsigned gpuDimForArrayY = (Dims > 1)? hostInfo_->arrayDimToGpus[dim_manager_type::DimIdxY]: 1;
-        unsigned gpuDimForArrayX =             hostInfo_->arrayDimToGpus[dim_manager_type::DimIdxX];
+        unsigned gpuDimForArrayZ = (dimensions > 2)? hostInfo_->arrayDimToGpus[dim_manager_type::DimIdxZ]: 1;
+        unsigned gpuDimForArrayY = (dimensions > 1)? hostInfo_->arrayDimToGpus[dim_manager_type::DimIdxY]: 1;
+        unsigned gpuDimForArrayX =                   hostInfo_->arrayDimToGpus[dim_manager_type::DimIdxX];
 
         DEBUG("Reshape> ALLOCATE");
         // Iterate on all array grid dimensions
@@ -97,13 +104,13 @@ class dynarray_storage<T, Dims, storage_tag::RESHAPE_BLOCK_CYCLIC, PartConf> :
 public:
     template <unsigned DimsComp>
     __host__
-    void compute_distribution_internal_single(const compute_mapping<DimsComp, Dims> &mapping)
+    void compute_distribution_internal_single(const compute_mapping<DimsComp, dimensions> &mapping)
     {
         // Compute the number of partitioned dimensions
-        for (unsigned i = 0; i < Dims; ++i) {
+        for (unsigned i = 0; i < dimensions; ++i) {
             hostInfo_->mapping[i] = DimsComp - (mapping.info[i] + 1);
         }
-        DEBUG("Reshape> ALLOC: mapping: %s", utils::to_string(hostInfo_->mapping, Dims).c_str());
+        DEBUG("Reshape> ALLOC: mapping: %s", utils::to_string(hostInfo_->mapping, dimensions).c_str());
 
         // Count partitioned dimensions in array and computation
         unsigned arrayPartDims = mapping.get_array_part_dims();
@@ -122,13 +129,13 @@ public:
             hostInfo_->gpuGrid[i] = 1;
         }
         // Compute the
-        for (unsigned i = 0; i < Dims; ++i) {
+        for (unsigned i = 0; i < dimensions; ++i) {
             gridDims_[i] = 1;
             fakeBlockDims_[i] = 1;
         }
 
         // Compute the array grid and the local sizes
-        for (unsigned i = 0; i < Dims; ++i) {
+        for (unsigned i = 0; i < dimensions; ++i) {
             hostInfo_->localDims_[i] = this->get_dim_manager().sizes_[i];
             blockDims_[i]            = this->get_dim_manager().sizes_[i];
 
@@ -142,8 +149,8 @@ public:
 
         array_size_t prevLocalOff = 1;
         // Compute the inter-GPU offsets for each dimension
-        for (unsigned i = 0; i < Dims; ++i) {
-            unsigned dim = Dims - (i + 1);
+        for (unsigned i = 0; i < dimensions; ++i) {
+            unsigned dim = dimensions - (i + 1);
             gpuOffs_[dim] = 0;
 
             if (i > 0) {
@@ -153,30 +160,30 @@ public:
         }
 
         // Compute the array to GPU mapping needed for the allocation based on the grid offsets
-        for (unsigned i = 0; i < Dims; ++i) {
+        for (unsigned i = 0; i < dimensions; ++i) {
             hostInfo_->arrayDimToGpus[i] = 0;
         }
 
         DEBUG("Reshape> ALLOC: gpus: %u", mapping.comp.procs);
         DEBUG("Reshape> ALLOC: comp  part: %s (%u)", utils::to_string(mapping.comp.info).c_str(), compPartDims);
         DEBUG("Reshape> ALLOC: comp  grid: %s", utils::to_string(hostInfo_->gpuGrid, hostInfo_->compDims).c_str());
-        DEBUG("Reshape> ALLOC: array grid: %s", utils::to_string(hostInfo_->arrayPartitionGrid, Dims).c_str());
-        DEBUG("Reshape> ALLOC: local elems: %s (%zd)", utils::to_string(hostInfo_->localDims_, Dims).c_str(), size_t(hostInfo_->elemsLocal));
-        DEBUG("Reshape> ALLOC: local offs: %s", utils::to_string(localOffs_, Dims - 1).c_str());
+        DEBUG("Reshape> ALLOC: array grid: %s", utils::to_string(hostInfo_->arrayPartitionGrid, dimensions).c_str());
+        DEBUG("Reshape> ALLOC: local elems: %s (%zd)", utils::to_string(hostInfo_->localDims_, dimensions).c_str(), size_t(hostInfo_->elemsLocal));
+        DEBUG("Reshape> ALLOC: local offs: %s", utils::to_string(localOffs_, dimensions - 1).c_str());
 
-        DEBUG("Reshape> ALLOC: grid offsets: %s", utils::to_string(hostInfo_->arrayDimToGpus, Dims).c_str());
-        DEBUG("Reshape> ALLOC: gpu offsets: %s", utils::to_string(gpuOffs_, Dims).c_str());
+        DEBUG("Reshape> ALLOC: grid offsets: %s", utils::to_string(hostInfo_->arrayDimToGpus, dimensions).c_str());
+        DEBUG("Reshape> ALLOC: gpu offsets: %s", utils::to_string(gpuOffs_, dimensions).c_str());
     }
 
     template <unsigned DimsComp>
     __host__
-    void compute_distribution_internal(const compute_mapping<DimsComp, Dims> &mapping)
+    void compute_distribution_internal(const compute_mapping<DimsComp, dimensions> &mapping)
     {
         // Compute the number of partitioned dimensions
-        for (unsigned i = 0; i < Dims; ++i) {
+        for (unsigned i = 0; i < dimensions; ++i) {
             hostInfo_->mapping[i] = DimsComp - (mapping.info[i] + 1);
         }
-        DEBUG("Reshape> ALLOC: mapping: %s", utils::to_string(hostInfo_->mapping, Dims).c_str());
+        DEBUG("Reshape> ALLOC: mapping: %s", utils::to_string(hostInfo_->mapping, dimensions).c_str());
 
         // Count partitioned dimensions in array and computation
         unsigned arrayPartDims = mapping.get_array_part_dims();
@@ -219,7 +226,7 @@ public:
         }
 
         // Compute the array grid and the local sizes
-        for (unsigned i = 0; i < Dims; ++i) {
+        for (unsigned i = 0; i < dimensions; ++i) {
             int compDim = hostInfo_->mapping[i];
 
             unsigned partition = 1;
@@ -243,8 +250,8 @@ public:
         array_size_t off = 1;
         array_size_t prevLocalOff = 1;
         // Compute the inter-GPU offsets for each dimension
-        for (unsigned i = 0; i < Dims; ++i) {
-            unsigned dim = Dims - (i + 1);
+        for (unsigned i = 0; i < dimensions; ++i) {
+            unsigned dim = dimensions - (i + 1);
             if (mapping.info[dim] != -1) {
                 gpuOffs_[dim] = off * hostInfo_->elemsLocal;
                 off *= hostInfo_->arrayPartitionGrid[dim];
@@ -258,11 +265,11 @@ public:
             }
         }
 
-        unsigned arrayDimToGpus[Dims];
+        unsigned arrayDimToGpus[dimensions];
         unsigned gridOff = 1;
         // Compute the local grid offsets
-        for (unsigned i = 0; i < Dims; ++i) {
-            unsigned dim = Dims - (i + 1);
+        for (unsigned i = 0; i < dimensions; ++i) {
+            unsigned dim = dimensions - (i + 1);
 
             if (dim < DimsComp) {
                 arrayDimToGpus[dim] = gridOff;
@@ -273,7 +280,7 @@ public:
         }
 
         // Compute the array to GPU mapping needed for the allocation based on the grid offsets
-        for (unsigned i = 0; i < Dims; ++i) {
+        for (unsigned i = 0; i < dimensions; ++i) {
             int j = hostInfo_->mapping[i];
             if (j != DimsComp) {
                 hostInfo_->arrayDimToGpus[i] = arrayDimToGpus[j];
@@ -285,17 +292,17 @@ public:
         DEBUG("Reshape> ALLOC: gpus: %u", mapping.comp.procs);
         DEBUG("Reshape> ALLOC: comp  part: %s (%u)", utils::to_string(mapping.comp.info).c_str(), compPartDims);
         DEBUG("Reshape> ALLOC: comp  grid: %s", utils::to_string(hostInfo_->gpuGrid, hostInfo_->compDims).c_str());
-        DEBUG("Reshape> ALLOC: array grid: %s", utils::to_string(hostInfo_->arrayPartitionGrid, Dims).c_str());
-        DEBUG("Reshape> ALLOC: local elems: %s (%zd)", utils::to_string(hostInfo_->localDims_, Dims).c_str(), size_t(hostInfo_->elemsLocal));
-        DEBUG("Reshape> ALLOC: local offs: %s", utils::to_string(localOffs_, Dims - 1).c_str());
+        DEBUG("Reshape> ALLOC: array grid: %s", utils::to_string(hostInfo_->arrayPartitionGrid, dimensions).c_str());
+        DEBUG("Reshape> ALLOC: local elems: %s (%zd)", utils::to_string(hostInfo_->localDims_, dimensions).c_str(), size_t(hostInfo_->elemsLocal));
+        DEBUG("Reshape> ALLOC: local offs: %s", utils::to_string(localOffs_, dimensions - 1).c_str());
 
-        DEBUG("Reshape> ALLOC: grid offsets: %s", utils::to_string(hostInfo_->arrayDimToGpus, Dims).c_str());
-        DEBUG("Reshape> ALLOC: gpu offsets: %s", utils::to_string(gpuOffs_, Dims).c_str());
+        DEBUG("Reshape> ALLOC: grid offsets: %s", utils::to_string(hostInfo_->arrayDimToGpus, dimensions).c_str());
+        DEBUG("Reshape> ALLOC: gpu offsets: %s", utils::to_string(gpuOffs_, dimensions).c_str());
     }
 
     template <unsigned DimsComp>
     __host__ void
-    compute_distribution(const compute_mapping<DimsComp, Dims> &mapping)
+    compute_distribution(const compute_mapping<DimsComp, dimensions> &mapping)
     {
         if (hostInfo_ != NULL) delete hostInfo_;
         hostInfo_ = new storage_host_info(mapping.comp.info);
@@ -305,7 +312,7 @@ public:
 
     template <unsigned DimsComp>
     __host__ bool
-    distribute(const compute_mapping<DimsComp, Dims> &mapping)
+    distribute(const compute_mapping<DimsComp, dimensions> &mapping)
     {
         if (!dataDev_) {
             hostInfo_ = new storage_host_info(mapping.comp.info);
@@ -338,20 +345,20 @@ public:
 private:
     T *dataDev_;
 
-    array_size_t gridDims_[Dims];
-    array_size_t blockDims_[Dims];
-    array_size_t fakeBlockDims_[Dims];
-    array_size_t localOffs_[Dims - 1];
-    array_size_t gpuOffs_[Dims];
+    array_size_t gridDims_[dimensions];
+    array_size_t blockDims_[dimensions];
+    array_size_t fakeBlockDims_[dimensions];
+    array_size_t localOffs_[dimensions - 1];
+    array_size_t gpuOffs_[dimensions];
 
     struct storage_host_info {
         array_size_t elemsLocal;
-        array_size_t localDims_[Dims];
+        array_size_t localDims_[dimensions];
 
         unsigned gpus;
-        unsigned arrayPartitionGrid[Dims];
-        unsigned arrayDimToGpus[Dims];
-        int mapping[Dims];
+        unsigned arrayPartitionGrid[dimensions];
+        unsigned arrayDimToGpus[dimensions];
+        int mapping[dimensions];
 
         unsigned *gpuGrid;
         unsigned compDims;
@@ -375,7 +382,7 @@ private:
 
 public:
     __host__
-    dynarray_storage(const extents<Dims> &ext,
+    dynarray_storage(const extents<dimensions> &ext,
                      const align_t &align) :
         base_storage_type(ext, align),
         dataDev_(nullptr),
@@ -403,28 +410,29 @@ public:
     void to_host(host_storage<T> &host)
     {
         T *unaligned = host.addr();
+        auto &dimMgr = this->get_dim_manager();
 
-        unsigned partZ = (Dims > 2)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxZ]: 1;
-        unsigned partY = (Dims > 1)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxY]: 1;
-        unsigned partX =             hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxX];
+        unsigned partZ = (dimensions > 2)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxZ]: 1;
+        unsigned partY = (dimensions > 1)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxY]: 1;
+        unsigned partX =                   hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxX];
 
         cudaMemcpy3DParms myParms;
         memset(&myParms, 0, sizeof(myParms));
         myParms.dstPtr = make_cudaPitchedPtr(unaligned,
-                                             sizeof(T) * this->get_dim_manager().dim_align(dim_manager_type::DimIdxX),
-                                                         this->get_dim_manager().dim_align(dim_manager_type::DimIdxX),
-                                             Dims > 1?   this->get_dim_manager().dim_align(dim_manager_type::DimIdxY): 1);
+                                             sizeof(T) * dimMgr.dim_align(dim_manager_type::DimIdxX),
+                                                         dimMgr.dim_align(dim_manager_type::DimIdxX),
+                                             dimensions > 1? dimMgr.dim_align(dim_manager_type::DimIdxY): 1);
 
         for (unsigned pZ : utils::make_range(partZ)) {
             for (unsigned pY : utils::make_range(partY)) {
                 for (unsigned pX : utils::make_range(partX)) {
-                    array_index_t localZ = Dims > 2? hostInfo_->localDims_[dim_manager_type::DimIdxZ]: 1;
-                    array_index_t localY = Dims > 1? hostInfo_->localDims_[dim_manager_type::DimIdxY]: 1;
-                    array_index_t localX =           hostInfo_->localDims_[dim_manager_type::DimIdxX];
+                    array_index_t localZ = dimensions > 2? hostInfo_->localDims_[dim_manager_type::DimIdxZ]: 1;
+                    array_index_t localY = dimensions > 1? hostInfo_->localDims_[dim_manager_type::DimIdxY]: 1;
+                    array_index_t localX =                 hostInfo_->localDims_[dim_manager_type::DimIdxX];
 
-                    array_index_t blockOff = pZ * (Dims > 2? gpuOffs_[dim_manager_type::DimIdxZ]: 0) +
-                                             pY * (Dims > 1? gpuOffs_[dim_manager_type::DimIdxY]: 0) +
-                                             pX *            gpuOffs_[dim_manager_type::DimIdxX];
+                    array_index_t blockOff = pZ * (dimensions > 2? gpuOffs_[dim_manager_type::DimIdxZ]: 0) +
+                                             pY * (dimensions > 1? gpuOffs_[dim_manager_type::DimIdxY]: 0) +
+                                             pX *                  gpuOffs_[dim_manager_type::DimIdxX];
 
                     DEBUG("TO_HOST: Extent: (%u %u %u)", sizeof(T) * hostInfo_->localDims_[dim_manager_type::DimIdxX],
                                                          localY,
@@ -433,17 +441,17 @@ public:
                     DEBUG("TO_HOST: Src Block Off: %u", blockOff);
 
                     DEBUG("TO_HOST: Block (%u, %u, %u)", pZ, pY, pX);
-                    DEBUG("TO_HOST: Dst  (%zd, %zd, %zd)", pZ * localZ * (Dims > 2? this->get_dim_manager().get_offs_align()[dim_manager_type::DimIdxZ]: 0),
-                                                           pY * localY * (Dims > 1? this->get_dim_manager().get_offs_align()[dim_manager_type::DimIdxY]: 0),
+                    DEBUG("TO_HOST: Dst  (%zd, %zd, %zd)", pZ * localZ * (dimensions > 2? dimMgr.get_offs_align()[dim_manager_type::DimIdxZ]: 0),
+                                                           pY * localY * (dimensions > 1? dimMgr.get_offs_align()[dim_manager_type::DimIdxY]: 0),
                                                            pX * localX);
-                    DEBUG("TO_HOST: Src   (%zd, %zd, %zd)", pZ * (Dims > 2? gpuOffs_[dim_manager_type::DimIdxZ]: 0),
-                                                            pY * (Dims > 1? gpuOffs_[dim_manager_type::DimIdxY]: 0),
-                                                            pX *            gpuOffs_[dim_manager_type::DimIdxX]);
+                    DEBUG("TO_HOST: Src   (%zd, %zd, %zd)", pZ * (dimensions > 2? gpuOffs_[dim_manager_type::DimIdxZ]: 0),
+                                                            pY * (dimensions > 1? gpuOffs_[dim_manager_type::DimIdxY]: 0),
+                                                            pX *                  gpuOffs_[dim_manager_type::DimIdxX]);
 
                     myParms.srcPtr = make_cudaPitchedPtr(dataDev_ + blockOff,
                                                          sizeof(T) * hostInfo_->localDims_[dim_manager_type::DimIdxX],
                                                                      hostInfo_->localDims_[dim_manager_type::DimIdxX],
-                                                         Dims > 1?   hostInfo_->localDims_[dim_manager_type::DimIdxY]: 1);
+                                                         dimensions > 1? hostInfo_->localDims_[dim_manager_type::DimIdxY]: 1);
 
                     // We copy the whole chunk
                     myParms.srcPos = make_cudaPos(0, 0, 0);
@@ -454,11 +462,11 @@ public:
 
                     // Only transfer the remaining elements
                     if (PartConf::Z)
-                    localZ = std::min(localZ, array_index_t(this->get_dim_manager().dim_align(dim_manager_type::DimIdxZ) - pZ * localZ));
+                    localZ = std::min(localZ, array_index_t(dimMgr.dim_align(dim_manager_type::DimIdxZ) - pZ * localZ));
                     if (PartConf::Y)
-                    localY = std::min(localY, array_index_t(this->get_dim_manager().dim_align(dim_manager_type::DimIdxY) - pY * localY));
+                    localY = std::min(localY, array_index_t(dimMgr.dim_align(dim_manager_type::DimIdxY) - pY * localY));
                     if (PartConf::X)
-                    localX = std::min(localX, array_index_t(this->get_dim_manager().dim_align(dim_manager_type::DimIdxX) - pX * localX));
+                    localX = std::min(localX, array_index_t(dimMgr.dim_align(dim_manager_type::DimIdxX) - pX * localX));
 
                     if (localZ < 1 || localY < 1 || localZ < 1) continue;
 
@@ -478,43 +486,44 @@ public:
     void to_device(host_storage<T> &host)
     {
         T *unaligned = host.addr();
+        auto &dimMgr = this->get_dim_manager();
 
-        unsigned partZ = (Dims > 2)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxZ]: 1;
-        unsigned partY = (Dims > 1)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxY]: 1;
+        unsigned partZ = (dimensions > 2)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxZ]: 1;
+        unsigned partY = (dimensions > 1)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxY]: 1;
         unsigned partX =             hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxX];
 
         cudaMemcpy3DParms myParms;
         memset(&myParms, 0, sizeof(myParms));
         myParms.srcPtr = make_cudaPitchedPtr(unaligned,
-                                             sizeof(T) * this->get_dim_manager().sizesAlign_[dim_manager_type::DimIdxX],
-                                                         this->get_dim_manager().sizesAlign_[dim_manager_type::DimIdxX],
-                                             Dims > 1?   this->get_dim_manager().sizesAlign_[dim_manager_type::DimIdxY]: 1);
+                                             sizeof(T) * dimMgr.dim_align(dim_manager_type::DimIdxX),
+                                                         dimMgr.dim_align(dim_manager_type::DimIdxX),
+                                             dimensions > 1? dimMgr.dim_align(dim_manager_type::DimIdxY): 1);
 
         for (unsigned pZ : utils::make_range(partZ)) {
             for (unsigned pY : utils::make_range(partY)) {
                 for (unsigned pX : utils::make_range(partX)) {
-                    array_index_t localZ = Dims > 2? hostInfo_->localDims_[dim_manager_type::DimIdxZ]: 1;
-                    array_index_t localY = Dims > 1? hostInfo_->localDims_[dim_manager_type::DimIdxY]: 1;
-                    array_index_t localX =           hostInfo_->localDims_[dim_manager_type::DimIdxX];
+                    array_index_t localZ = dimensions > 2? hostInfo_->localDims_[dim_manager_type::DimIdxZ]: 1;
+                    array_index_t localY = dimensions > 1? hostInfo_->localDims_[dim_manager_type::DimIdxY]: 1;
+                    array_index_t localX =                 hostInfo_->localDims_[dim_manager_type::DimIdxX];
 
-                    array_index_t blockOff = pZ * (Dims > 2? gpuOffs_[dim_manager_type::DimIdxZ]: 0) +
-                                             pY * (Dims > 1? gpuOffs_[dim_manager_type::DimIdxY]: 0) +
-                                             pX *            gpuOffs_[dim_manager_type::DimIdxX];
+                    array_index_t blockOff = pZ * (dimensions > 2? gpuOffs_[dim_manager_type::DimIdxZ]: 0) +
+                                             pY * (dimensions > 1? gpuOffs_[dim_manager_type::DimIdxY]: 0) +
+                                             pX *                  gpuOffs_[dim_manager_type::DimIdxX];
 
                     DEBUG("TO_DEVICE: Src Block Off: %u", blockOff);
 
                     DEBUG("TO_DEVICE: Block (%u, %u, %u)", pZ, pY, pX);
-                    DEBUG("TO_DEVICE: Dst   (%zd, %zd, %zd)", pZ * (Dims > 2? gpuOffs_[dim_manager_type::DimIdxZ]: 0),
-                                                              pY * (Dims > 1? gpuOffs_[dim_manager_type::DimIdxY]: 0),
-                                                              pX *            gpuOffs_[dim_manager_type::DimIdxX]);
-                    DEBUG("TO_DEVICE: Src   (%zd, %zd, %zd)", pZ * localZ * (Dims > 2? this->get_dim_manager().get_offs_align()[dim_manager_type::DimIdxZ]: 0),
-                                                              pY * localY * (Dims > 1? this->get_dim_manager().get_offs_align()[dim_manager_type::DimIdxY]: 0),
+                    DEBUG("TO_DEVICE: Dst   (%zd, %zd, %zd)", pZ * (dimensions > 2? gpuOffs_[dim_manager_type::DimIdxZ]: 0),
+                                                              pY * (dimensions > 1? gpuOffs_[dim_manager_type::DimIdxY]: 0),
+                                                              pX *                  gpuOffs_[dim_manager_type::DimIdxX]);
+                    DEBUG("TO_DEVICE: Src   (%zd, %zd, %zd)", pZ * localZ * (dimensions > 2? dimMgr.get_offs_align()[dim_manager_type::DimIdxZ]: 0),
+                                                              pY * localY * (dimensions > 1? dimMgr.get_offs_align()[dim_manager_type::DimIdxY]: 0),
                                                               pX * localX);
 
                     myParms.dstPtr = make_cudaPitchedPtr(dataDev_ + blockOff,
                                                          sizeof(T) * hostInfo_->localDims_[dim_manager_type::DimIdxX],
                                                                      hostInfo_->localDims_[dim_manager_type::DimIdxX],
-                                                         Dims > 1?   hostInfo_->localDims_[dim_manager_type::DimIdxY]: 1);
+                                                         dimensions > 1?   hostInfo_->localDims_[dim_manager_type::DimIdxY]: 1);
 
                     // We copy the whole chunk
                     myParms.dstPos = make_cudaPos(0, 0, 0);
@@ -523,20 +532,20 @@ public:
                                                   pY * localY,
                                                   pZ * localZ);
 
-                    if (PartConf::Z && pZ * localZ >= this->get_dim_manager().sizesAlign_[dim_manager_type::DimIdxZ])
+                    if (PartConf::Z && pZ * localZ >= dimMgr.sizesAlign_[dim_manager_type::DimIdxZ])
                         continue;
-                    if (PartConf::Y && pY * localY >= this->get_dim_manager().sizesAlign_[dim_manager_type::DimIdxY])
+                    if (PartConf::Y && pY * localY >= dimMgr.sizesAlign_[dim_manager_type::DimIdxY])
                         continue;
-                    if (PartConf::X && pX * localX >= this->get_dim_manager().sizesAlign_[dim_manager_type::DimIdxX])
+                    if (PartConf::X && pX * localX >= dimMgr.sizesAlign_[dim_manager_type::DimIdxX])
                         continue;
 
                     // Only transfer the remaining elements
                     if (PartConf::Z)
-                    localZ = std::min(localZ, array_index_t(this->get_dim_manager().sizesAlign_[dim_manager_type::DimIdxZ] - pZ * localZ));
+                    localZ = std::min(localZ, array_index_t(dimMgr.sizesAlign_[dim_manager_type::DimIdxZ] - pZ * localZ));
                     if (PartConf::Y)
-                    localY = std::min(localY, array_index_t(this->get_dim_manager().sizesAlign_[dim_manager_type::DimIdxY] - pY * localY));
+                    localY = std::min(localY, array_index_t(dimMgr.sizesAlign_[dim_manager_type::DimIdxY] - pY * localY));
                     if (PartConf::X)
-                    localX = std::min(localX, array_index_t(this->get_dim_manager().sizesAlign_[dim_manager_type::DimIdxX] - pX * localX));
+                    localX = std::min(localX, array_index_t(dimMgr.sizesAlign_[dim_manager_type::DimIdxX] - pX * localX));
 
                     DEBUG("TO_DEVICE: Extent: (%u %u %u)", sizeof(T) * localX,
                                                            localY,
@@ -559,25 +568,27 @@ public:
         return hostInfo_->gpus;
     }
 
+    template <typename... Idxs>
     __device__ inline
-    T &access_pos(array_index_t idx1, array_index_t idx2, array_index_t idx3)
+    T &access_pos(Idxs... idxs)
     {
         array_index_t idx;
         idx = indexer_type::access_pos(localOffs_, blockDims_, fakeBlockDims_,
                                        gridDims_,
                                        gpuOffs_,
-                                       idx1, idx2, idx3);
+                                       idxs...);
         return this->dataDev_[idx];
     }
 
+    template <typename... Idxs>
     __device__ inline
-    const T &access_pos(array_index_t idx1, array_index_t idx2, array_index_t idx3) const
+    const T &access_pos(Idxs... idxs) const
     {
         array_index_t idx;
         idx = indexer_type::access_pos(localOffs_, blockDims_, fakeBlockDims_,
                                        gridDims_,
                                        gpuOffs_,
-                                       idx1, idx2, idx3);
+                                       idxs...);
         return this->dataDev_[idx];
     }
 

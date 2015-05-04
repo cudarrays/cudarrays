@@ -41,6 +41,7 @@
 #include "common.hpp"
 #include "compiler.hpp"
 #include "compute.hpp"
+#include "traits.hpp"
 #include "utils.hpp"
 
 namespace cudarrays {
@@ -177,7 +178,7 @@ struct storage_conf {
     static constexpr storage_tag       impl = Storage;
     static constexpr storage_tag final_impl = select_auto_impl<Storage>::impl;
     template <unsigned Dims>
-    using part_seq_type = typename PartConf<Part, Dims>::type;
+    using part_seq = typename PartConf<Part, Dims>::type;
 };
 
 template <storage_tag Impl>
@@ -254,6 +255,68 @@ struct compute_mapping {
         return ret;
     }
 };
+
+template <typename T, T Val1, T Val2>
+struct is_greater {
+    static constexpr bool value = Val1 > Val2;
+};
+
+template <typename T, T Val1, T Val2>
+struct is_less {
+    static constexpr bool value = Val1 < Val2;
+};
+
+template <typename T, T Val1, T Val2>
+struct is_equal {
+    static constexpr bool value = (Val1 == Val2);
+};
+
+template <typename T, typename StorageType, typename PartConf>
+struct storage_traits {
+    using         array_type = T;
+    using  array_traits_type = array_traits<array_type>;
+
+    static constexpr unsigned         dimensions = array_traits_type::dimensions;
+    static constexpr unsigned  static_dimensions = array_traits_type::static_dimensions;
+    static constexpr unsigned dynamic_dimensions = array_traits_type::dynamic_dimensions;
+
+    // User-provided dimension ordering
+    using dim_order_seq = typename make_dim_order<array_traits_type::dimensions, StorageType>::seq_type;
+    // Sort array extents
+    using extents_pre_seq =
+        SEQ_REORDER(
+            typename array_traits_type::extents_seq,
+            dim_order_seq);
+    // Nullify static extents if all static dimensions are not the last physical dimensions
+    using extents_seq =
+        typename
+        std::conditional<SEQ_FIND_LAST(extents_pre_seq, 0) == -1 ||
+                             is_equal<ssize_t,
+                                      SEQ_FIND_LAST(extents_pre_seq, 0) + 1,
+                                      dynamic_dimensions
+                                     >::value,
+                         extents_pre_seq,
+                         SEQ_GEN_FILL(array_size_t(0), dimensions)
+                        >::type;
+
+    // Sort array extents
+    using offsets_seq = typename array_offsets_helper<extents_seq>::seq;
+
+    // Sort dimension partitioning configuration
+    using partitioning_seq =
+        SEQ_REORDER(
+            typename PartConf::template part_seq<array_traits_type::dimensions>,
+            dim_order_seq);
+
+    using permuter_type = utils::permuter<dim_order_seq>;
+};
+
+template <typename T, typename StorageType, typename PartConf>
+constexpr unsigned storage_traits<T, StorageType, PartConf>::dimensions;
+template <typename T, typename StorageType, typename PartConf>
+constexpr unsigned storage_traits<T, StorageType, PartConf>::static_dimensions;
+template <typename T, typename StorageType, typename PartConf>
+constexpr unsigned storage_traits<T, StorageType, PartConf>::dynamic_dimensions;
 
 }
 

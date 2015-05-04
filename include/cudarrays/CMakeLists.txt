@@ -18,6 +18,7 @@ set(CUDARRAYS_HEADERS coherence.hpp
                       detail/utils/log.hpp
                       detail/utils/misc.hpp
                       detail/utils/permute.hpp
+                      detail/utils/seq.hpp
                       detail/utils/stl.hpp
                       dynarray.hpp
                       host.hpp

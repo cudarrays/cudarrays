@@ -210,20 +210,22 @@ private:
     CUDARRAYS_TESTED(storage_test, vm_page_allocator2)
 };
 
-template <typename T, unsigned Dims, typename PartConf>
-class dynarray_storage<T, Dims, storage_tag::VM, PartConf> :
-    public dynarray_base<T, Dims>
+template <typename T, typename StorageTraits>
+class dynarray_storage<T, storage_tag::VM, StorageTraits> :
+    public dynarray_base<T, StorageTraits::dimensions>
 {
-    using base_storage_type = dynarray_base<T, Dims>;
+    static constexpr unsigned dimensions = StorageTraits::dimensions;
+
+    using base_storage_type = dynarray_base<T, dimensions>;
     using  dim_manager_type = typename base_storage_type::dim_manager_type;
 
-    using indexer_type = linearizer<Dims>;
+    using indexer_type = linearizer_hybrid<typename StorageTraits::offsets_seq>;
 
     struct storage_host_info {
         unsigned gpus;
 
-        extents<Dims> localDims;
-        std::array<unsigned, Dims>     arrayDimToGpus;
+        extents<dimensions> localDims;
+        std::array<unsigned, dimensions>     arrayDimToGpus;
 
         unsigned npages;
 
@@ -237,7 +239,7 @@ class dynarray_storage<T, Dims, storage_tag::VM, PartConf> :
 public:
     template <unsigned DimsComp>
     __host__ bool
-    distribute(const compute_mapping<DimsComp, Dims> &mapping)
+    distribute(const compute_mapping<DimsComp, dimensions> &mapping)
     {
         if (!dataDev_) {
             hostInfo_ = new storage_host_info(mapping.comp.procs);
@@ -340,7 +342,7 @@ public:
     }
 
     __host__
-    dynarray_storage(const extents<Dims> &ext,
+    dynarray_storage(const extents<dimensions> &ext,
                      const align_t &align) :
         base_storage_type(ext, align),
         dataDev_(NULL),
@@ -376,31 +378,34 @@ public:
 #endif
     }
 
+    template <typename... Idxs>
     __device__ inline
-    T &access_pos(array_index_t idx1, array_index_t idx2, array_index_t idx3)
+    T &access_pos(Idxs... idxs)
     {
-        array_index_t idx = indexer_type::access_pos(this->get_dim_manager().get_offs_align(), idx1, idx2, idx3);
-        return dataDev_ [idx];
+        auto idx = indexer_type::access_pos(this->get_dim_manager().get_offs_align(), idxs...);
+        return dataDev_[idx];
     }
 
+    template <typename... Idxs>
     __device__ inline
-    const T &access_pos(array_index_t idx1, array_index_t idx2, array_index_t idx3) const
+    const T &access_pos(Idxs... idxs) const
     {
-        array_index_t idx = indexer_type::access_pos(this->get_dim_manager().get_offs_align(), idx1, idx2, idx3);
-        return dataDev_ [idx];
+        auto idx = indexer_type::access_pos(this->get_dim_manager().get_offs_align(), idxs...);
+        return dataDev_[idx];
     }
+
 
 private:
     __host__
     void alloc(unsigned gpus)
     {
-        using my_allocator = page_allocator<Dims>;
+        using my_allocator = page_allocator<dimensions>;
 
-        extents<Dims> elems;
-        extents<Dims> elemsAlign;
+        extents<dimensions> elems;
+        extents<dimensions> elemsAlign;
 
         utils::copy(this->get_dim_manager().dims(), elems);
-        std::copy(this->get_dim_manager().dims_align(), this->get_dim_manager().dims_align() + Dims, elemsAlign.begin());
+        std::copy(this->get_dim_manager().dims_align(), this->get_dim_manager().dims_align() + dimensions, elemsAlign.begin());
 
         my_allocator cursor(gpus,
                             elems,
@@ -445,9 +450,9 @@ private:
 
     template <unsigned DimsComp>
     __host__
-    void compute_distribution_internal(const compute_mapping<DimsComp, Dims> &mapping)
+    void compute_distribution_internal(const compute_mapping<DimsComp, dimensions> &mapping)
     {
-        std::array<int, Dims> arrayDimToCompDim;
+        std::array<int, dimensions> arrayDimToCompDim;
         std::array<unsigned, DimsComp> gpuGrid;
 
         // Register the mapping
@@ -464,21 +469,21 @@ private:
         if ((1 << compPartDims) > mapping.comp.procs)
             FATAL("Not enough GPUs (%u), to partition %u", mapping.comp.procs, arrayPartDims);
 #endif
-        std::array<array_size_t, Dims> dims = make_array(this->get_dim_manager().dims());
+        std::array<array_size_t, dimensions> dims = make_array(this->get_dim_manager().dims());
 
         // Distribute the partition uniformly across GPUs
         // 1- Compute GPU grid
         gpuGrid = helper_distribution_get_gpu_grid(mapping.comp);
         // 2- Compute array partitioning grid
-        std::array<unsigned, Dims> arrayPartitionGrid = helper_distribution_get_array_grid(gpuGrid, arrayDimToCompDim);
+        std::array<unsigned, dimensions> arrayPartitionGrid = helper_distribution_get_array_grid(gpuGrid, arrayDimToCompDim);
         //hostInfo_->arrayPartitionGrid = arrayPartitionGrid;
         // 3- Compute dimensions of each tile
-        std::array<array_size_t, Dims> localDims = helper_distribution_get_local_dims(dims, arrayPartitionGrid);
+        std::array<array_size_t, dimensions> localDims = helper_distribution_get_local_dims(dims, arrayPartitionGrid);
         hostInfo_->localDims = localDims;
         // 4- Compute the GPU grid offsets (iterate from lowest-order dimension)
         std::array<unsigned, DimsComp> gpuGridOffs = helper_distribution_gpu_get_offs(gpuGrid);
         // 5- Compute the array to GPU mapping needed for the allocation based on the grid offsets
-        std::array<unsigned, Dims> arrayDimToGpus = helper_distribution_get_array_dim_to_gpus(gpuGridOffs, arrayDimToCompDim);
+        std::array<unsigned, dimensions> arrayDimToGpus = helper_distribution_get_array_dim_to_gpus(gpuGridOffs, arrayDimToCompDim);
         hostInfo_->arrayDimToGpus = arrayDimToGpus;
 
         DEBUG("VM> BASE INFO");
@@ -498,7 +503,7 @@ private:
 
     template <unsigned DimsComp>
     __host__ void
-    compute_distribution(const compute_mapping<DimsComp, Dims> &mapping)
+    compute_distribution(const compute_mapping<DimsComp, dimensions> &mapping)
     {
         DEBUG("=========================");
         DEBUG("VM> DISTRIBUTE BEGIN");

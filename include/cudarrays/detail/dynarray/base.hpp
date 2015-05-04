@@ -216,7 +216,7 @@ private:
     dim_manager_type dimManager_;
 };
 
-template <typename T, unsigned Dims, storage_tag StorageImpl, typename PartConf>
+template <typename T, storage_tag StorageImpl, typename StorageTraits>
 class dynarray_storage;
 
 }

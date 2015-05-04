@@ -35,7 +35,7 @@
 #include "../../compiler.hpp"
 
 #include "log.hpp"
-#include "misc.hpp"
+#include "seq.hpp"
 #include "stl.hpp"
 
 namespace utils {

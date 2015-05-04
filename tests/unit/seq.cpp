@@ -26,18 +26,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. */
 
-#pragma once
-#ifndef CUDARRAYS_UTIL_HPP_
-#define CUDARRAYS_UTIL_HPP_
+#include <iostream>
+#include <type_traits>
 
-#include "detail/utils/env.hpp"
-#include "detail/utils/integral_iterator.hpp"
-#include "detail/utils/log.hpp"
-#include "detail/utils/misc.hpp"
-#include "detail/utils/permute.hpp"
-#include "detail/utils/seq.hpp"
-#include "detail/utils/stl.hpp"
+#include "cudarrays/utils.hpp"
 
-#endif // CUDARRAYS_UTIL_HPP_
+#include "gtest/gtest.h"
 
-/* vim:set ft=cpp backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab: */
+class seq_test :
+    public testing::Test {
+protected:
+    static void SetUpTestCase() {}
+    static void TearDownTestCase() {}
+};
+
+template <unsigned...> struct var;
+
+TEST_F(seq_test, create)
+{
+    ASSERT_EQ(SEQ_SIZE(SEQ_WITH_TYPE(unsigned)), 0u);
+    ASSERT_EQ(SEQ_SIZE(SEQ(1)),       1u);
+    ASSERT_EQ(SEQ_SIZE(SEQ(1, 2, 3)), 3u);
+
+    using t = var<1, 2, 3>;
+
+    ASSERT_EQ(SEQ_SIZE(SEQ_WRAP(unsigned, t)), 3u);
+    bool result = std::is_same<t,
+                                SEQ_UNWRAP(SEQ_WRAP(unsigned, t), var<>)>::value;
+    ASSERT_EQ(result, true);
+}

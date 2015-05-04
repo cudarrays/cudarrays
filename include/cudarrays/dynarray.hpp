@@ -61,44 +61,31 @@ class dynarray :
     public coherent {
 public:
     using           array_type = T;
-    using               traits = array_traits<array_type>;
-     // User-provided dimension ordering
-    using   dim_order_seq_type = typename make_dim_order<traits::dimensions, StorageType>::seq_type;
-    // Sort array extents
-    using ordered_extents_seq_type =
-        SEQ_REORDER(
-            typename traits::extents_type::extents_seq_type,
-            dim_order_seq_type);
-    // Sort dimension partitioning configuration
-    using ordered_partitioning_seq_type =
-        SEQ_REORDER(
-            typename PartConf::template part_seq_type<traits::dimensions>,
-            dim_order_seq_type);
+    using    array_traits_type = array_traits<array_type>;
+    using  storage_traits_type = storage_traits<array_type, StorageType, PartConf>;
 
-    using   host_storage_type = host_storage<typename traits::value_type>;
-
-    using device_storage_type =
-        dynarray_storage<typename traits::value_type,
-                         traits::dimensions,
-                         PartConf::final_impl,
-                         SEQ_UNWRAP(ordered_partitioning_seq_type,
-                                    storage_part_dim_helper<>)>;
-
-    using         permuter_type = utils::permuter<dim_order_seq_type>;
+    using         permuter_type = typename storage_traits_type::permuter_type;
 
     using       difference_type = array_index_t;
-    using            value_type = typename traits::value_type;
+    using            value_type = typename array_traits_type::value_type;
     using coherence_policy_type = CoherencePolicy<dynarray>;
-    using          indexer_type = linearizer_hybrid<array_type>;
+    using          indexer_type = linearizer_hybrid<typename storage_traits_type::offsets_seq>;
 
-    static constexpr auto dimensions = traits::dimensions;
+    using     host_storage_type = host_storage<value_type>;
+
+    using device_storage_type =
+        dynarray_storage<value_type,
+                         PartConf::final_impl,
+                         storage_traits_type>;
+
+    static constexpr auto dimensions = array_traits_type::dimensions;
 
     __host__
-    explicit dynarray(const extents<traits::dynamic_dimensions> &extents,
+    explicit dynarray(const extents<array_traits_type::dynamic_dimensions> &extents,
                       const align_t &align = align_t{0, 0},
                       coherence_policy_type coherence = coherence_policy_type()) :
         coherencePolicy_(coherence),
-        device_(permuter_type::reorder(traits::extents_type::type::get(extents)), align)
+        device_(permuter_type::reorder(array_traits_type::make_extents(extents)), align)
     {
         coherencePolicy_.bind(this);
 
@@ -134,33 +121,33 @@ public:
     }
 
     __array_index__
-    typename traits::value_type &operator()(array_index_t idx)
+    value_type &operator()(array_index_t idx)
     {
 #ifdef __CUDA_ARCH__
-        return device_.access_pos(0, 0, idx);
+        return device_.access_pos(idx);
 #else
         return host_.addr()[idx];
 #endif
     }
 
     __array_index__
-    const typename traits::value_type &operator()(array_index_t idx) const
+    const value_type &operator()(array_index_t idx) const
     {
 #ifdef __CUDA_ARCH__
-        return device_.access_pos(0, 0, idx);
+        return device_.access_pos(idx);
 #else
         return host_.addr()[idx];
 #endif
     }
 
     __array_index__
-    typename traits::value_type &operator()(array_index_t idx1, array_index_t idx2)
+    value_type &operator()(array_index_t idx1, array_index_t idx2)
     {
         array_index_t i1 = permuter_type::template select<0>(idx1, idx2);
         array_index_t i2 = permuter_type::template select<1>(idx1, idx2);
 
 #ifdef __CUDA_ARCH__
-        return device_.access_pos(0, i1, i2);
+        return device_.access_pos(i1, i2);
 #else
         auto idx = indexer_type::access_pos(device_.get_dim_manager().get_offs_align(), i1, i2);
         return host_.addr()[idx];
@@ -168,13 +155,13 @@ public:
     }
 
     __array_index__
-    const typename traits::value_type &operator()(array_index_t idx1, array_index_t idx2) const
+    const value_type &operator()(array_index_t idx1, array_index_t idx2) const
     {
         array_index_t i1 = permuter_type::template select<0>(idx1, idx2);
         array_index_t i2 = permuter_type::template select<1>(idx1, idx2);
 
 #ifdef __CUDA_ARCH__
-        return device_.access_pos(0, i1, i2);
+        return device_.access_pos(i1, i2);
 #else
         auto idx = indexer_type::access_pos(device_.get_dim_manager().get_offs_align(), i1, i2);
         return host_.addr()[idx];
@@ -182,7 +169,7 @@ public:
     }
 
     __array_index__
-    typename traits::value_type &operator()(array_index_t idx1, array_index_t idx2, array_index_t idx3)
+    value_type &operator()(array_index_t idx1, array_index_t idx2, array_index_t idx3)
     {
         array_index_t i1 = permuter_type::template select<0>(idx1, idx2, idx3);
         array_index_t i2 = permuter_type::template select<1>(idx1, idx2, idx3);
@@ -197,7 +184,7 @@ public:
     }
 
     __array_index__
-    const typename traits::value_type  &operator()(array_index_t idx1, array_index_t idx2, array_index_t idx3) const
+    const value_type  &operator()(array_index_t idx1, array_index_t idx2, array_index_t idx3) const
     {
         array_index_t i1 = permuter_type::template select<0>(idx1, idx2, idx3);
         array_index_t i2 = permuter_type::template select<1>(idx1, idx2, idx3);
@@ -213,7 +200,7 @@ public:
 
     template <unsigned DimsComp>
     __host__ bool
-    distribute(compute_mapping<DimsComp, traits::dimensions> mapping)
+    distribute(compute_mapping<DimsComp, array_traits_type::dimensions> mapping)
     {
         auto mapping2 = mapping;
         mapping2.info = permuter_type::reorder(mapping2.info);
@@ -289,8 +276,8 @@ public:
 
     iterator begin()
     {
-        array_index_t dims[traits::dimensions];
-        std::fill(dims, dims + traits::dimensions, 0);
+        array_index_t dims[array_traits_type::dimensions];
+        std::fill(dims, dims + array_traits_type::dimensions, 0);
         return iterator(*this, dims);
     }
 
@@ -301,15 +288,15 @@ public:
 
     const_iterator cbegin() const
     {
-        array_index_t dims[traits::dimensions];
-        std::fill(dims, dims + traits::dimensions, 0);
+        array_index_t dims[array_traits_type::dimensions];
+        std::fill(dims, dims + array_traits_type::dimensions, 0);
         return const_iterator(*this, dims);
     }
 
     reverse_iterator rbegin()
     {
-        array_index_t dims[traits::dimensions];
-        for (unsigned i = 0; i < traits::dimensions; ++i) {
+        array_index_t dims[array_traits_type::dimensions];
+        for (unsigned i = 0; i < array_traits_type::dimensions; ++i) {
             dims[i] = this->dim(i) - 1;
         }
         return reverse_iterator(iterator(*this, dims));
@@ -317,10 +304,10 @@ public:
 
     iterator end()
     {
-        array_index_t dims[traits::dimensions];
+        array_index_t dims[array_traits_type::dimensions];
         dims[0] = this->dim(0);
-        if (traits::dimensions > 1) {
-            std::fill(dims + 1, dims + traits::dimensions, 0);
+        if (array_traits_type::dimensions > 1) {
+            std::fill(dims + 1, dims + array_traits_type::dimensions, 0);
         }
         return iterator(*this, dims);
     }
@@ -332,19 +319,19 @@ public:
 
     const_iterator cend() const
     {
-        array_index_t dims[traits::dimensions];
+        array_index_t dims[array_traits_type::dimensions];
         dims[0] = this->dim(0);
-        if (traits::dimensions > 1) {
-            std::fill(dims + 1, dims + traits::dimensions, 0);
+        if (array_traits_type::dimensions > 1) {
+            std::fill(dims + 1, dims + array_traits_type::dimensions, 0);
         }
         return const_iterator(*this, dims);
     }
 
     reverse_iterator rend()
     {
-        array_index_t dims[traits::dimensions];
+        array_index_t dims[array_traits_type::dimensions];
         dims[0] = -1;
-        for (unsigned i = 0; i < traits::dimensions; ++i) {
+        for (unsigned i = 0; i < array_traits_type::dimensions; ++i) {
             dims[i] = this->dim(i) - 1;
         }
         return reverse_iterator(iterator(*this, dims));
@@ -357,9 +344,9 @@ public:
 
     const_reverse_iterator crend() const
     {
-        array_index_t dims[traits::dimensions];
+        array_index_t dims[array_traits_type::dimensions];
         dims[0] = -1;
-        for (unsigned i = 0; i < traits::dimensions; ++i) {
+        for (unsigned i = 0; i < array_traits_type::dimensions; ++i) {
             dims[i] = this->dim(i) - 1;
         }
         return const_reverse_iterator(const_iterator(*this, dims));
@@ -393,7 +380,7 @@ private:
 public:
     using     host_storage_type = typename dynarray_type::host_storage_type;
 
-    using            value_type = typename dynarray_type::traits::value_type;
+    using            value_type = typename dynarray_type::value_type;
     using       difference_type = typename dynarray_type::difference_type;
 
     using coherence_policy_type = typename dynarray_type::coherence_policy_type;
@@ -462,7 +449,7 @@ private:
 public:
     using host_storage_type = typename dynarray_type::host_storage_type;
 
-    using      value_type = typename dynarray_type::traits::value_type;
+    using      value_type = typename dynarray_type::value_type;
     using difference_type = typename dynarray_type::difference_type;
 
     using coherence_policy_type = typename dynarray_type::coherence_policy_type;

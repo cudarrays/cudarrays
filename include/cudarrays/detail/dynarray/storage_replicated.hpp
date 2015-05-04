@@ -38,14 +38,16 @@
 
 namespace cudarrays {
 
-template <typename T, unsigned Dims, typename PartConf>
-class dynarray_storage<T, Dims, storage_tag::REPLICATED, PartConf> :
-    public dynarray_base<T, Dims>
+template <typename T, typename StorageTraits>
+class dynarray_storage<T, storage_tag::REPLICATED, StorageTraits> :
+    public dynarray_base<T, StorageTraits::dimensions>
 {
-    using base_storage_type = dynarray_base<T, Dims>;
+    static constexpr unsigned dimensions = StorageTraits::dimensions;
+
+    using base_storage_type = dynarray_base<T, dimensions>;
     using  dim_manager_type = typename base_storage_type::dim_manager_type;
 
-    using indexer_type = linearizer<Dims>;
+    using indexer_type = linearizer_hybrid<typename StorageTraits::offsets_seq>;
 
 private:
     __host__
@@ -97,7 +99,7 @@ private:
 
 public:
     __host__
-    dynarray_storage(const extents<Dims> &ext,
+    dynarray_storage(const extents<dimensions> &ext,
                      const align_t &align) :
         base_storage_type(ext, align),
         dataDev_(nullptr),
@@ -124,7 +126,7 @@ public:
 
     template <size_t DimsComp>
     __host__ bool
-    distribute(const compute_mapping<DimsComp, Dims> &mapping)
+    distribute(const compute_mapping<DimsComp, dimensions> &mapping)
     {
         DEBUG("Replicated> Distributing");
         if (!hostInfo_) {
@@ -187,17 +189,19 @@ public:
                                              hostInfo_->allocsDev.end(), nullptr);
     }
 
+    template <typename... Idxs>
     __device__ inline
-    T &access_pos(array_index_t idx1, array_index_t idx2, array_index_t idx3)
+    T &access_pos(Idxs... idxs)
     {
-        auto idx = indexer_type::access_pos(this->get_dim_manager().get_offs_align(), idx1, idx2, idx3);
+        auto idx = indexer_type::access_pos(this->get_dim_manager().get_offs_align(), idxs...);
         return dataDev_[idx];
     }
 
+    template <typename... Idxs>
     __device__ inline
-    const T &access_pos(array_index_t idx1, array_index_t idx2, array_index_t idx3) const
+    const T &access_pos(Idxs... idxs) const
     {
-        auto idx = indexer_type::access_pos(this->get_dim_manager().get_offs_align(), idx1, idx2, idx3);
+        auto idx = indexer_type::access_pos(this->get_dim_manager().get_offs_align(), idxs...);
         return dataDev_[idx];
     }
 
