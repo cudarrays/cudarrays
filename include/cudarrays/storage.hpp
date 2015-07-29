@@ -63,48 +63,30 @@ enum class storage_tag {
     REPLICATED,
 };
 
-template <bool... PartVals>
+template <typename PartSeq>
 struct storage_part_dim_helper {
-    static constexpr size_t dimensions = sizeof...(PartVals);
+    static constexpr size_t dimensions = SEQ_SIZE(PartSeq);
 
-    using sequence_type = SEQ(PartVals...);
-
-    static_assert(sizeof...(PartVals) <= 3,
+    static_assert(dimensions <= 3,
                   "Up to 3 dimensional arrays are supported so far");
 
-    static constexpr bool X = SEQ_AT_OR(sequence_type, size_t((ssize_t(dimensions) - 1) - 0), false);
-    static constexpr bool Y = SEQ_AT_OR(sequence_type, size_t((ssize_t(dimensions) - 1) - 1), false);
-    static constexpr bool Z = SEQ_AT_OR(sequence_type, size_t((ssize_t(dimensions) - 1) - 2), false);
+    static constexpr bool X = SEQ_AT_OR(PartSeq, size_t((ssize_t(dimensions) - 1) - 0), false);
+    static constexpr bool Y = SEQ_AT_OR(PartSeq, size_t((ssize_t(dimensions) - 1) - 1), false);
+    static constexpr bool Z = SEQ_AT_OR(PartSeq, size_t((ssize_t(dimensions) - 1) - 2), false);
 };
 
 template <partition Part, unsigned Dims>
 struct storage_part_helper;
 
 // Predefined partition classes
-template <>
-struct storage_part_helper<partition::none, 1> {
-    using type = SEQ(false);
-};
-template <>
-struct storage_part_helper<partition::none, 2> {
-    using type = SEQ(false, false);
-};
-template <>
-struct storage_part_helper<partition::none, 3> {
-    using type = SEQ(false, false, false);
+template <unsigned Dims>
+struct storage_part_helper<partition::none, Dims> {
+    using type = SEQ_GEN_FILL(false, Dims);
 };
 
-template <>
-struct storage_part_helper<partition::x, 1> {
-    using type = SEQ(true);
-};
-template <>
-struct storage_part_helper<partition::x, 2> {
-    using type = SEQ(false, true);
-};
-template <>
-struct storage_part_helper<partition::x, 3> {
-    using type = SEQ(false, false, true);
+template <unsigned Dims>
+struct storage_part_helper<partition::x, Dims> {
+    using type = SEQ_APPEND(SEQ_GEN_FILL(false, Dims - 1), true);
 };
 
 template <>
@@ -116,9 +98,10 @@ struct storage_part_helper<partition::y, 3> {
     using type = SEQ(false, true, false);
 };
 
-template <>
-struct storage_part_helper<partition::z, 3> {
-    using type = SEQ(true, false, false);
+template <unsigned Dims>
+struct storage_part_helper<partition::z, Dims> {
+    static_assert(Dims >= 3, "At least 3 dimensions are needed for Z decomposition");
+    using type = SEQ_PREPEND(SEQ_GEN_FILL(false, Dims - 1), true);
 };
 
 template <>

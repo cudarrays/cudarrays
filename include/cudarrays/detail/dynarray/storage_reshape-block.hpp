@@ -43,8 +43,7 @@ class dynarray_storage<T, storage_tag::RESHAPE_BLOCK, StorageTraits> :
 {
     static constexpr unsigned dimensions = StorageTraits::dimensions;
 
-    using PartConf = SEQ_UNWRAP(typename StorageTraits::partitioning_seq,
-                                storage_part_dim_helper<>);
+    using PartConf = storage_part_dim_helper<typename StorageTraits::partitioning_seq>;
 
     using base_storage_type = dynarray_base<T, dimensions>;
     using  dim_manager_type = typename base_storage_type::dim_manager_type;
