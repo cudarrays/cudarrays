@@ -433,7 +433,7 @@ protected:
             // my_arguments::compiler_layout_args(total_grid, VALID_VAL_MAX(arg));
         }
 
-        my_arguments::parse_args(args2...);
+        my_arguments::parse_args(std::forward<ArgsPassed>(args2)...);
 
         coherentParams_ = my_arguments::CoherentParams;
 
@@ -612,9 +612,11 @@ public:
 template <unsigned Dims, typename R, typename... Args>
 class launcher :
     public launcher_common<Dims, R, Args...> {
+    using common_parent = launcher_common<Dims, R, Args...>;
 public:
+    template <typename... Args2>
     launcher(R(&f)(Args...), const char *funName, const cuda_conf &conf, compute_conf<Dims> gpuConf, bool transposeXY) :
-        launcher_common<Dims, R, Args...>(f, funName, conf, gpuConf, transposeXY)
+        common_parent(f, funName, conf, gpuConf, transposeXY)
     {
     }
 
@@ -622,7 +624,7 @@ public:
     bool
     operator()(ArgsPassed &&...args2)
     {
-        auto ret = this->execute(args2...);
+        auto ret = this->execute(std::forward<ArgsPassed>(args2)...);
         if (ret) {
             auto gpus = this->activeGPUs_;
             auto params = this->coherentParams_;
@@ -639,7 +641,7 @@ class launcher_async :
     using common_parent = launcher_common<Dims, R, Args...>;
 public:
     launcher_async(R(&f)(Args...), const char *funName, const cuda_conf &conf, compute_conf<Dims> gpuConf, bool transposeXY) :
-        launcher_common<Dims, R, Args...>(f, funName, conf, gpuConf, transposeXY)
+        common_parent(f, funName, conf, gpuConf, transposeXY)
     {
     }
 
@@ -647,7 +649,7 @@ public:
     std::future<bool>
     operator()(ArgsPassed &&...args2)
     {
-        auto ret = this->execute(args2...);
+        auto ret = this->execute(std::forward<ArgsPassed>(args2)...);
         if (ret) {
             auto gpus = this->activeGPUs_;
             auto params = this->coherentParams_;
@@ -663,7 +665,8 @@ public:
 template <unsigned DimsComp, typename R, typename... Args>
 launcher<DimsComp, R, Args...>
 launch_(const char *name,
-        R(&f)(Args...), const cuda_conf &conf,
+        R(&f)(Args...),
+        const cuda_conf &conf,
         compute_conf<DimsComp> gpuConf = {partition::none, 1},
         bool transposeXY = false)
 {
@@ -673,15 +676,16 @@ launch_(const char *name,
 template <unsigned DimsComp, typename R, typename... Args>
 launcher_async<DimsComp, R, Args...>
 launch_async_(const char *name,
-              R(&f)(Args...), const cuda_conf &conf,
+              R(&f)(Args...),
+              const cuda_conf &conf,
               compute_conf<DimsComp> gpuConf = {partition::none, 1},
               bool transposeXY = false)
 {
     return launcher_async<DimsComp, R, Args...>(f, name, conf, gpuConf, transposeXY);
 }
 
-#define launch(f,...)       launch_(#f, f, __VA_ARGS__)
-#define launch_async(f,...) launch_async_(#f, f, __VA_ARGS__)
+#define launch(f,...)       launch_(#f, f,##__VA_ARGS__)
+#define launch_async(f,...) launch_async_(#f, f,##__VA_ARGS__)
 
 }
 
