@@ -352,7 +352,7 @@ public:
 
     __host__
     dynarray_storage(const dynarray_storage &other) :
-        dim_manager_type(other),
+        base_storage_type(other),
         dataDev_(other.dataDev_),
         hostInfo_(other.hostInfo_)
     {
