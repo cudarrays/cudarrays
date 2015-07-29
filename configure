@@ -42,6 +42,11 @@ do
         echo "Setting compiler: ${compiler}"
         CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_CXX_COMPILER=${compiler} -DCMAKE_C_COMPILER=${compiler/\+\+/cc}"
         ;;
+    --with-clang=*)
+        compiler=`echo $i | sed 's/[-a-zA-Z0-9]*=//'`
+        echo "Setting compiler: ${compiler}"
+        CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_CXX_COMPILER=${compiler} -DCMAKE_C_COMPILER=${compiler/\+\+/}"
+        ;;
     --enable-gcov)
         CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_GCOV=ON"
         ;;
@@ -55,7 +60,7 @@ done
 #GENERATOR="CodeBlocks - Unix Makefiles"
 GENERATOR="Unix Makefiles"
 
-CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_BUILD_TYPE=${BUILD_TYPE}"
+CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=${BUILD_TYPE}"
 echo "$0 $*" > ${SCRIPT_NAME}.log
 echo "${CMAKE} ${CMAKE_ARGS}" -G"${GENERATOR}" ${CMAKE_HOME} >> ${SCRIPT_NAME}.log
 ${CMAKE} ${CMAKE_ARGS} -G"${GENERATOR}" ${CMAKE_HOME}
