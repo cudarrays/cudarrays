@@ -133,12 +133,12 @@ struct make_dim_order;
 
 template <unsigned Dims>
 struct make_dim_order<Dims, layout::rmo> {
-    using seq_type = SEQ_GEN_INC(unsigned, Dims);
+    using seq_type = SEQ_GEN_INC(Dims);
 };
 
 template <unsigned Dims>
 struct make_dim_order<Dims, layout::cmo> {
-    using seq_type = SEQ_REVERSE(SEQ_GEN_INC(unsigned, Dims));
+    using seq_type = SEQ_REVERSE(SEQ_GEN_INC(Dims));
 };
 
 template <unsigned Dims, unsigned... Order>

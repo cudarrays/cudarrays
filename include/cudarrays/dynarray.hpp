@@ -124,14 +124,14 @@ public:
     __array_index__
     value_type &operator()(Idxs ...idxs)
     {
-        return access_element_helper<SEQ_GEN_INC(unsigned, unsigned(sizeof...(Idxs)))>::at(device_, host_, array_index_t(idxs)...);
+        return access_element_helper<SEQ_GEN_INC(unsigned(sizeof...(Idxs)))>::at(device_, host_, array_index_t(idxs)...);
     }
 
     template <typename ...Idxs>
     __array_index__
     const value_type &operator()(Idxs ...idxs) const
     {
-        return access_element_helper<SEQ_GEN_INC(unsigned, unsigned(sizeof...(Idxs)))>::at_const(device_, host_, array_index_t(idxs)...);
+        return access_element_helper<SEQ_GEN_INC(unsigned(sizeof...(Idxs)))>::at_const(device_, host_, array_index_t(idxs)...);
     }
 
     template <unsigned DimsComp>

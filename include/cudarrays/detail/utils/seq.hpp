@@ -219,7 +219,8 @@ struct seq_gen_inc {
     using type = typename detail::seq_gen_inc<T, Size, 0>::type;
 };
 
-#define SEQ_GEN_INC(...) SEQ_T_OP(gen_inc,##__VA_ARGS__)
+#define SEQ_GEN_INC(v)             SEQ_T_OP(gen_inc,decltype(utils::mpl::deduce(v)),v)
+#define SEQ_GEN_INC_WITH_TYPE(t,v) SEQ_T_OP(gen_inc,t,v)
 
 namespace detail {
 

@@ -118,7 +118,7 @@ struct index_block_detail<OffsetsSeq,
 };
 
 template <typename OffsetsSeq, typename PartSeq>
-using index_block = index_block_detail<OffsetsSeq, PartSeq, SEQ_GEN_INC(unsigned, SEQ_SIZE(PartSeq))>;
+using index_block = index_block_detail<OffsetsSeq, PartSeq, SEQ_GEN_INC(unsigned(SEQ_SIZE(PartSeq)))>;
 
 template <typename OffsetsSeq, typename PartSeq, typename DimIdxSeq>
 struct index_cyclic_detail;
@@ -162,7 +162,7 @@ struct index_cyclic_detail<OffsetsSeq,
 };
 
 template <typename OffsetsSeq, typename PartSeq>
-using index_cyclic = index_cyclic_detail<OffsetsSeq, PartSeq, SEQ_GEN_INC(unsigned, SEQ_SIZE(PartSeq))>;
+using index_cyclic = index_cyclic_detail<OffsetsSeq, PartSeq, SEQ_GEN_INC(unsigned(SEQ_SIZE(PartSeq)))>;
 
 template <typename OffsetsSeq, typename PartSeq, typename DimIdxSeq, unsigned BlockSize>
 struct index_block_cyclic_detail;
@@ -218,7 +218,7 @@ struct index_block_cyclic_detail<OffsetsSeq,
 };
 
 template <typename OffsetsSeq, typename PartSeq, unsigned BlockSize>
-using index_block_cyclic = index_block_cyclic_detail<OffsetsSeq, PartSeq, SEQ_GEN_INC(unsigned, SEQ_SIZE(PartSeq)), BlockSize>;
+using index_block_cyclic = index_block_cyclic_detail<OffsetsSeq, PartSeq, SEQ_GEN_INC(unsigned(SEQ_SIZE(PartSeq))), BlockSize>;
 
 }
 
