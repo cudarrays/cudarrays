@@ -7,13 +7,19 @@ set(CUDA_PROPAGATE_HOST_FLAGS ON)
 set(CUDA_SEPARABLE_COMPILATION ON)
 
 option(CUDA_DEBUG "Compile CUDA code with debug support" ON)
-if(CMAKE_COMPILER_IS_GNUCC)
-    set(CUDA_NVCC_FLAGS "-std=c++11" "--cudart" "static" "-L../../lib" "-lcudarrays")
-    list(APPEND CUDA_NVCC_FLAGS ${GPU_ARCH})
-    if(CUDA_DEBUG)
-        list(APPEND CUDA_NVCC_FLAGS "-G")
-    endif(CUDA_DEBUG)
-endif(CMAKE_COMPILER_IS_GNUCC)
+
+set(CUDA_NVCC_FLAGS "-std=c++11" "--cudart" "static" "-L../../lib" "-lcudarrays")
+
+if(CUDA_VERSION_MAJOR EQUAL "7" AND
+   CUDA_VERSION_MINOR EQUAL "5")
+   list(APPEND CUDA_NVCC_FLAGS "--expt-extended-lambda")
+endif(CUDA_VERSION_MAJOR EQUAL "7" AND
+      CUDA_VERSION_MINOR EQUAL "5")
+
+list(APPEND CUDA_NVCC_FLAGS ${GPU_ARCH})
+if(CUDA_DEBUG)
+    list(APPEND CUDA_NVCC_FLAGS "-G")
+endif(CUDA_DEBUG)
 
 cuda_add_executable(default default.cu ${LIB_INCLUDE})
 target_link_libraries(default ${CMAKE_IMPORT_LIBRARY_PREFIX}cudarrays${CMAKE_IMPORT_LIBRARY_SUFFIX} ${CUDA_LIBRARIES})

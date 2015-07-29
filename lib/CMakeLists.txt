@@ -5,13 +5,18 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 
 set(CUDA_PROPAGATE_HOST_FLAGS ON)
 
-if(CMAKE_COMPILER_IS_GNUCC)
-    set(CUDA_NVCC_FLAGS "-std=c++11" "-rdc" "true")
-    list(APPEND CUDA_NVCC_FLAGS ${GPU_ARCH})
-    if(CUDA_DEBUG)
-        set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -G")
-    endif(CUDA_DEBUG)
-endif(CMAKE_COMPILER_IS_GNUCC)
+set(CUDA_NVCC_FLAGS "-std=c++11" "-rdc" "true")
+
+if(CUDA_VERSION_MAJOR EQUAL "7" AND
+   CUDA_VERSION_MINOR EQUAL "5")
+   list(APPEND CUDA_NVCC_FLAGS "--expt-extended-lambda")
+endif(CUDA_VERSION_MAJOR EQUAL "7" AND
+      CUDA_VERSION_MINOR EQUAL "5")
+
+list(APPEND CUDA_NVCC_FLAGS ${GPU_ARCH})
+if(CUDA_DEBUG)
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -G")
+endif(CUDA_DEBUG)
 
 cuda_add_library(${CMAKE_IMPORT_LIBRARY_PREFIX}cudarrays STATIC cuda_vars.cu ${LIB_SRC} ${LIB_INCLUDE})
 

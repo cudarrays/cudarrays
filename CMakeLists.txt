@@ -24,6 +24,10 @@ else(CUDA_FOUND)
     message(FATAL_ERROR "NVIDIA CUDA Compiler is required")
 endif(CUDA_FOUND)
 
+if(CUDA_VERSION_MAJOR LESS "7")
+    message(FATAL_ERROR "NVIDIA CUDA Compiler 7.0 or newer is required")
+endif(CUDA_VERSION_MAJOR LESS "7")
+
 set(COMMON_CXX_FLAGS "-Wall -Wextra -Werror -Wformat -Wformat-security -std=c++11 -g")
 
 if(OPENMP_FOUND)
