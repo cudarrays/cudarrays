@@ -120,82 +120,18 @@ public:
         unregister_range(this->get_host_storage().base_addr());
     }
 
+    template <typename ...Idxs>
     __array_index__
-    value_type &operator()(array_index_t idx)
+    value_type &operator()(Idxs ...idxs)
     {
-#ifdef __CUDA_ARCH__
-        return device_.access_pos(idx);
-#else
-        return host_.addr()[idx];
-#endif
+        return access_element_helper<SEQ_GEN_INC(unsigned, unsigned(sizeof...(Idxs)))>::at(device_, host_, array_index_t(idxs)...);
     }
 
+    template <typename ...Idxs>
     __array_index__
-    const value_type &operator()(array_index_t idx) const
+    const value_type &operator()(Idxs ...idxs) const
     {
-#ifdef __CUDA_ARCH__
-        return device_.access_pos(idx);
-#else
-        return host_.addr()[idx];
-#endif
-    }
-
-    __array_index__
-    value_type &operator()(array_index_t idx1, array_index_t idx2)
-    {
-        array_index_t i1 = permuter_type::template select<0>(idx1, idx2);
-        array_index_t i2 = permuter_type::template select<1>(idx1, idx2);
-
-#ifdef __CUDA_ARCH__
-        return device_.access_pos(i1, i2);
-#else
-        auto idx = indexer_type::access_pos(device_.get_dim_manager().get_offs_align(), i1, i2);
-        return host_.addr()[idx];
-#endif
-    }
-
-    __array_index__
-    const value_type &operator()(array_index_t idx1, array_index_t idx2) const
-    {
-        array_index_t i1 = permuter_type::template select<0>(idx1, idx2);
-        array_index_t i2 = permuter_type::template select<1>(idx1, idx2);
-
-#ifdef __CUDA_ARCH__
-        return device_.access_pos(i1, i2);
-#else
-        auto idx = indexer_type::access_pos(device_.get_dim_manager().get_offs_align(), i1, i2);
-        return host_.addr()[idx];
-#endif
-    }
-
-    __array_index__
-    value_type &operator()(array_index_t idx1, array_index_t idx2, array_index_t idx3)
-    {
-        array_index_t i1 = permuter_type::template select<0>(idx1, idx2, idx3);
-        array_index_t i2 = permuter_type::template select<1>(idx1, idx2, idx3);
-        array_index_t i3 = permuter_type::template select<2>(idx1, idx2, idx3);
-
-#ifdef __CUDA_ARCH__
-        return device_.access_pos(i1, i2, i3);
-#else
-        auto idx = indexer_type::access_pos(device_.get_dim_manager().get_offs_align(), i1, i2, i3);
-        return host_.addr()[idx];
-#endif
-    }
-
-    __array_index__
-    const value_type  &operator()(array_index_t idx1, array_index_t idx2, array_index_t idx3) const
-    {
-        array_index_t i1 = permuter_type::template select<0>(idx1, idx2, idx3);
-        array_index_t i2 = permuter_type::template select<1>(idx1, idx2, idx3);
-        array_index_t i3 = permuter_type::template select<2>(idx1, idx2, idx3);
-
-#ifdef __CUDA_ARCH__
-        return device_.access_pos(i1, i2, i3);
-#else
-        auto idx = indexer_type::access_pos(device_.get_dim_manager().get_offs_align(), i1, i2, i3);
-        return host_.addr()[idx];
-#endif
+        return access_element_helper<SEQ_GEN_INC(unsigned, unsigned(sizeof...(Idxs)))>::at_const(device_, host_, array_index_t(idxs)...);
     }
 
     template <unsigned DimsComp>
@@ -356,6 +292,45 @@ public:
     friend myiterator<dynarray, true>;
 
 private:
+    template <typename Selector>
+    struct access_element_helper;
+
+    template <unsigned ...Vals>
+    struct access_element_helper<mpl::sequence<unsigned, Vals...>> {
+        template <typename... Idxs>
+        __array_index__
+        static
+        value_type &at(device_storage_type &device,
+                       host_storage_type   &host,
+                       Idxs ...idxs)
+        {
+#ifdef __CUDA_ARCH__
+            return device.access_pos(permuter_type::template select<Vals>(idxs...)...);
+#else
+            auto idx = indexer_type::access_pos(device.get_dim_manager().get_offs_align(),
+                                                permuter_type::template select<Vals>(idxs...)...);
+            return host.addr()[idx];
+#endif
+        }
+
+        template <typename... Idxs>
+        __array_index__
+        static
+        const value_type &at_const(const device_storage_type &device,
+                                   const host_storage_type   &host,
+                                   Idxs ...idxs)
+        {
+#ifdef __CUDA_ARCH__
+            return device.access_pos(permuter_type::template select<Vals>(idxs...)...);
+#else
+            auto idx = indexer_type::access_pos(device.get_dim_manager().get_offs_align(),
+                                                permuter_type::template select<Vals>(idxs...)...);
+            return host.addr()[idx];
+#endif
+        }
+
+    };
+
     coherence_policy_type coherencePolicy_;
     device_storage_type   device_;
     host_storage_type     host_;
@@ -368,7 +343,8 @@ class dynarray_ref {
 private:
 #ifdef __CUDA_ARCH__
     // Use the whole object to avoid extra indirection on the GPU. Kernel launch performs the conversion
-    dynarray_type &array_;
+    // TODO: check if extra indirection introduces overhead
+    dynarray_type array_;
 #else
     dynarray_type &array_;
 #endif
@@ -437,7 +413,8 @@ class dynarray_cref {
 private:
 #ifdef __CUDA_ARCH__
     // Use the whole object to avoid extra indirection on the GPU. Kernel launch performs the conversion
-    const dynarray_type &array_;
+    // TODO: check if extra indirection introduces overhead
+    const dynarray_type array_;
 #else
     const dynarray_type &array_;
 #endif
