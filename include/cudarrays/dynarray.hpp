@@ -365,19 +365,19 @@ template <typename Array>
 class dynarray_ref {
     using dynarray_type = Array;
     dynarray_ref() = delete;
+private:
 #ifdef __CUDA_ARCH__
     // Use the whole object to avoid extra indirection on the GPU. Kernel launch performs the conversion
-    dynarray_type array_;
+    dynarray_type &array_;
 #else
+    dynarray_type &array_;
+#endif
 public:
+    __host__
     dynarray_ref(dynarray_type &a) :
         array_(a)
     {}
 
-private:
-    dynarray_type &array_;
-#endif
-public:
     using     host_storage_type = typename dynarray_type::host_storage_type;
 
     using            value_type = typename dynarray_type::value_type;
@@ -434,19 +434,19 @@ template <typename Array>
 class dynarray_cref {
     using dynarray_type = Array;
     dynarray_cref() = delete;
+private:
 #ifdef __CUDA_ARCH__
     // Use the whole object to avoid extra indirection on the GPU. Kernel launch performs the conversion
-    dynarray_type array_;
+    const dynarray_type &array_;
 #else
+    const dynarray_type &array_;
+#endif
 public:
+    __host__
     dynarray_cref(const dynarray_type &a) :
         array_(a)
     {}
 
-private:
-    const dynarray_type &array_;
-#endif
-public:
     using host_storage_type = typename dynarray_type::host_storage_type;
 
     using      value_type = typename dynarray_type::value_type;
@@ -475,6 +475,21 @@ public:
         return array_.dim(dim);
     }
 };
+
+template <typename Array>
+__host__
+dynarray_ref<Array> make_ref(Array &a)
+{
+    return dynarray_ref<Array>(a);
+}
+
+template <typename Array>
+__host__
+dynarray_cref<Array> make_cref(const Array &a)
+{
+    return dynarray_cref<Array>(a);
+}
+
 
 }
 
