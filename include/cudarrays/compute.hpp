@@ -45,8 +45,8 @@ struct compute_part_helper<1> {
     make_array(partition c)
     {
         std::array<bool, 1> ret;
-        if (c == partition::none)   ret = { false };
-        else if (c == partition::x) ret = { true  };
+        if (c == partition::NONE)   ret = { false };
+        else if (c == partition::X) ret = { true  };
         else abort();
         return ret;
     }
@@ -58,10 +58,10 @@ struct compute_part_helper<2> {
     make_array(partition c)
     {
         std::array<bool, 2> ret;
-        if (c == partition::none)    ret = { false, false };
-        else if (c == partition::x)  ret = { false, true  };
-        else if (c == partition::y)  ret = { true, false  };
-        else if (c == partition::xy) ret = { true, true   };
+        if (c == partition::NONE)    ret = { false, false };
+        else if (c == partition::X)  ret = { false, true  };
+        else if (c == partition::Y)  ret = { true, false  };
+        else if (c == partition::XY) ret = { true, true   };
         else abort();
         return ret;
     }
@@ -73,14 +73,14 @@ struct compute_part_helper<3> {
     make_array(partition c)
     {
         std::array<bool, 3> ret;
-        if (c == partition::none)     ret = { false, false, false };
-        else if (c == partition::x)   ret = { false, false, true  };
-        else if (c == partition::y)   ret = { false, true,  false };
-        else if (c == partition::z)   ret = { true,  false, false };
-        else if (c == partition::xy)  ret = { false, true,  true  };
-        else if (c == partition::xz)  ret = { true,  false, true  };
-        else if (c == partition::yz)  ret = { true,  true,  false };
-        else if (c == partition::xyz) ret = { true,  true,  true  };
+        if (c == partition::NONE)     ret = { false, false, false };
+        else if (c == partition::X)   ret = { false, false, true  };
+        else if (c == partition::Y)   ret = { false, true,  false };
+        else if (c == partition::Z)   ret = { true,  false, false };
+        else if (c == partition::XY)  ret = { false, true,  true  };
+        else if (c == partition::XZ)  ret = { true,  false, true  };
+        else if (c == partition::YZ)  ret = { true,  true,  false };
+        else if (c == partition::XYZ) ret = { true,  true,  true  };
         else abort();
         return ret;
     }

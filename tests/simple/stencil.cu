@@ -139,28 +139,28 @@ launch_test_stencil(compute_conf<2> gpus, mapping2D infoB,
     return ok;
 }
 
-static const int NONE = -1;
+static const int NIL = -1;
 
 template <typename Impl>
 void test_conf(unsigned gpus)
 {
     bool ok = false;
 
-    ok = launch_test_stencil<typename Impl::x>({partition::x, gpus},
-                                               {NONE, 0},
-                                               {NONE, 0});
+    ok = launch_test_stencil<typename Impl::x>({partition::X, gpus},
+                                               {NIL, 0},
+                                               {NIL, 0});
     printf("%s X %u: %d\n", Impl::name, gpus, ok);
-    ok = launch_test_stencil<typename Impl::y>({partition::y, gpus},
-                                               {1, NONE},
-                                               {1, NONE});
+    ok = launch_test_stencil<typename Impl::y>({partition::Y, gpus},
+                                               {1, NIL},
+                                               {1, NIL});
     printf("%s Y %u: %d\n", Impl::name, gpus, ok);
 
     if (gpus == 1 || gpus >= 4) {
-        ok = launch_test_stencil<typename Impl::xy>({partition::xy, gpus},
+        ok = launch_test_stencil<typename Impl::xy>({partition::XY, gpus},
                                                     {1, 0},
                                                     {1, 0});
         printf("%s XY %u: %d\n", Impl::name, gpus, ok);
-        ok = launch_test_stencil<typename Impl::xy>({partition::xy, gpus},
+        ok = launch_test_stencil<typename Impl::xy>({partition::XY, gpus},
                                                     {0, 1},
                                                     {0, 1});
         printf("%s YX %u: %d\n", Impl::name, gpus, ok);
@@ -171,9 +171,9 @@ int main()
 {
     init_lib();
     bool ok;
-    ok = launch_test_stencil<replicate::none>({partition::none, 1},
-                                              {NONE, NONE},
-                                              {NONE, NONE});
+    ok = launch_test_stencil<replicate::none>({partition::NONE, 1},
+                                              {NIL, NIL},
+                                              {NIL, NIL});
     printf("%s %u: %d\n", replicate::name, 1, ok);
 
     for (auto gpus : {1, 2, 4}) {

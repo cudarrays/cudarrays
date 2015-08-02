@@ -139,59 +139,59 @@ launch_test_matrixadd(compute_conf<3> gpus, std::array<int, 3> infoC,
     return ok;
 }
 
-static const int NONE = -1;
+static const int NIL = -1;
 
 template <typename Impl>
 void test_conf(unsigned gpus)
 {
     bool ok = false;
 
-    ok = launch_test_matrixadd<typename Impl::x>({partition::x, gpus},
-                                                 {NONE, NONE, 0},
-                                                 {NONE, NONE, 0},
-                                                 {NONE, NONE, 0});
+    ok = launch_test_matrixadd<typename Impl::x>({partition::X, gpus},
+                                                 {NIL, NIL, 0},
+                                                 {NIL, NIL, 0},
+                                                 {NIL, NIL, 0});
     printf("%s X %u: %d\n", Impl::name, gpus, ok);
-    ok = launch_test_matrixadd<typename Impl::y>({partition::y, gpus},
-                                                 {NONE, 1, NONE},
-                                                 {NONE, 1, NONE},
-                                                 {NONE, 1, NONE});
+    ok = launch_test_matrixadd<typename Impl::y>({partition::Y, gpus},
+                                                 {NIL, 1, NIL},
+                                                 {NIL, 1, NIL},
+                                                 {NIL, 1, NIL});
     printf("%s Y %u: %d\n", Impl::name, gpus, ok);
-    ok = launch_test_matrixadd<typename Impl::z>({partition::z, gpus},
-                                                 {2, NONE, NONE},
-                                                 {2, NONE, NONE},
-                                                 {2, NONE, NONE});
+    ok = launch_test_matrixadd<typename Impl::z>({partition::Z, gpus},
+                                                 {2, NIL, NIL},
+                                                 {2, NIL, NIL},
+                                                 {2, NIL, NIL});
     printf("%s Z %u: %d\n", Impl::name, gpus, ok);
 
     if (gpus == 1 || gpus >= 4) {
-        ok = launch_test_matrixadd<typename Impl::xy>({partition::xy, gpus},
-                                                      {NONE, 1, 0},
-                                                      {NONE, 1, 0},
-                                                      {NONE, 1, 0});
+        ok = launch_test_matrixadd<typename Impl::xy>({partition::XY, gpus},
+                                                      {NIL, 1, 0},
+                                                      {NIL, 1, 0},
+                                                      {NIL, 1, 0});
         printf("%s XY %u: %d\n", Impl::name, gpus, ok);
-        ok = launch_test_matrixadd<typename Impl::xy>({partition::xy, gpus},
-                                                      {NONE, 0, 1},
-                                                      {NONE, 0, 1},
-                                                      {NONE, 0, 1});
+        ok = launch_test_matrixadd<typename Impl::xy>({partition::XY, gpus},
+                                                      {NIL, 0, 1},
+                                                      {NIL, 0, 1},
+                                                      {NIL, 0, 1});
         printf("%s YX %u: %d\n", Impl::name, gpus, ok);
-        ok = launch_test_matrixadd<typename Impl::xz>({partition::xz, gpus},
-                                                      {2, NONE, 0},
-                                                      {2, NONE, 0},
-                                                      {2, NONE, 0});
+        ok = launch_test_matrixadd<typename Impl::xz>({partition::XZ, gpus},
+                                                      {2, NIL, 0},
+                                                      {2, NIL, 0},
+                                                      {2, NIL, 0});
         printf("%s XZ %u: %d\n", Impl::name, gpus, ok);
-        ok = launch_test_matrixadd<typename Impl::xz>({partition::xz, gpus},
-                                                      {0, NONE, 2},
-                                                      {0, NONE, 2},
-                                                      {0, NONE, 2});
+        ok = launch_test_matrixadd<typename Impl::xz>({partition::XZ, gpus},
+                                                      {0, NIL, 2},
+                                                      {0, NIL, 2},
+                                                      {0, NIL, 2});
         printf("%s ZX %u: %d\n", Impl::name, gpus, ok);
-        ok = launch_test_matrixadd<typename Impl::yz>({partition::yz, gpus},
-                                                      {2, 1, NONE},
-                                                      {2, 1, NONE},
-                                                      {2, 1, NONE});
+        ok = launch_test_matrixadd<typename Impl::yz>({partition::YZ, gpus},
+                                                      {2, 1, NIL},
+                                                      {2, 1, NIL},
+                                                      {2, 1, NIL});
         printf("%s YZ %u: %d\n", Impl::name, gpus, ok);
-        ok = launch_test_matrixadd<typename Impl::yz>({partition::yz, gpus},
-                                                      {1, 2, NONE},
-                                                      {1, 2, NONE},
-                                                      {1, 2, NONE});
+        ok = launch_test_matrixadd<typename Impl::yz>({partition::YZ, gpus},
+                                                      {1, 2, NIL},
+                                                      {1, 2, NIL},
+                                                      {1, 2, NIL});
         printf("%s ZY %u: %d\n", Impl::name, gpus, ok);
     }
 }

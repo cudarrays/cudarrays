@@ -143,9 +143,9 @@ TEST_F(storage_test, bitseq_seq)
 
 TEST_F(storage_test, part_helper_none)
 {
-    using part_helper_1_none = typename cudarrays::storage_part_helper<cudarrays::partition::none, 1>::type;
-    using part_helper_2_none = typename cudarrays::storage_part_helper<cudarrays::partition::none, 2>::type;
-    using part_helper_3_none = typename cudarrays::storage_part_helper<cudarrays::partition::none, 3>::type;
+    using part_helper_1_none = typename cudarrays::storage_part_helper<cudarrays::partition::NONE, 1>::type;
+    using part_helper_2_none = typename cudarrays::storage_part_helper<cudarrays::partition::NONE, 2>::type;
+    using part_helper_3_none = typename cudarrays::storage_part_helper<cudarrays::partition::NONE, 3>::type;
 
     ASSERT_EQ(part_helper_1_none::as_array().size(), 1u);
     ASSERT_EQ(part_helper_2_none::as_array().size(), 2u);
@@ -154,9 +154,9 @@ TEST_F(storage_test, part_helper_none)
 
 TEST_F(storage_test, part_helper_single)
 {
-    using part_helper_1_x = typename cudarrays::storage_part_helper<cudarrays::partition::x, 1>::type;
-    using part_helper_2_x = typename cudarrays::storage_part_helper<cudarrays::partition::x, 2>::type;
-    using part_helper_3_x = typename cudarrays::storage_part_helper<cudarrays::partition::x, 3>::type;
+    using part_helper_1_x = typename cudarrays::storage_part_helper<cudarrays::partition::X, 1>::type;
+    using part_helper_2_x = typename cudarrays::storage_part_helper<cudarrays::partition::X, 2>::type;
+    using part_helper_3_x = typename cudarrays::storage_part_helper<cudarrays::partition::X, 3>::type;
 
     ASSERT_EQ(part_helper_1_x::as_array()[0], true);
     ASSERT_EQ(part_helper_2_x::as_array()[0], false);
@@ -165,8 +165,8 @@ TEST_F(storage_test, part_helper_single)
     ASSERT_EQ(part_helper_3_x::as_array()[1], false);
     ASSERT_EQ(part_helper_3_x::as_array()[2], true);
 
-    using part_helper_2_y = typename cudarrays::storage_part_helper<cudarrays::partition::y, 2>::type;
-    using part_helper_3_y = typename cudarrays::storage_part_helper<cudarrays::partition::y, 3>::type;
+    using part_helper_2_y = typename cudarrays::storage_part_helper<cudarrays::partition::Y, 2>::type;
+    using part_helper_3_y = typename cudarrays::storage_part_helper<cudarrays::partition::Y, 3>::type;
 
     ASSERT_EQ(part_helper_2_y::as_array()[0], true);
     ASSERT_EQ(part_helper_2_y::as_array()[1], false);
@@ -174,7 +174,7 @@ TEST_F(storage_test, part_helper_single)
     ASSERT_EQ(part_helper_3_y::as_array()[1], true);
     ASSERT_EQ(part_helper_3_y::as_array()[2], false);
 
-    using part_helper_3_z = typename cudarrays::storage_part_helper<cudarrays::partition::z, 3>::type;
+    using part_helper_3_z = typename cudarrays::storage_part_helper<cudarrays::partition::Z, 3>::type;
 
     ASSERT_EQ(part_helper_3_z::as_array()[0], true);
     ASSERT_EQ(part_helper_3_z::as_array()[1], false);
@@ -409,28 +409,28 @@ TEST_F(storage_test, gpu_grid)
     //
     // 1D decompositions
     //
-    gpu_grid_conf<1>({cudarrays::partition::none, 12}, {1});
-    gpu_grid_conf<1>({cudarrays::partition::x, 12},    {12});
+    gpu_grid_conf<1>({cudarrays::partition::NONE, 12}, {1});
+    gpu_grid_conf<1>({cudarrays::partition::X, 12},    {12});
 
     //
     // 2D decompositions
     //
-    gpu_grid_conf<2>({cudarrays::partition::none, 12}, {1, 1});
-    gpu_grid_conf<2>({cudarrays::partition::x, 12},    {1, 12});
-    gpu_grid_conf<2>({cudarrays::partition::y, 12},    {12, 1});
-    gpu_grid_conf<2>({cudarrays::partition::xy, 12},   {6, 2});
+    gpu_grid_conf<2>({cudarrays::partition::NONE, 12}, {1, 1});
+    gpu_grid_conf<2>({cudarrays::partition::X, 12},    {1, 12});
+    gpu_grid_conf<2>({cudarrays::partition::Y, 12},    {12, 1});
+    gpu_grid_conf<2>({cudarrays::partition::XY, 12},   {6, 2});
 
     //
     // 3D decompositions
     //
-    gpu_grid_conf<3>({cudarrays::partition::none, 12}, {1, 1, 1});
-    gpu_grid_conf<3>({cudarrays::partition::x, 12},    {1, 1, 12});
-    gpu_grid_conf<3>({cudarrays::partition::y, 12},    {1, 12, 1});
-    gpu_grid_conf<3>({cudarrays::partition::z, 12},    {12, 1, 1});
-    gpu_grid_conf<3>({cudarrays::partition::xy, 12},   {1, 6, 2});
-    gpu_grid_conf<3>({cudarrays::partition::xz, 12},   {6, 1, 2});
-    gpu_grid_conf<3>({cudarrays::partition::yz, 12},   {6, 2, 1});
-    gpu_grid_conf<3>({cudarrays::partition::xyz, 12},  {3, 2, 2});
+    gpu_grid_conf<3>({cudarrays::partition::NONE, 12}, {1, 1, 1});
+    gpu_grid_conf<3>({cudarrays::partition::X, 12},    {1, 1, 12});
+    gpu_grid_conf<3>({cudarrays::partition::Y, 12},    {1, 12, 1});
+    gpu_grid_conf<3>({cudarrays::partition::Z, 12},    {12, 1, 1});
+    gpu_grid_conf<3>({cudarrays::partition::XY, 12},   {1, 6, 2});
+    gpu_grid_conf<3>({cudarrays::partition::XZ, 12},   {6, 1, 2});
+    gpu_grid_conf<3>({cudarrays::partition::YZ, 12},   {6, 2, 1});
+    gpu_grid_conf<3>({cudarrays::partition::XYZ, 12},  {3, 2, 2});
 }
 
 template <unsigned DimsComp, unsigned Dims>
@@ -454,59 +454,59 @@ TEST_F(storage_test, array_grid)
     //
     // 1D decompositions
     //
-    array_grid_conf<1, 1>({{cudarrays::partition::none, 12}, {-1}},
+    array_grid_conf<1, 1>({{cudarrays::partition::NONE, 12}, {-1}},
                           {1});
-    array_grid_conf<1, 1>({{cudarrays::partition::x, 12}, {0}},
+    array_grid_conf<1, 1>({{cudarrays::partition::X, 12}, {0}},
                           {12});
 
     //
     // 2D decompositions
     //
-    array_grid_conf<2, 2>({{cudarrays::partition::none, 12}, {-1, -1}},
+    array_grid_conf<2, 2>({{cudarrays::partition::NONE, 12}, {-1, -1}},
                           {1, 1});
-    array_grid_conf<2, 2>({{cudarrays::partition::x, 12}, {-1, 0}},
+    array_grid_conf<2, 2>({{cudarrays::partition::X, 12}, {-1, 0}},
                           {1, 12});
-    array_grid_conf<2, 2>({{cudarrays::partition::y, 12}, {1, -1}},
+    array_grid_conf<2, 2>({{cudarrays::partition::Y, 12}, {1, -1}},
                           {12, 1});
-    array_grid_conf<2, 2>({{cudarrays::partition::xy, 12}, {1, 0}},
+    array_grid_conf<2, 2>({{cudarrays::partition::XY, 12}, {1, 0}},
                           {6, 2});
-    array_grid_conf<2, 2>({{cudarrays::partition::xy, 12}, {0, 1}},
+    array_grid_conf<2, 2>({{cudarrays::partition::XY, 12}, {0, 1}},
                           {2, 6});
 
     //
     // 3D decompositions
     //
-    array_grid_conf<3, 3>({{cudarrays::partition::none, 12}, {-1, -1, -1}},
+    array_grid_conf<3, 3>({{cudarrays::partition::NONE, 12}, {-1, -1, -1}},
                           {1, 1, 1});
-    array_grid_conf<3, 3>({{cudarrays::partition::x, 12}, {-1, -1, 0}},
+    array_grid_conf<3, 3>({{cudarrays::partition::X, 12}, {-1, -1, 0}},
                           {1, 1, 12});
-    array_grid_conf<3, 3>({{cudarrays::partition::y, 12}, {-1, 1, -1}},
+    array_grid_conf<3, 3>({{cudarrays::partition::Y, 12}, {-1, 1, -1}},
                           {1, 12, 1});
-    array_grid_conf<3, 3>({{cudarrays::partition::z, 12}, {2, -1, -1}},
+    array_grid_conf<3, 3>({{cudarrays::partition::Z, 12}, {2, -1, -1}},
                           {12, 1, 1});
-    array_grid_conf<3, 3>({{cudarrays::partition::xy, 12}, {-1, 1, 0}},
+    array_grid_conf<3, 3>({{cudarrays::partition::XY, 12}, {-1, 1, 0}},
                           {1, 6, 2});
-    array_grid_conf<3, 3>({{cudarrays::partition::xy, 12}, {-1, 0, 1}},
+    array_grid_conf<3, 3>({{cudarrays::partition::XY, 12}, {-1, 0, 1}},
                           {1, 2, 6});
-    array_grid_conf<3, 3>({{cudarrays::partition::xz, 12}, {2, -1, 0}},
+    array_grid_conf<3, 3>({{cudarrays::partition::XZ, 12}, {2, -1, 0}},
                           {6, 1, 2});
-    array_grid_conf<3, 3>({{cudarrays::partition::xz, 12}, {0, -1, 2}},
+    array_grid_conf<3, 3>({{cudarrays::partition::XZ, 12}, {0, -1, 2}},
                           {2, 1, 6});
-    array_grid_conf<3, 3>({{cudarrays::partition::yz, 12}, {2, 1, -1}},
+    array_grid_conf<3, 3>({{cudarrays::partition::YZ, 12}, {2, 1, -1}},
                           {6, 2, 1});
-    array_grid_conf<3, 3>({{cudarrays::partition::yz, 12}, {1, 2, -1}},
+    array_grid_conf<3, 3>({{cudarrays::partition::YZ, 12}, {1, 2, -1}},
                           {2, 6, 1});
-    array_grid_conf<3, 3>({{cudarrays::partition::xyz, 12}, {2, 1, 0}},
+    array_grid_conf<3, 3>({{cudarrays::partition::XYZ, 12}, {2, 1, 0}},
                           {3, 2, 2});
-    array_grid_conf<3, 3>({{cudarrays::partition::xyz, 12}, {2, 0, 1}},
+    array_grid_conf<3, 3>({{cudarrays::partition::XYZ, 12}, {2, 0, 1}},
                           {3, 2, 2});
-    array_grid_conf<3, 3>({{cudarrays::partition::xyz, 12}, {1, 2, 0}},
+    array_grid_conf<3, 3>({{cudarrays::partition::XYZ, 12}, {1, 2, 0}},
                           {2, 3, 2});
-    array_grid_conf<3, 3>({{cudarrays::partition::xyz, 12}, {1, 0, 2}},
+    array_grid_conf<3, 3>({{cudarrays::partition::XYZ, 12}, {1, 0, 2}},
                           {2, 2, 3});
-    array_grid_conf<3, 3>({{cudarrays::partition::xyz, 12}, {0, 2, 1}},
+    array_grid_conf<3, 3>({{cudarrays::partition::XYZ, 12}, {0, 2, 1}},
                           {2, 3, 2});
-    array_grid_conf<3, 3>({{cudarrays::partition::xyz, 12}, {0, 1, 2}},
+    array_grid_conf<3, 3>({{cudarrays::partition::XYZ, 12}, {0, 1, 2}},
                           {2, 2, 3});
 }
 
@@ -537,64 +537,64 @@ TEST_F(storage_test, local_dims)
     //
     // 1D decompositions
     //
-    array_local_dim_conf<1, 1>(dims1, {{cudarrays::partition::none, 12}, {-1}},
+    array_local_dim_conf<1, 1>(dims1, {{cudarrays::partition::NONE, 12}, {-1}},
                                {120});
-    array_local_dim_conf<1, 1>(dims1, {{cudarrays::partition::x, 12}, {0}},
+    array_local_dim_conf<1, 1>(dims1, {{cudarrays::partition::X, 12}, {0}},
                                {10});
 
     //
     // 2D decompositions
     //
-    array_local_dim_conf<2, 2>(dims2, {{cudarrays::partition::none, 12}, {-1, -1}},
+    array_local_dim_conf<2, 2>(dims2, {{cudarrays::partition::NONE, 12}, {-1, -1}},
                                {120, 240});
-    array_local_dim_conf<2, 2>(dims2, {{cudarrays::partition::x, 12}, {-1, 0}},
+    array_local_dim_conf<2, 2>(dims2, {{cudarrays::partition::X, 12}, {-1, 0}},
                                {120, 20});
-    array_local_dim_conf<2, 2>(dims2, {{cudarrays::partition::y, 12}, {1, -1}},
+    array_local_dim_conf<2, 2>(dims2, {{cudarrays::partition::Y, 12}, {1, -1}},
                                {10, 240});
-    array_local_dim_conf<2, 2>(dims2, {{cudarrays::partition::xy, 12}, {1, 0}},
+    array_local_dim_conf<2, 2>(dims2, {{cudarrays::partition::XY, 12}, {1, 0}},
                                {20, 120});
-    array_local_dim_conf<2, 2>(dims2, {{cudarrays::partition::xy, 12}, {0, 1}},
+    array_local_dim_conf<2, 2>(dims2, {{cudarrays::partition::XY, 12}, {0, 1}},
                                {60, 40});
 
-    array_local_dim_conf<2, 3>(dims3, {{cudarrays::partition::xy, 12}, {-1, 1, 0}},
+    array_local_dim_conf<2, 3>(dims3, {{cudarrays::partition::XY, 12}, {-1, 1, 0}},
                                {120, 30, 120});
-    array_local_dim_conf<2, 3>(dims3, {{cudarrays::partition::xy, 12}, {-1, 0, 1}},
+    array_local_dim_conf<2, 3>(dims3, {{cudarrays::partition::XY, 12}, {-1, 0, 1}},
                                {120, 90, 40});
 
     //
     // 3D decompositions
     //
-    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::none, 12}, {-1, -1, -1}},
+    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::NONE, 12}, {-1, -1, -1}},
                                {120, 180, 240});
-    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::x, 12}, {-1, -1, 0}},
+    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::X, 12}, {-1, -1, 0}},
                                {120, 180, 20});
-    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::y, 12}, {-1, 1, -1}},
+    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::Y, 12}, {-1, 1, -1}},
                                {120, 15, 240});
-    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::z, 12}, {2, -1, -1}},
+    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::Z, 12}, {2, -1, -1}},
                                {10, 180, 240});
-    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::xy, 12}, {-1, 1, 0}},
+    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::XY, 12}, {-1, 1, 0}},
                                {120, 30, 120});
-    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::xy, 12}, {-1, 0, 1}},
+    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::XY, 12}, {-1, 0, 1}},
                                {120, 90, 40});
-    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::xz, 12}, {2, -1, 0}},
+    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::XZ, 12}, {2, -1, 0}},
                                {20, 180, 120});
-    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::xz, 12}, {0, -1, 2}},
+    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::XZ, 12}, {0, -1, 2}},
                                {60, 180, 40});
-    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::yz, 12}, {2, 1, -1}},
+    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::YZ, 12}, {2, 1, -1}},
                                {20, 90, 240});
-    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::yz, 12}, {1, 2, -1}},
+    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::YZ, 12}, {1, 2, -1}},
                                {60, 30, 240});
-    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::xyz, 12}, {2, 1, 0}},
+    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::XYZ, 12}, {2, 1, 0}},
                                {40, 90, 120});
-    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::xyz, 12}, {2, 0, 1}},
+    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::XYZ, 12}, {2, 0, 1}},
                                {40, 90, 120});
-    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::xyz, 12}, {1, 2, 0}},
+    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::XYZ, 12}, {1, 2, 0}},
                                {60, 60, 120});
-    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::xyz, 12}, {1, 0, 2}},
+    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::XYZ, 12}, {1, 0, 2}},
                                {60, 90, 80});
-    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::xyz, 12}, {0, 2, 1}},
+    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::XYZ, 12}, {0, 2, 1}},
                                {60, 60, 120});
-    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::xyz, 12}, {0, 1, 2}},
+    array_local_dim_conf<3, 3>(dims3, {{cudarrays::partition::XYZ, 12}, {0, 1, 2}},
                                {60, 90, 80});
 }
 

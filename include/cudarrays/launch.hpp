@@ -667,7 +667,7 @@ launcher<DimsComp, R, Args...>
 launch_(const char *name,
         R(&f)(Args...),
         const cuda_conf &conf,
-        compute_conf<DimsComp> gpuConf = {partition::none, 1},
+        compute_conf<DimsComp> gpuConf = {partition::NONE, 1},
         bool transposeXY = false)
 {
     return launcher<DimsComp, R, Args...>(f, name, conf, gpuConf, transposeXY);
@@ -678,7 +678,7 @@ launcher_async<DimsComp, R, Args...>
 launch_async_(const char *name,
               R(&f)(Args...),
               const cuda_conf &conf,
-              compute_conf<DimsComp> gpuConf = {partition::none, 1},
+              compute_conf<DimsComp> gpuConf = {partition::NONE, 1},
               bool transposeXY = false)
 {
     return launcher_async<DimsComp, R, Args...>(f, name, conf, gpuConf, transposeXY);

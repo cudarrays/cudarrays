@@ -127,7 +127,7 @@ launch_test_vecadd(compute_conf<1> gpus, mapping1D infoC,
 
 void dead_code()
 {
-    launch_test_vecadd<reshape_cyclic::x>({partition::x, 1}, {{0}}, {{0}}, {{0}});
+    launch_test_vecadd<reshape_cyclic::x>({partition::X, 1}, {{0}}, {{0}}, {{0}});
 }
 
 
@@ -137,31 +137,31 @@ int main()
 
     bool ok = false;
 
-    ok = launch_test_vecadd<replicate::x>({ partition::x, 1 },
+    ok = launch_test_vecadd<replicate::x>({ partition::X, 1 },
                                           {{0}}, {{0}}, {{0}});
     printf("REPLICATED 1: %d\n", ok);
-    ok = launch_test_vecadd<replicate::x>({ partition::x, 2 },
+    ok = launch_test_vecadd<replicate::x>({ partition::X, 2 },
                                           {{0}}, {{0}}, {{0}});
     printf("REPLICATED 2: %d\n", ok);
-    ok = launch_test_vecadd<replicate::x>({ partition::x, 4 },
+    ok = launch_test_vecadd<replicate::x>({ partition::X, 4 },
                                           {{0}}, {{0}}, {{0}});
     printf("REPLICATED 4: %d\n", ok);
-    ok = launch_test_vecadd<vm::x>({ partition::x, 1 },
+    ok = launch_test_vecadd<vm::x>({ partition::X, 1 },
                                    {{0}}, {{0}}, {{0}});
     printf("DISTRIBUTED_VM 1: %d\n", ok);
-    ok = launch_test_vecadd<vm::x>({partition::x, 2},
+    ok = launch_test_vecadd<vm::x>({partition::X, 2},
                                    {{0}}, {{0}}, {{0}});
     printf("DISTRIBUTED_VM 2: %d\n", ok);
-    ok = launch_test_vecadd<vm::x>({partition::x, 4},
+    ok = launch_test_vecadd<vm::x>({partition::X, 4},
                                    {{0}}, {{0}}, {{0}});
     printf("DISTRIBUTED_VM 4: %d\n", ok);
-    ok = launch_test_vecadd<reshape::x>({partition::x, 1},
+    ok = launch_test_vecadd<reshape::x>({partition::X, 1},
                                         {{0}}, {{0}}, {{0}});
     printf("RESHAPE_BLOCK   1: %d\n", ok);
-    ok = launch_test_vecadd<reshape::x>({partition::x, 2},
+    ok = launch_test_vecadd<reshape::x>({partition::X, 2},
                                         {{0}}, {{0}}, {{0}});
     printf("RESHAPE_BLOCK_X 2: %d\n", ok);
-    ok = launch_test_vecadd<reshape::x>({partition::x, 4},
+    ok = launch_test_vecadd<reshape::x>({partition::X, 4},
                                         {{0}}, {{0}}, {{0}});
     printf("RESHAPE_BLOCK_X 4: %d\n", ok);
 

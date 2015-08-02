@@ -142,88 +142,88 @@ int main()
 {
     init_lib();
 
-    static const int NONE = -1;
+    static const int NIL = -1;
 
     bool ok = false;
 
-    ok = launch_test_matrixmul<replicate::none>({partition::none, 1},
-                                                {NONE, NONE},
-                                                {NONE, NONE},
-                                                {NONE, NONE});
+    ok = launch_test_matrixmul<replicate::none>({partition::NONE, 1},
+                                                {NIL, NIL},
+                                                {NIL, NIL},
+                                                {NIL, NIL});
     printf("REPLICATE 1: %d\n", ok);
 
-    ok = launch_test_matrixmul<replicate::none>({partition::y, 2},
-                                                {0, NONE},
-                                                {0, NONE},
-                                                {0, NONE});
+    ok = launch_test_matrixmul<replicate::none>({partition::Y, 2},
+                                                {0, NIL},
+                                                {0, NIL},
+                                                {0, NIL});
     printf("REPLICATE 2: %d\n", ok);
 
-    ok = launch_test_matrixmul<replicate::none>({partition::y, 4},
-                                                {0, NONE},
-                                                {0, NONE},
-                                                {0, NONE});
+    ok = launch_test_matrixmul<replicate::none>({partition::Y, 4},
+                                                {0, NIL},
+                                                {0, NIL},
+                                                {0, NIL});
     printf("REPLICATE 4: %d\n", ok);
 
-    ok = launch_test_matrixmul<vm::none>({partition::none, 1},
-                                         {NONE, NONE},
-                                         {NONE, NONE},
-                                         {NONE, NONE});
+    ok = launch_test_matrixmul<vm::none>({partition::NONE, 1},
+                                         {NIL, NIL},
+                                         {NIL, NIL},
+                                         {NIL, NIL});
     printf("VM 1: %d\n", ok);
 
-    ok = launch_test_matrixmul<vm::none>({partition::y, 2},
-                                         {0, NONE},
-                                         {0, NONE},
-                                         {0, NONE});
+    ok = launch_test_matrixmul<vm::none>({partition::Y, 2},
+                                         {0, NIL},
+                                         {0, NIL},
+                                         {0, NIL});
     printf("VM 2: %d\n", ok);
 
-    ok = launch_test_matrixmul<vm::none>({partition::y, 4},
-                                         {0, NONE},
-                                         {0, NONE},
-                                         {0, NONE});
+    ok = launch_test_matrixmul<vm::none>({partition::Y, 4},
+                                         {0, NIL},
+                                         {0, NIL},
+                                         {0, NIL});
     printf("VM 4: %d\n", ok);
 
     // TODO: implement proper replication
 #if 0
     ok = launch_test_matrixmul<reshape::none>({1, partition::none},
-                                               {NONE, NONE},
-                                               {NONE, NONE},
-                                               {NONE, NONE});
+                                               {NIL, NIL},
+                                               {NIL, NIL},
+                                               {NIL, NIL});
     printf("RESHAPE_BLOCK   1: %d\n", ok);
 #endif
 
     ok = launch_test_matrixmul<reshape::x, reshape::x, replicate::none>
-                                           ({partition::x, 2},
-                                            {NONE, 0},
-                                            {NONE, 0},
-                                            {NONE, NONE});
+                                           ({partition::X, 2},
+                                            {NIL, 0},
+                                            {NIL, 0},
+                                            {NIL, NIL});
     printf("RESHAPE_BLOCK_X 2: %d\n", ok);
 
     ok = launch_test_matrixmul<reshape::y, replicate::none, reshape::x>
-                                           ({partition::y, 2},
-                                            {1, NONE},
-                                            {NONE, NONE},
-                                            {NONE, 1});
+                                           ({partition::Y, 2},
+                                            {1, NIL},
+                                            {NIL, NIL},
+                                            {NIL, 1});
     printf("RESHAPE_BLOCK_Y 2: %d\n", ok);
 
     ok = launch_test_matrixmul<reshape::x, reshape::x, replicate::none>
-                                           ({partition::x, 4},
-                                            {NONE, 0},
-                                            {NONE, 0},
-                                            {NONE, NONE});
+                                           ({partition::X, 4},
+                                            {NIL, 0},
+                                            {NIL, 0},
+                                            {NIL, NIL});
     printf("RESHAPE_BLOCK_X 4, 4: %d\n", ok);
 
     ok = launch_test_matrixmul<reshape::y, replicate::none, reshape::x>
-                                           ({partition::y, 4},
-                                            {1, NONE},
-                                            {NONE, NONE},
-                                            {NONE, 1});
+                                           ({partition::Y, 4},
+                                            {1, NIL},
+                                            {NIL, NIL},
+                                            {NIL, 1});
     printf("RESHAPE_BLOCK_Y 4, 4: %d\n", ok);
 
     ok = launch_test_matrixmul<reshape::xy, replicate::x, replicate::x>
-                                            ({partition::xy, 4},
+                                            ({partition::XY, 4},
                                              {1, 0},
-                                             {NONE, 0},
-                                             {NONE, 1});
+                                             {NIL, 0},
+                                             {NIL, 1});
     printf("RESHAPE_BLOCK_XY 4, 4: %d\n", ok);
 #if 0
     ok = launch_test_matrixmul<storage_tag<COMPUTE_ELEMS> >(1, 1);

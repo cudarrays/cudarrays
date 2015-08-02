@@ -70,9 +70,9 @@ struct storage_part_dim_helper {
     static_assert(dimensions <= 3,
                   "Up to 3 dimensional arrays are supported so far");
 
-    static constexpr bool X = bool(partition::x & Part);
-    static constexpr bool Y = bool(partition::y & Part);
-    static constexpr bool Z = bool(partition::z & Part);
+    static constexpr bool X = bool(partition::X & Part);
+    static constexpr bool Y = bool(partition::Y & Part);
+    static constexpr bool Z = bool(partition::Z & Part);
 };
 
 
@@ -175,17 +175,17 @@ struct storage_part
     static constexpr storage_tag       impl = Impl;
     static constexpr storage_tag final_impl = select_auto_impl<Impl>::impl;
 
-    using none = storage_conf<Impl, partition::none>;
+    using none = storage_conf<Impl, partition::NONE>;
 
-    using x = storage_conf<Impl, partition::x>;
-    using y = storage_conf<Impl, partition::y>;
-    using z = storage_conf<Impl, partition::z>;
+    using x = storage_conf<Impl, partition::X>;
+    using y = storage_conf<Impl, partition::Y>;
+    using z = storage_conf<Impl, partition::Z>;
 
-    using xy = storage_conf<Impl, partition::xy>;
-    using xz = storage_conf<Impl, partition::xz>;
-    using yz = storage_conf<Impl, partition::yz>;
+    using xy = storage_conf<Impl, partition::XY>;
+    using xz = storage_conf<Impl, partition::XZ>;
+    using yz = storage_conf<Impl, partition::YZ>;
 
-    using xyz = storage_conf<Impl, partition::xyz>;
+    using xyz = storage_conf<Impl, partition::XYZ>;
 };
 
 struct automatic : storage_part<storage_tag::AUTO> {
