@@ -146,37 +146,37 @@ int main()
 
     bool ok = false;
 
-    ok = launch_test_matrixmul<replicate::none>({partition::NONE, 1},
+    ok = launch_test_matrixmul<replicate::none>({compute::none, 1},
                                                 {NIL, NIL},
                                                 {NIL, NIL},
                                                 {NIL, NIL});
     printf("REPLICATE 1: %d\n", ok);
 
-    ok = launch_test_matrixmul<replicate::none>({partition::Y, 2},
+    ok = launch_test_matrixmul<replicate::none>({compute::y, 2},
                                                 {0, NIL},
                                                 {0, NIL},
                                                 {0, NIL});
     printf("REPLICATE 2: %d\n", ok);
 
-    ok = launch_test_matrixmul<replicate::none>({partition::Y, 4},
+    ok = launch_test_matrixmul<replicate::none>({compute::y, 4},
                                                 {0, NIL},
                                                 {0, NIL},
                                                 {0, NIL});
     printf("REPLICATE 4: %d\n", ok);
 
-    ok = launch_test_matrixmul<vm::none>({partition::NONE, 1},
+    ok = launch_test_matrixmul<vm::none>({compute::none, 1},
                                          {NIL, NIL},
                                          {NIL, NIL},
                                          {NIL, NIL});
     printf("VM 1: %d\n", ok);
 
-    ok = launch_test_matrixmul<vm::none>({partition::Y, 2},
+    ok = launch_test_matrixmul<vm::none>({compute::y, 2},
                                          {0, NIL},
                                          {0, NIL},
                                          {0, NIL});
     printf("VM 2: %d\n", ok);
 
-    ok = launch_test_matrixmul<vm::none>({partition::Y, 4},
+    ok = launch_test_matrixmul<vm::none>({compute::y, 4},
                                          {0, NIL},
                                          {0, NIL},
                                          {0, NIL});
@@ -192,35 +192,35 @@ int main()
 #endif
 
     ok = launch_test_matrixmul<reshape::x, reshape::x, replicate::none>
-                                           ({partition::X, 2},
+                                           ({compute::x, 2},
                                             {NIL, 0},
                                             {NIL, 0},
                                             {NIL, NIL});
     printf("RESHAPE_BLOCK_X 2: %d\n", ok);
 
     ok = launch_test_matrixmul<reshape::y, replicate::none, reshape::x>
-                                           ({partition::Y, 2},
+                                           ({compute::y, 2},
                                             {1, NIL},
                                             {NIL, NIL},
                                             {NIL, 1});
     printf("RESHAPE_BLOCK_Y 2: %d\n", ok);
 
     ok = launch_test_matrixmul<reshape::x, reshape::x, replicate::none>
-                                           ({partition::X, 4},
+                                           ({compute::x, 4},
                                             {NIL, 0},
                                             {NIL, 0},
                                             {NIL, NIL});
     printf("RESHAPE_BLOCK_X 4, 4: %d\n", ok);
 
     ok = launch_test_matrixmul<reshape::y, replicate::none, reshape::x>
-                                           ({partition::Y, 4},
+                                           ({compute::y, 4},
                                             {1, NIL},
                                             {NIL, NIL},
                                             {NIL, 1});
     printf("RESHAPE_BLOCK_Y 4, 4: %d\n", ok);
 
     ok = launch_test_matrixmul<reshape::xy, replicate::x, replicate::x>
-                                            ({partition::XY, 4},
+                                            ({compute::xy, 4},
                                              {1, 0},
                                              {NIL, 0},
                                              {NIL, 1});

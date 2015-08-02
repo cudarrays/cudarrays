@@ -32,9 +32,21 @@
 
 #include <array>
 
+#include "common.hpp"
 #include "utils.hpp"
 
 namespace cudarrays {
+
+enum compute : unsigned {
+    none = partition::NONE,
+    x = partition::X,
+    y = partition::Y,
+    z = partition::Z,
+    xy = partition::XY,
+    xz = partition::XZ,
+    yz = partition::YZ,
+    xyz = partition::XYZ
+};
 
 template <unsigned Dims>
 struct compute_part_helper;
@@ -42,11 +54,11 @@ struct compute_part_helper;
 template <>
 struct compute_part_helper<1> {
     static std::array<bool, 1>
-    make_array(partition c)
+    make_array(compute c)
     {
         std::array<bool, 1> ret;
-        if (c == partition::NONE)   ret = { false };
-        else if (c == partition::X) ret = { true  };
+        if (c == compute::none)   ret = { false };
+        else if (c == compute::y) ret = { true  };
         else abort();
         return ret;
     }
@@ -55,13 +67,13 @@ struct compute_part_helper<1> {
 template <>
 struct compute_part_helper<2> {
     static std::array<bool, 2>
-    make_array(partition c)
+    make_array(compute c)
     {
         std::array<bool, 2> ret;
-        if (c == partition::NONE)    ret = { false, false };
-        else if (c == partition::X)  ret = { false, true  };
-        else if (c == partition::Y)  ret = { true, false  };
-        else if (c == partition::XY) ret = { true, true   };
+        if (c == compute::none)    ret = { false, false };
+        else if (c == compute::x)  ret = { false, true  };
+        else if (c == compute::y)  ret = { true, false  };
+        else if (c == compute::xy) ret = { true, true   };
         else abort();
         return ret;
     }
@@ -70,17 +82,17 @@ struct compute_part_helper<2> {
 template <>
 struct compute_part_helper<3> {
     static std::array<bool, 3>
-    make_array(partition c)
+    make_array(compute c)
     {
         std::array<bool, 3> ret;
-        if (c == partition::NONE)     ret = { false, false, false };
-        else if (c == partition::X)   ret = { false, false, true  };
-        else if (c == partition::Y)   ret = { false, true,  false };
-        else if (c == partition::Z)   ret = { true,  false, false };
-        else if (c == partition::XY)  ret = { false, true,  true  };
-        else if (c == partition::XZ)  ret = { true,  false, true  };
-        else if (c == partition::YZ)  ret = { true,  true,  false };
-        else if (c == partition::XYZ) ret = { true,  true,  true  };
+        if (c == compute::none)     ret = { false, false, false };
+        else if (c == compute::x)   ret = { false, false, true  };
+        else if (c == compute::y)   ret = { false, true,  false };
+        else if (c == compute::z)   ret = { true,  false, false };
+        else if (c == compute::xy)  ret = { false, true,  true  };
+        else if (c == compute::xz)  ret = { true,  false, true  };
+        else if (c == compute::yz)  ret = { true,  true,  false };
+        else if (c == compute::xyz) ret = { true,  true,  true  };
         else abort();
         return ret;
     }
@@ -91,7 +103,7 @@ struct compute_conf {
     std::array<bool, Dims> info;
     unsigned procs;
 
-    compute_conf(partition c, unsigned _procs = 0) :
+    compute_conf(compute c, unsigned _procs = 0) :
         procs(_procs)
     {
         info = compute_part_helper<Dims>::make_array(c);

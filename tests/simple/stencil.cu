@@ -146,21 +146,21 @@ void test_conf(unsigned gpus)
 {
     bool ok = false;
 
-    ok = launch_test_stencil<typename Impl::x>({partition::X, gpus},
+    ok = launch_test_stencil<typename Impl::x>({compute::x, gpus},
                                                {NIL, 0},
                                                {NIL, 0});
     printf("%s X %u: %d\n", Impl::name, gpus, ok);
-    ok = launch_test_stencil<typename Impl::y>({partition::Y, gpus},
+    ok = launch_test_stencil<typename Impl::y>({compute::y, gpus},
                                                {1, NIL},
                                                {1, NIL});
     printf("%s Y %u: %d\n", Impl::name, gpus, ok);
 
     if (gpus == 1 || gpus >= 4) {
-        ok = launch_test_stencil<typename Impl::xy>({partition::XY, gpus},
+        ok = launch_test_stencil<typename Impl::xy>({compute::xy, gpus},
                                                     {1, 0},
                                                     {1, 0});
         printf("%s XY %u: %d\n", Impl::name, gpus, ok);
-        ok = launch_test_stencil<typename Impl::xy>({partition::XY, gpus},
+        ok = launch_test_stencil<typename Impl::xy>({compute::xy, gpus},
                                                     {0, 1},
                                                     {0, 1});
         printf("%s YX %u: %d\n", Impl::name, gpus, ok);
@@ -171,7 +171,7 @@ int main()
 {
     init_lib();
     bool ok;
-    ok = launch_test_stencil<replicate::none>({partition::NONE, 1},
+    ok = launch_test_stencil<replicate::none>({compute::none, 1},
                                               {NIL, NIL},
                                               {NIL, NIL});
     printf("%s %u: %d\n", replicate::name, 1, ok);
