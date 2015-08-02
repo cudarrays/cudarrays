@@ -63,69 +63,74 @@ enum class storage_tag {
     REPLICATED,
 };
 
-template <typename PartSeq>
+template <partition Part, unsigned Dims>
 struct storage_part_dim_helper {
-    static constexpr size_t dimensions = SEQ_SIZE(PartSeq);
+    static constexpr size_t dimensions = Dims;
 
     static_assert(dimensions <= 3,
                   "Up to 3 dimensional arrays are supported so far");
 
-    static constexpr bool X = SEQ_AT_OR(PartSeq, size_t((ssize_t(dimensions) - 1) - 0), false);
-    static constexpr bool Y = SEQ_AT_OR(PartSeq, size_t((ssize_t(dimensions) - 1) - 1), false);
-    static constexpr bool Z = SEQ_AT_OR(PartSeq, size_t((ssize_t(dimensions) - 1) - 2), false);
+    static constexpr bool X = bool(partition::x & Part);
+    static constexpr bool Y = bool(partition::y & Part);
+    static constexpr bool Z = bool(partition::z & Part);
+};
+
+
+namespace detail {
+template <unsigned Bits, typename Idxs>
+struct bitset_to_seq;
+
+template <unsigned Bits, unsigned ...Idxs>
+struct bitset_to_seq<Bits, SEQ_WITH_TYPE(unsigned, Idxs...)> {
+    using type = SEQ_REVERSE(SEQ_WITH_TYPE(bool, Bits & (1 << Idxs)...));
+};
+
+template <unsigned Idx, typename Seq>
+struct seq_to_bitset;
+
+template <unsigned Idx, bool Val, bool ...Vals>
+struct seq_to_bitset<Idx, SEQ_WITH_TYPE(bool, Val, Vals...)> {
+    constexpr static unsigned value_helper()
+    {
+        return unsigned(Val) << (Idx - 1) | seq_to_bitset<Idx - 1, SEQ_WITH_TYPE(bool, Vals...)>::value_helper();
+    }
+
+    constexpr static unsigned value()
+    {
+        return value_helper();
+    }
+};
+
+template <>
+struct seq_to_bitset<0, SEQ_WITH_TYPE(bool)> {
+    constexpr static unsigned value_helper()
+    {
+        return 0;
+    }
+
+    constexpr static unsigned value()
+    {
+        return 0;
+    }
+};
+}
+
+template <unsigned Bits, unsigned N>
+struct bitset_to_seq {
+    using type = typename detail::bitset_to_seq<Bits, SEQ_GEN_INC(N)>::type;
+};
+
+template <typename S>
+struct seq_to_bitset {
+    constexpr static unsigned value()
+    {
+        return detail::seq_to_bitset<SEQ_SIZE(S), S>::value();
+    }
 };
 
 template <partition Part, unsigned Dims>
-struct storage_part_helper;
-
-// Predefined partition classes
-template <unsigned Dims>
-struct storage_part_helper<partition::none, Dims> {
-    using type = SEQ_GEN_FILL(false, Dims);
-};
-
-template <unsigned Dims>
-struct storage_part_helper<partition::x, Dims> {
-    using type = SEQ_APPEND(SEQ_GEN_FILL(false, Dims - 1), true);
-};
-
-template <>
-struct storage_part_helper<partition::y, 2> {
-    using type = SEQ(true, false);
-};
-template <>
-struct storage_part_helper<partition::y, 3> {
-    using type = SEQ(false, true, false);
-};
-
-template <unsigned Dims>
-struct storage_part_helper<partition::z, Dims> {
-    static_assert(Dims >= 3, "At least 3 dimensions are needed for Z decomposition");
-    using type = SEQ_PREPEND(SEQ_GEN_FILL(false, Dims - 1), true);
-};
-
-template <>
-struct storage_part_helper<partition::xy, 2> {
-    using type = SEQ(true, true);
-};
-template <>
-struct storage_part_helper<partition::xy, 3> {
-    using type = SEQ(false, true, true);
-};
-
-template <>
-struct storage_part_helper<partition::xz, 3> {
-    using type = SEQ(true, false, true);
-};
-
-template <>
-struct storage_part_helper<partition::yz, 3> {
-    using type = SEQ(true, true, false);
-};
-
-template <>
-struct storage_part_helper<partition::xyz, 3> {
-    using type = SEQ(true, true, true);
+struct storage_part_helper {
+    using type = typename bitset_to_seq<Part, Dims>::type;
 };
 
 template <unsigned Dims, typename StorageType>
@@ -156,12 +161,12 @@ struct select_auto_impl<storage_tag::AUTO> {
     static constexpr storage_tag impl = storage_tag::REPLICATED;
 };
 
-template <storage_tag Storage, partition Part, template <partition, unsigned> class PartConf>
+template <storage_tag Storage, partition Part>
 struct storage_conf {
     static constexpr storage_tag       impl = Storage;
     static constexpr storage_tag final_impl = select_auto_impl<Storage>::impl;
     template <unsigned Dims>
-    using part_seq = typename PartConf<Part, Dims>::type;
+    using part_seq = typename storage_part_helper<Part, Dims>::type;
 };
 
 template <storage_tag Impl>
@@ -170,17 +175,17 @@ struct storage_part
     static constexpr storage_tag       impl = Impl;
     static constexpr storage_tag final_impl = select_auto_impl<Impl>::impl;
 
-    using none = storage_conf<Impl, partition::none, storage_part_helper>;
+    using none = storage_conf<Impl, partition::none>;
 
-    using x = storage_conf<Impl, partition::x, storage_part_helper>;
-    using y = storage_conf<Impl, partition::y, storage_part_helper>;
-    using z = storage_conf<Impl, partition::z, storage_part_helper>;
+    using x = storage_conf<Impl, partition::x>;
+    using y = storage_conf<Impl, partition::y>;
+    using z = storage_conf<Impl, partition::z>;
 
-    using xy = storage_conf<Impl, partition::xy, storage_part_helper>;
-    using xz = storage_conf<Impl, partition::xz, storage_part_helper>;
-    using yz = storage_conf<Impl, partition::yz, storage_part_helper>;
+    using xy = storage_conf<Impl, partition::xy>;
+    using xz = storage_conf<Impl, partition::xz>;
+    using yz = storage_conf<Impl, partition::yz>;
 
-    using xyz = storage_conf<Impl, partition::xyz, storage_part_helper>;
+    using xyz = storage_conf<Impl, partition::xyz>;
 };
 
 struct automatic : storage_part<storage_tag::AUTO> {
@@ -265,7 +270,7 @@ struct storage_traits {
 
     // User-provided dimension ordering
     using dim_order_seq = typename make_dim_order<array_traits_type::dimensions, StorageType>::seq_type;
-    // Sort array extents
+    // Order array extents
     using extents_pre_seq =
         SEQ_REORDER(
             typename array_traits_type::extents_seq,
@@ -282,15 +287,18 @@ struct storage_traits {
                          SEQ_GEN_FILL(array_size_t(0), dimensions)
                         >::type;
 
-    // Sort array extents
+    // Get offsets for the ordered extents
     using offsets_seq = typename array_offsets_helper<extents_seq>::seq;
 
-    // Sort dimension partitioning configuration
+    // Order dimension partitioning configuration
     using partitioning_seq =
         SEQ_REORDER(
             typename PartConf::template part_seq<array_traits_type::dimensions>,
             dim_order_seq);
+    static constexpr partition partition_value =
+        partition(seq_to_bitset<partitioning_seq>::value());
 
+    // Type to order elements at run-time
     using permuter_type = utils::permuter<dim_order_seq>;
 };
 
@@ -300,6 +308,8 @@ template <typename T, typename StorageType, typename PartConf>
 constexpr unsigned storage_traits<T, StorageType, PartConf>::static_dimensions;
 template <typename T, typename StorageType, typename PartConf>
 constexpr unsigned storage_traits<T, StorageType, PartConf>::dynamic_dimensions;
+template <typename T, typename StorageType, typename PartConf>
+constexpr partition storage_traits<T, StorageType, PartConf>::partition_value;
 
 }
 

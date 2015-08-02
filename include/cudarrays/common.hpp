@@ -43,11 +43,15 @@
 
 namespace cudarrays {
 
-enum class partition {
-    none,
-    x, y, z,
-    xy, xz, yz,
-    xyz
+enum partition : unsigned {
+    none = 0b000,
+    x    = 0b001,
+    y    = 0b010,
+    z    = 0b100,
+    xy   = 0b011,
+    xz   = 0b101,
+    yz   = 0b110,
+    xyz  = 0b111
 };
 
 void init_lib();

@@ -107,6 +107,80 @@ TEST_F(storage_test, reorder)
     ASSERT_EQ(mix[2], 0u);
 }
 
+TEST_F(storage_test, bitseq_seq)
+{
+    using T0 = typename cudarrays::bitset_to_seq<0b0, 1>::type;
+    ASSERT_EQ(cudarrays::seq_to_bitset<T0>::value(), 0b0u);
+    using T1 = typename cudarrays::bitset_to_seq<0b1, 1>::type;
+    ASSERT_EQ(cudarrays::seq_to_bitset<T1>::value(), 0b1u);
+
+    using T00 = typename cudarrays::bitset_to_seq<0b00, 2>::type;
+    ASSERT_EQ(cudarrays::seq_to_bitset<T00>::value(), 0b00u);
+    using T01 = typename cudarrays::bitset_to_seq<0b01, 2>::type;
+    ASSERT_EQ(cudarrays::seq_to_bitset<T01>::value(), 0b01u);
+    using T10 = typename cudarrays::bitset_to_seq<0b10, 2>::type;
+    ASSERT_EQ(cudarrays::seq_to_bitset<T10>::value(), 0b10u);
+    using T11 = typename cudarrays::bitset_to_seq<0b11, 2>::type;
+    ASSERT_EQ(cudarrays::seq_to_bitset<T11>::value(), 0b11u);
+
+    using T000 = typename cudarrays::bitset_to_seq<0b000, 3>::type;
+    ASSERT_EQ(cudarrays::seq_to_bitset<T000>::value(), 0b000u);
+    using T001 = typename cudarrays::bitset_to_seq<0b001, 3>::type;
+    ASSERT_EQ(cudarrays::seq_to_bitset<T001>::value(), 0b001u);
+    using T010 = typename cudarrays::bitset_to_seq<0b010, 3>::type;
+    ASSERT_EQ(cudarrays::seq_to_bitset<T010>::value(), 0b010u);
+    using T011 = typename cudarrays::bitset_to_seq<0b011, 3>::type;
+    ASSERT_EQ(cudarrays::seq_to_bitset<T011>::value(), 0b011u);
+    using T100 = typename cudarrays::bitset_to_seq<0b100, 3>::type;
+    ASSERT_EQ(cudarrays::seq_to_bitset<T100>::value(), 0b100u);
+    using T101 = typename cudarrays::bitset_to_seq<0b101, 3>::type;
+    ASSERT_EQ(cudarrays::seq_to_bitset<T101>::value(), 0b101u);
+    using T110 = typename cudarrays::bitset_to_seq<0b110, 3>::type;
+    ASSERT_EQ(cudarrays::seq_to_bitset<T110>::value(), 0b110u);
+    using T111 = typename cudarrays::bitset_to_seq<0b111, 3>::type;
+    ASSERT_EQ(cudarrays::seq_to_bitset<T111>::value(), 0b111u);
+}
+
+TEST_F(storage_test, part_helper_none)
+{
+    using part_helper_1_none = typename cudarrays::storage_part_helper<cudarrays::partition::none, 1>::type;
+    using part_helper_2_none = typename cudarrays::storage_part_helper<cudarrays::partition::none, 2>::type;
+    using part_helper_3_none = typename cudarrays::storage_part_helper<cudarrays::partition::none, 3>::type;
+
+    ASSERT_EQ(part_helper_1_none::as_array().size(), 1u);
+    ASSERT_EQ(part_helper_2_none::as_array().size(), 2u);
+    ASSERT_EQ(part_helper_3_none::as_array().size(), 3u);
+}
+
+TEST_F(storage_test, part_helper_single)
+{
+    using part_helper_1_x = typename cudarrays::storage_part_helper<cudarrays::partition::x, 1>::type;
+    using part_helper_2_x = typename cudarrays::storage_part_helper<cudarrays::partition::x, 2>::type;
+    using part_helper_3_x = typename cudarrays::storage_part_helper<cudarrays::partition::x, 3>::type;
+
+    ASSERT_EQ(part_helper_1_x::as_array()[0], true);
+    ASSERT_EQ(part_helper_2_x::as_array()[0], false);
+    ASSERT_EQ(part_helper_2_x::as_array()[1], true);
+    ASSERT_EQ(part_helper_3_x::as_array()[0], false);
+    ASSERT_EQ(part_helper_3_x::as_array()[1], false);
+    ASSERT_EQ(part_helper_3_x::as_array()[2], true);
+
+    using part_helper_2_y = typename cudarrays::storage_part_helper<cudarrays::partition::y, 2>::type;
+    using part_helper_3_y = typename cudarrays::storage_part_helper<cudarrays::partition::y, 3>::type;
+
+    ASSERT_EQ(part_helper_2_y::as_array()[0], true);
+    ASSERT_EQ(part_helper_2_y::as_array()[1], false);
+    ASSERT_EQ(part_helper_3_y::as_array()[0], false);
+    ASSERT_EQ(part_helper_3_y::as_array()[1], true);
+    ASSERT_EQ(part_helper_3_y::as_array()[2], false);
+
+    using part_helper_3_z = typename cudarrays::storage_part_helper<cudarrays::partition::z, 3>::type;
+
+    ASSERT_EQ(part_helper_3_z::as_array()[0], true);
+    ASSERT_EQ(part_helper_3_z::as_array()[1], false);
+    ASSERT_EQ(part_helper_3_z::as_array()[2], false);
+}
+
 template <unsigned Dims>
 using extents = std::array<cudarrays::array_size_t, Dims>;
 

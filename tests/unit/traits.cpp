@@ -266,3 +266,30 @@ TEST_F(traits_test, storage_traits_offset2)
     ASSERT_EQ(custom_traits::offsets_seq::as_array()[0], 0u);
     ASSERT_EQ(custom_traits::offsets_seq::as_array()[1], 0u);
 }
+
+TEST_F(traits_test, storage_traits_partition)
+{
+    using rmo_traits1 = cudarrays::storage_traits<int[1][2][3],
+                                                  cudarrays::layout::rmo,
+                                                  cudarrays::storage_conf<cudarrays::storage_tag::VM,
+                                                                          cudarrays::partition(0b100)>>;
+    using rmo_traits2 = cudarrays::storage_traits<int[1][2][3],
+                                                  cudarrays::layout::rmo,
+                                                  cudarrays::storage_conf<cudarrays::storage_tag::VM,
+                                                                          cudarrays::partition(0b001)>>;
+
+    using cmo_traits1 = cudarrays::storage_traits<int[1][2][3],
+                                                  cudarrays::layout::cmo,
+                                                  cudarrays::storage_conf<cudarrays::storage_tag::VM,
+                                                                          cudarrays::partition(0b100)>>;
+    using cmo_traits2 = cudarrays::storage_traits<int[1][2][3],
+                                                  cudarrays::layout::cmo,
+                                                  cudarrays::storage_conf<cudarrays::storage_tag::VM,
+                                                                          cudarrays::partition(0b001)>>;
+
+    ASSERT_EQ(rmo_traits1::partition_value, cudarrays::partition(0b100));
+    ASSERT_EQ(rmo_traits2::partition_value, cudarrays::partition(0b001));
+
+    ASSERT_EQ(cmo_traits1::partition_value, cudarrays::partition(0b001));
+    ASSERT_EQ(cmo_traits2::partition_value, cudarrays::partition(0b100));
+}

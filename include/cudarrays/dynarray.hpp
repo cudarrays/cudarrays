@@ -296,7 +296,7 @@ private:
     struct access_element_helper;
 
     template <unsigned ...Vals>
-    struct access_element_helper<mpl::sequence<unsigned, Vals...>> {
+    struct access_element_helper<SEQ_WITH_TYPE(unsigned, Vals...)> {
         template <typename... Idxs>
         __array_index__
         static

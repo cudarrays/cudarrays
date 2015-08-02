@@ -43,7 +43,7 @@ class dynarray_storage<T, storage_tag::RESHAPE_BLOCK_CYCLIC, StorageTraits> :
 {
     static constexpr unsigned dimensions = StorageTraits::dimensions;
 
-    using PartConf = storage_part_dim_helper<typename StorageTraits::partitioning_seq>;
+    using PartConf = storage_part_dim_helper<StorageTraits::partition_value, dimensions>;
 
     static constexpr array_size_t BlockSize = 1;
 

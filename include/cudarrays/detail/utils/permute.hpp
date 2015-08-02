@@ -79,7 +79,7 @@ template <unsigned N, class M>
 struct permuter_detail;
 
 template <unsigned Idx0>
-struct permuter_detail<1, mpl::sequence<unsigned, Idx0>> {
+struct permuter_detail<1, SEQ_WITH_TYPE(unsigned, Idx0)> {
     template <unsigned IdxSelect, typename IdxType>
     static inline __hostdevice__
     IdxType select(IdxType idx)
@@ -112,7 +112,7 @@ struct permuter_detail<1, mpl::sequence<unsigned, Idx0>> {
 };
 
 template <unsigned Idx0, unsigned Idx1>
-struct permuter_detail<2, mpl::sequence<unsigned, Idx0, Idx1>> {
+struct permuter_detail<2, SEQ_WITH_TYPE(unsigned, Idx0, Idx1)> {
     static inline __host__
     std::array<unsigned, 2> as_array()
     {
@@ -159,7 +159,7 @@ struct permuter_detail<2, mpl::sequence<unsigned, Idx0, Idx1>> {
 };
 
 template <unsigned Idx0, unsigned Idx1, unsigned Idx2>
-struct permuter_detail<3, mpl::sequence<unsigned, Idx0, Idx1, Idx2>> {
+struct permuter_detail<3, SEQ_WITH_TYPE(unsigned, Idx0, Idx1, Idx2)> {
     static inline __host__
     std::array<unsigned, 3> as_array()
     {

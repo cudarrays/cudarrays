@@ -83,8 +83,8 @@ struct index_block_detail;
 
 template <typename OffsetsSeq, bool... PartSeq, unsigned... DimIdxSeq>
 struct index_block_detail<OffsetsSeq,
-                          utils::mpl::sequence<bool, PartSeq...>,
-                          utils::mpl::sequence<unsigned, DimIdxSeq...>> {
+                          SEQ_WITH_TYPE(bool, PartSeq...),
+                          SEQ_WITH_TYPE(unsigned, DimIdxSeq...)> {
     static constexpr unsigned Dims = sizeof...(PartSeq);
 
     template <bool Part>
@@ -125,8 +125,8 @@ struct index_cyclic_detail;
 
 template <typename OffsetsSeq, bool... PartSeq, unsigned... DimIdxSeq>
 struct index_cyclic_detail<OffsetsSeq,
-                           utils::mpl::sequence<bool, PartSeq...>,
-                           utils::mpl::sequence<unsigned, DimIdxSeq...>> {
+                           SEQ_WITH_TYPE(bool, PartSeq...),
+                           SEQ_WITH_TYPE(unsigned, DimIdxSeq...)> {
     static constexpr unsigned Dims = sizeof...(PartSeq);
 
     template <bool Part>
@@ -169,8 +169,8 @@ struct index_block_cyclic_detail;
 
 template <typename OffsetsSeq, bool... PartSeq, unsigned... DimIdxSeq, unsigned BlockSize>
 struct index_block_cyclic_detail<OffsetsSeq,
-                                 utils::mpl::sequence<bool, PartSeq...>,
-                                 utils::mpl::sequence<unsigned, DimIdxSeq...>,
+                                 SEQ_WITH_TYPE(bool, PartSeq...),
+                                 SEQ_WITH_TYPE(unsigned, DimIdxSeq...),
                                  BlockSize> {
     static constexpr unsigned Dims = sizeof...(PartSeq);
 

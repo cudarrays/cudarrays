@@ -31,6 +31,7 @@
 #define CUDARRAYS_DETAIL_UTILS_SEQ_HPP_
 
 #include <array>
+#include <tuple>
 
 namespace utils {
 
@@ -48,11 +49,11 @@ struct sequence {
     }
 };
 
-template <typename T>
-static T
-deduce(T...) {}
+template <typename ...T>
+auto deduce(T...) -> typename std::tuple_element<0, std::tuple<T...>>::type
+{ }
 
-#define SEQ(v,...)           utils::mpl::sequence<decltype(utils::mpl::deduce(v)),v,##__VA_ARGS__>
+#define SEQ(...)           utils::mpl::sequence<decltype(utils::mpl::deduce(__VA_ARGS__)),##__VA_ARGS__>
 #define SEQ_WITH_TYPE(t,...) utils::mpl::sequence<t,##__VA_ARGS__>
 
 #define SEQ_T_OP(o,...) typename utils::mpl::seq_##o<__VA_ARGS__>::type
@@ -175,6 +176,25 @@ struct seq_append {
 };
 
 #define SEQ_APPEND(...) SEQ_T_OP(append,##__VA_ARGS__)
+
+namespace detail {
+
+template <typename T, typename S>
+struct seq_pop;
+
+template <typename T, T Value, T... Values>
+struct seq_pop<T, sequence<T, Value, Values...>> {
+    using type = SEQ_WITH_TYPE(T, Values...);
+};
+
+}
+
+template <typename S>
+struct seq_pop {
+    using type = typename detail::seq_pop<SEQ_TYPE(S), S>::type;
+};
+
+#define SEQ_POP(s) SEQ_T_OP(pop,s)
 
 namespace detail {
 
