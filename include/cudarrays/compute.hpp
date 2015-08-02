@@ -58,7 +58,7 @@ struct compute_part_helper<1> {
     {
         std::array<bool, 1> ret;
         if (c == compute::none)   ret = { false };
-        else if (c == compute::y) ret = { true  };
+        else if (c == compute::x) ret = { true  };
         else abort();
         return ret;
     }
