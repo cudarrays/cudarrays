@@ -62,6 +62,7 @@ TYPE_VECTOR(i,int)
 TYPE_VECTOR(u,unsigned)
 TYPE_VECTOR(f32,float)
 TYPE_VECTOR(f64,double)
+#undef TYPE_VECTOR
 
 template <typename T, typename StorageType = layout::rmo, typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence>
 using matrix       = dynarray2d<T, StorageType, PartConf, CoherencePolicy>;
@@ -84,6 +85,7 @@ TYPE_MATRIX(i,int)
 TYPE_MATRIX(u,unsigned)
 TYPE_MATRIX(f32,float)
 TYPE_MATRIX(f64,double)
+#undef TYPE_MATRIX
 
 template <typename T, typename StorageType = layout::rmo, typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence>
 using volume       = dynarray3d<T, StorageType, PartConf, CoherencePolicy>;
@@ -106,6 +108,7 @@ TYPE_VOLUME(i,int)
 TYPE_VOLUME(u,unsigned)
 TYPE_VOLUME(f32,float)
 TYPE_VOLUME(f64,double)
+#undef TYPE_VOLUME
 
 }
 

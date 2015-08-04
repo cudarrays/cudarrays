@@ -20,7 +20,7 @@ set (standalone_SRC
 
 add_executable(UnitTests ${standalone_SRC})
 
-target_link_libraries(UnitTests ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(UnitTests ${CUDARRAYS_LIB} ${CMAKE_THREAD_LIBS_INIT})
 
 
 set (full_SRC

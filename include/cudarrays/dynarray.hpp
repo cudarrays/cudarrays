@@ -71,8 +71,6 @@ public:
     using coherence_policy_type = CoherencePolicy<dynarray>;
     using          indexer_type = linearizer_hybrid<typename storage_traits_type::offsets_seq>;
 
-    using     host_storage_type = host_storage<value_type>;
-
     using device_storage_type =
         dynarray_storage<value_type,
                          PartConf::final_impl,
@@ -90,9 +88,10 @@ public:
         coherencePolicy_.bind(this);
 
         // Alloc host memory
-        host_.alloc(device_.get_dim_manager().get_elems_align(), device_.get_dim_manager().offset());
+        host_.alloc(device_.get_dim_manager().get_elems_align() * sizeof(value_type),
+                    device_.get_dim_manager().offset());
         // TODO: Move this to a better place
-        register_range(this->get_host_storage().base_addr(),
+        register_range(this->get_host_storage().template base_addr<value_type>(),
                        this->get_host_storage().size());
     }
 
@@ -117,7 +116,7 @@ public:
     __host__
     virtual ~dynarray()
     {
-        unregister_range(this->get_host_storage().base_addr());
+        unregister_range(this->get_host_storage().template base_addr<value_type>());
     }
 
     template <typename ...Idxs>
@@ -151,7 +150,7 @@ public:
     }
 
     __host__ bool
-    is_distributed()
+    is_distributed() const
     {
         return device_.is_distributed();
     }
@@ -182,7 +181,7 @@ public:
         return coherencePolicy_;
     }
 
-    host_storage_type &get_host_storage()
+    host_storage &get_host_storage()
     {
         return host_;
     }
@@ -301,15 +300,15 @@ private:
         __array_index__
         static
         value_type &at(device_storage_type &device,
-                       host_storage_type   &host,
+                       host_storage   &host,
                        Idxs ...idxs)
         {
 #ifdef __CUDA_ARCH__
             return device.access_pos(permuter_type::template select<Vals>(idxs...)...);
 #else
-            auto idx = indexer_type::access_pos(device.get_dim_manager().get_offs_align(),
+            auto idx = indexer_type::access_pos(device.get_dim_manager().get_strides(),
                                                 permuter_type::template select<Vals>(idxs...)...);
-            return host.addr()[idx];
+            return host.addr<value_type>()[idx];
 #endif
         }
 
@@ -317,15 +316,15 @@ private:
         __array_index__
         static
         const value_type &at_const(const device_storage_type &device,
-                                   const host_storage_type   &host,
+                                   const host_storage   &host,
                                    Idxs ...idxs)
         {
 #ifdef __CUDA_ARCH__
             return device.access_pos(permuter_type::template select<Vals>(idxs...)...);
 #else
-            auto idx = indexer_type::access_pos(device.get_dim_manager().get_offs_align(),
+            auto idx = indexer_type::access_pos(device.get_dim_manager().get_strides(),
                                                 permuter_type::template select<Vals>(idxs...)...);
-            return host.addr()[idx];
+            return host.addr<value_type>()[idx];
 #endif
         }
 
@@ -333,7 +332,7 @@ private:
 
     coherence_policy_type coherencePolicy_;
     device_storage_type   device_;
-    host_storage_type     host_;
+    host_storage     host_;
 };
 
 template <typename Array>
@@ -353,8 +352,6 @@ public:
     dynarray_ref(dynarray_type &a) :
         array_(a)
     {}
-
-    using     host_storage_type = typename dynarray_type::host_storage_type;
 
     using            value_type = typename dynarray_type::value_type;
     using       difference_type = typename dynarray_type::difference_type;
@@ -400,7 +397,7 @@ public:
         return array_.get_coherence_policy();
     }
 
-    host_storage_type &get_host_storage()
+    host_storage &get_host_storage()
     {
         return array_.get_host_storage();
     }
@@ -423,8 +420,6 @@ public:
     dynarray_cref(const dynarray_type &a) :
         array_(a)
     {}
-
-    using host_storage_type = typename dynarray_type::host_storage_type;
 
     using      value_type = typename dynarray_type::value_type;
     using difference_type = typename dynarray_type::difference_type;

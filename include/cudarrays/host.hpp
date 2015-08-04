@@ -36,11 +36,10 @@
 
 namespace cudarrays {
 
-template <typename T>
 class host_storage {
 private:
     struct state {
-        T * data_;
+        void *data_;
         array_size_t offset_;
         size_t hostSize_;
     };
@@ -49,76 +48,44 @@ private:
     state *state_;
 
 private:
-    void free_data()
-    {
-        state_->data_ -= state_->offset_;
-
-        int ret = munmap(state_->data_, state_->hostSize_);
-        ASSERT(ret == 0);
-        state_->data_ = nullptr;
-    }
+    void free_data();
 
 public:
-    __host__
-    host_storage()
-    {
-        state_ = new state;
-        state_->data_ = nullptr;
-    }
+    host_storage();
 
-    __host__
-    virtual ~host_storage()
-    {
-        if (state_->data_ != nullptr) {
-            free_data();
-        }
-        delete state_;
-        state_ = nullptr;
-    }
+    virtual ~host_storage();
 
-    void alloc(array_size_t elems, array_size_t offset, T *addr = nullptr)
-    {
-        int flags = MAP_PRIVATE | MAP_ANONYMOUS;
-        if (addr != nullptr) flags |= MAP_FIXED;
-        state_->hostSize_ = size_t(elems) * sizeof(T);
-        state_->data_ = (T *) mmap(addr, state_->hostSize_,
-                                   PROT_READ | PROT_WRITE,
-                                   flags, -1, 0);
+    void alloc(array_size_t bytes, array_size_t offset, void *addr = nullptr);
 
-        if (addr != nullptr && state_->data_ != addr) {
-            FATAL("%p vs %p", state_->data_, addr);
-        }
-        DEBUG("mmapped: %p (%zd)", state_->data_, state_->hostSize_);
-
-        state_->data_  += offset;
-        state_->offset_ = offset;
-    }
-
-    const T *
+    template <typename T>
+    inline const T *
     addr() const
     {
-        return state_->data_;
+        return (const T *)reinterpret_cast<const T *>(state_->data_);
     }
 
-    T *
+    template <typename T>
+    inline T *
     addr()
     {
-        return state_->data_;
+        return (T *)reinterpret_cast<T *>(state_->data_);
     }
 
-    const T *
+    template <typename T>
+    inline const T *
     base_addr() const
     {
-        return state_->data_ - state_->offset_;
+        return (const T *)(reinterpret_cast<const char *>(state_->data_) - state_->offset_);
     }
 
-    T *
+    template <typename T>
+    inline T *
     base_addr()
     {
-        return state_->data_ - state_->offset_;
+        return (T *)(reinterpret_cast<char *>(state_->data_) - state_->offset_);
     }
 
-    size_t
+    inline size_t
     size() const
     {
         return state_->hostSize_;

@@ -256,7 +256,7 @@ TEST_F(storage_test, dim_manager_impl_offset)
     ASSERT_EQ(mgr1.dims()[0],       5u);
     ASSERT_EQ(mgr1.dims_align()[0], 5u);
 
-    ASSERT_EQ(mgr1.get_offs_align()[1], mgr1.dims_align()[2]);
+    ASSERT_EQ(mgr1.get_strides()[1], mgr1.dims_align()[2]);
 }
 
 TEST_F(storage_test, dim_manager_get_dim)
@@ -274,18 +274,16 @@ TEST_F(storage_test, dim_manager_get_dim)
 
 TEST_F(storage_test, host_storage)
 {
-    using my_host_storage = cudarrays::host_storage<float>;
-
-    my_host_storage mgr{};
+    cudarrays::host_storage mgr{};
 
     mgr.alloc(10, 0);
-    ASSERT_EQ(mgr.addr(), mgr.base_addr());
+    ASSERT_EQ(mgr.addr<void>(), mgr.base_addr<void>());
 
-    my_host_storage mgr2{};
+    cudarrays::host_storage mgr2{};
 
     mgr.alloc(10, 1);
-    ASSERT_NE(mgr.addr(), mgr.base_addr());
-    ASSERT_EQ(mgr.addr() - mgr.base_addr(), 1);
+    ASSERT_NE(mgr.addr<char>(), mgr.base_addr<char>());
+    ASSERT_EQ(mgr.addr<char>() - mgr.base_addr<char>(), 1);
 }
 
 TEST_F(storage_test, vm_page_allocator1)

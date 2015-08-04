@@ -137,7 +137,8 @@ public:
 
             hostInfo_ = new storage_host_info{gpus};
 
-            alloc(this->get_dim_manager().get_elems_align(), this->get_dim_manager().offset(), gpus);
+            alloc(this->get_dim_manager().get_elems_align() * sizeof(T),
+                  this->get_dim_manager().offset(), gpus);
 
             return true;
         }
@@ -151,7 +152,8 @@ public:
         if (!hostInfo_) {
             hostInfo_ = new storage_host_info{gpus};
 
-            alloc(this->get_dim_manager().get_elems_align(), this->get_dim_manager().offset(), gpus);
+            alloc(this->get_dim_manager().get_elems_align() * sizeof(T),
+                  this->get_dim_manager().offset(), gpus);
 
             return true;
         }
@@ -159,7 +161,7 @@ public:
     }
 
     __host__ bool
-    is_distributed()
+    is_distributed() const
     {
         return hostInfo_ != nullptr;
     }
@@ -193,7 +195,7 @@ public:
     __device__ inline
     T &access_pos(Idxs... idxs)
     {
-        auto idx = indexer_type::access_pos(this->get_dim_manager().get_offs_align(), idxs...);
+        auto idx = indexer_type::access_pos(this->get_dim_manager().get_strides(), idxs...);
         return dataDev_[idx];
     }
 
@@ -201,11 +203,11 @@ public:
     __device__ inline
     const T &access_pos(Idxs... idxs) const
     {
-        auto idx = indexer_type::access_pos(this->get_dim_manager().get_offs_align(), idxs...);
+        auto idx = indexer_type::access_pos(this->get_dim_manager().get_strides(), idxs...);
         return dataDev_[idx];
     }
 
-    void to_host(host_storage<T> &host)
+    void to_host(host_storage &host)
     {
         ASSERT(this->get_ngpus() != 0);
 
@@ -214,9 +216,9 @@ public:
             for (unsigned idx : utils::make_range(config::MAX_GPUS)) {
                 if (hostInfo_->allocsDev[idx] != nullptr) {
                     DEBUG("Replicated> gpu %u > to host: %p", idx, hostInfo_->allocsDev[idx] - this->get_dim_manager().offset());
-                    CUDA_CALL(cudaMemcpy(host.base_addr(),
+                    CUDA_CALL(cudaMemcpy(host.base_addr<T>(),
                                          hostInfo_->allocsDev[idx] - this->get_dim_manager().offset(),
-                                         this->get_dim_manager().get_elems_align() * sizeof(T),
+                                         this->get_dim_manager().get_bytes(),
                                          cudaMemcpyDeviceToHost));
                 }
             }
@@ -226,8 +228,8 @@ public:
                 hostInfo_->mergeFinal = new T[this->get_dim_manager().get_elems_align()];
             }
 
-            std::copy(host.base_addr(),
-                      host.base_addr() + this->get_dim_manager().get_elems_align(),
+            std::copy(host.base_addr<T>(),
+                      host.base_addr<T>() + this->get_dim_manager().get_elems_align(),
                       hostInfo_->mergeFinal);
 
             // Request copy-to-device
@@ -235,14 +237,14 @@ public:
                 if (hostInfo_->allocsDev[idx] != nullptr) {
                     CUDA_CALL(cudaMemcpy(hostInfo_->mergeTmp,
                                          hostInfo_->allocsDev[idx] - this->get_dim_manager().offset(),
-                                         this->get_dim_manager().get_elems_align() * sizeof(T),
+                                         this->get_dim_manager().get_bytes(),
                                          cudaMemcpyDeviceToHost));
 
                     DEBUG("Replicated> gpu %u > to host: %p", idx, hostInfo_->allocsDev[idx] - this->get_dim_manager().offset());
 
                     #pragma omp parallel for
                     for (array_size_t j = 0; j < this->get_dim_manager().get_elems_align(); ++j) {
-                        if (memcmp(hostInfo_->mergeTmp + j, host.base_addr() + j, sizeof(T)) != 0) {
+                        if (memcmp(hostInfo_->mergeTmp + j, host.base_addr<T>() + j, sizeof(T)) != 0) {
                             hostInfo_->mergeFinal[j] = hostInfo_->mergeTmp[j];
                         }
                     }
@@ -252,11 +254,11 @@ public:
             DEBUG("Replicated> Updating main host copy");
             std::copy(hostInfo_->mergeFinal,
                       hostInfo_->mergeFinal + this->get_dim_manager().get_elems_align(),
-                      host.base_addr());
+                      host.base_addr<T>());
         }
     }
 
-    void to_device(host_storage<T> &host)
+    void to_device(host_storage &host)
     {
         ASSERT(this->get_ngpus() != 0);
 
@@ -265,8 +267,8 @@ public:
             if (hostInfo_->allocsDev[idx] != nullptr) {
                 DEBUG("Replicated> Index %u > to dev: %p", idx, hostInfo_->allocsDev[idx] - this->get_dim_manager().offset());
                 CUDA_CALL(cudaMemcpy(hostInfo_->allocsDev[idx] - this->get_dim_manager().offset(),
-                                     host.base_addr(),
-                                     this->get_dim_manager().get_elems_align() * sizeof(T),
+                                     host.base_addr<T>(),
+                                     this->get_dim_manager().get_bytes(),
                                      cudaMemcpyHostToDevice));
             }
         }

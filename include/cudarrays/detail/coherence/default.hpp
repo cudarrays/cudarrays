@@ -51,7 +51,7 @@ public:
     {
     }
 
-    void bind(Coherent *obj)
+    void bind(coherent *obj)
     {
         // TODO: improve binding logic
         if (!obj_)
@@ -63,17 +63,17 @@ public:
         return obj_ != nullptr;
     }
 
-    void release(std::vector<unsigned> gpus, bool Const)
+    void release(const std::vector<unsigned> &gpus, bool Const)
     {
         if (!obj_->is_distributed()) {
             bool ok = obj_->distribute(gpus);
             ASSERT(ok, "Error while distributing array");
         }
 
-        DEBUG("Coherence> Release: %p", obj_->get_host_storage().base_addr());
+        DEBUG("Coherence> Release: %p", obj_->get_host_storage().base_addr<void>());
 
         if (state_ == CPU) {
-            DEBUG("Coherence> obj TO DEVICE: %p", obj_->get_host_storage().base_addr());
+            DEBUG("Coherence> obj TO DEVICE: %p", obj_->get_host_storage().base_addr<void>());
             obj_->to_device();
 
             if (!Const) {
@@ -94,15 +94,15 @@ public:
 
     void acquire()
     {
-        DEBUG("Coherence> Acquire: %p", obj_->get_host_storage().base_addr());
+        DEBUG("Coherence> Acquire: %p", obj_->get_host_storage().base_addr<void>());
 
         if (state_ == GPU) {
             // Delay acquire
-            protect_range(obj_->get_host_storage().base_addr(),
+            protect_range(obj_->get_host_storage().base_addr<void>(),
                           obj_->get_host_storage().size(),
                           [this](bool write) -> bool
                           {
-                              void *ptr = obj_->get_host_storage().base_addr();
+                              void *ptr = obj_->get_host_storage().base_addr<void>();
 
                               unprotect_range(ptr);
 
@@ -123,7 +123,7 @@ public:
     }
 
 private:
-    Coherent *obj_;
+    coherent *obj_;
     state state_;
 };
 

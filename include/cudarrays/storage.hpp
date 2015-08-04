@@ -37,9 +37,7 @@
 #include <functional>
 #include <type_traits>
 
-#include "coherence.hpp"
 #include "common.hpp"
-#include "compiler.hpp"
 #include "compute.hpp"
 #include "traits.hpp"
 #include "utils.hpp"

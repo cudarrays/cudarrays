@@ -37,9 +37,11 @@
 
 namespace cudarrays {
 
+class host_storage;
+
 class coherence_policy {
 public:
-    virtual void release(std::vector<unsigned> gpus, bool Const) = 0;
+    virtual void release(const std::vector<unsigned> &gpus, bool Const) = 0;
     virtual void acquire() = 0;
 };
 
@@ -47,6 +49,14 @@ class coherent {
 public:
     virtual coherence_policy &get_coherence_policy() = 0;
     virtual void set_current_gpu(unsigned /*idx*/) = 0;
+
+    virtual bool is_distributed() const = 0;
+    virtual bool distribute(const std::vector<unsigned> &gpus) = 0;
+
+    virtual void to_device() = 0;
+    virtual void to_host() = 0;
+
+    virtual host_storage &get_host_storage() = 0;
 };
 
 }

@@ -119,7 +119,7 @@ public:
         if ((1 << compPartDims) > mapping.comp.procs)
             FATAL("Not enough GPUs (%u), to partition %u", mapping.comp.procs, arrayPartDims);
 #endif
-        std::array<array_size_t, dimensions> dims = utils::make_array(this->get_dim_manager().dims());
+        std::array<array_size_t, dimensions> dims = this->get_dim_manager().dims();
 
         // Distribute the partition uniformly across GPUs
         // 1- Compute GPU grid
@@ -211,7 +211,7 @@ public:
     }
 
     __host__ bool
-    is_distributed()
+    is_distributed() const
     {
         return dataDev_ != nullptr;
     }
@@ -265,9 +265,9 @@ public:
     }
 
     __host__
-    void to_host(host_storage<T> &host)
+    void to_host(host_storage &host)
     {
-        T *unaligned = host.addr();
+        T *unaligned = host.addr<T>();
         auto &dimMgr = this->get_dim_manager();
 
         unsigned partZ = (dimensions > 2)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxZ]: 1;
@@ -299,8 +299,8 @@ public:
                     DEBUG("TO_HOST: Src Block Off: %u", blockOff);
 
                     DEBUG("TO_HOST: Block (%u, %u, %u)", pZ, pY, pX);
-                    DEBUG("TO_HOST: Dst  (%zd, %zd, %zd)", pZ * localZ * (dimensions > 2? dimMgr.get_offs_align()[dim_manager_type::DimIdxZ]: 0),
-                                                           pY * localY * (dimensions > 1? dimMgr.get_offs_align()[dim_manager_type::DimIdxY]: 0),
+                    DEBUG("TO_HOST: Dst  (%zd, %zd, %zd)", pZ * localZ * (dimensions > 2? dimMgr.get_strides()[dim_manager_type::DimIdxZ]: 0),
+                                                           pY * localY * (dimensions > 1? dimMgr.get_strides()[dim_manager_type::DimIdxY]: 0),
                                                            pX * localX);
                     DEBUG("TO_HOST: Src   (%zd, %zd, %zd)", pZ * (dimensions > 2? gpuOffs_[dim_manager_type::DimIdxZ]: 0),
                                                             pY * (dimensions > 1? gpuOffs_[dim_manager_type::DimIdxY]: 0),
@@ -341,9 +341,9 @@ public:
     }
 
     __host__
-    void to_device(host_storage<T> &host)
+    void to_device(host_storage &host)
     {
-        T *unaligned = host.addr();
+        T *unaligned = host.addr<T>();
         auto &dimMgr = this->get_dim_manager();
 
         unsigned partZ = (dimensions > 2)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxZ]: 1;
@@ -374,8 +374,8 @@ public:
                     DEBUG("TO_DEVICE: Dst   (%zd, %zd, %zd)", pZ * (dimensions > 2? gpuOffs_[dim_manager_type::DimIdxZ]: 0),
                                                               pY * (dimensions > 1? gpuOffs_[dim_manager_type::DimIdxY]: 0),
                                                               pX *                  gpuOffs_[dim_manager_type::DimIdxX]);
-                    DEBUG("TO_DEVICE: Src   (%zd, %zd, %zd)", pZ * localZ * (dimensions > 2? dimMgr.get_offs_align()[dim_manager_type::DimIdxZ]: 0),
-                                                              pY * localY * (dimensions > 1? dimMgr.get_offs_align()[dim_manager_type::DimIdxY]: 0),
+                    DEBUG("TO_DEVICE: Src   (%zd, %zd, %zd)", pZ * localZ * (dimensions > 2? dimMgr.get_strides()[dim_manager_type::DimIdxZ]: 0),
+                                                              pY * localY * (dimensions > 1? dimMgr.get_strides()[dim_manager_type::DimIdxY]: 0),
                                                               pX * localX);
 
                     myParms.dstPtr = make_cudaPitchedPtr(dataDev_ + blockOff,

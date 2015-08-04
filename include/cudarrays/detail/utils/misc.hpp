@@ -91,7 +91,7 @@ round_next(T val, U step)
 }
 
 #ifdef CUDARRAYS_UNITTEST
-#define CUDARRAYS_TESTED(C,T) friend ::C##_##T##_Test;
+#define CUDARRAYS_TESTED(C,T) friend C##_##T##_Test;
 #else
 #define CUDARRAYS_TESTED(C,T)
 #endif

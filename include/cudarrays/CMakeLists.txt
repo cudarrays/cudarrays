@@ -4,6 +4,7 @@ set(CUDARRAYS_BASE_HEADERS coherence.hpp
                       config.hpp
                       compiler.hpp
                       compute.hpp
+                      dim_manager.hpp
                       dynarray.hpp
                       host.hpp
                       gpu.cuh

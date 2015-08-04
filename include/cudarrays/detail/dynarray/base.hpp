@@ -31,161 +31,13 @@
 #define CUDARRAYS_DETAIL_DYNARRAY_BASE_HPP_
 
 #include "../../common.hpp"
+#include "../../dim_manager.hpp"
 #include "../../host.hpp"
 #include "../../storage.hpp"
 
 #include "indexing.hpp"
 
 namespace cudarrays {
-
-struct align_t {
-    array_size_t alignment;
-    array_size_t position;
-
-    explicit align_t(array_size_t _alignment = 0,
-                     array_index_t _position = 0) :
-        alignment(_alignment),
-        position(_position)
-    {
-    }
-
-    std::tuple<array_size_t, array_size_t>
-    align(array_size_t dim) const
-    {
-        array_size_t offset;
-        array_size_t sizeAlign;
-
-        offset = 0;
-        if (alignment > 1) {
-            if (position > alignment) {
-                offset = utils::round_next(position, alignment) - position;
-            } else if (position > 0) {
-                offset = alignment - position;
-            }
-            sizeAlign = utils::round_next(dim + offset, alignment);
-        } else {
-            sizeAlign = dim;
-        }
-
-        return std::make_tuple(offset, sizeAlign);
-    }
-};
-
-template <typename T, unsigned Dims>
-class dim_manager {
-public:
-    static constexpr unsigned FirstDim = 3 - Dims;
-
-    static constexpr unsigned DimIdxZ = 0 - FirstDim;
-    static constexpr unsigned DimIdxY = 1 - FirstDim;
-    static constexpr unsigned DimIdxX = 2 - FirstDim;
-
-private:
-    array_size_t sizes_[Dims];
-    array_size_t *sizesAlign_;
-    array_size_t offsAlign_[Dims - 1];
-
-    array_size_t elems_;
-    array_size_t offset_;
-
-    array_size_t elemsAlign_;
-
-public:
-    __host__
-    dim_manager(const extents<Dims> &extents,
-                const align_t &align)
-    {
-        ASSERT(extents.size() == Dims);
-
-        sizesAlign_ = new array_size_t[Dims];
-
-        // Initialize array sizes
-        utils::copy(extents, sizes_);
-        std::copy(extents.begin(), extents.end(), sizesAlign_);
-
-        // Compute offset and aligned size of the lowest order dimension
-        std::tie(offset_, sizesAlign_[Dims - 1]) = align.align(extents[Dims - 1]);
-
-        // Fill offsets' array
-        array_size_t nextOffAlign = 1;
-        for (int i = Dims - 1; i > 0; --i) {
-            nextOffAlign     *= sizesAlign_[i];
-            offsAlign_[i - 1] = nextOffAlign;
-        }
-
-        // Compute number of elements
-        elems_      = utils::accumulate(sizes_, 1, std::multiplies<array_size_t>());
-        elemsAlign_ = std::accumulate(sizesAlign_, sizesAlign_ + Dims,
-                                      1, std::multiplies<array_size_t>());
-    }
-
-    __host__
-    ~dim_manager()
-    {
-        delete [] sizesAlign_;
-    }
-
-    __host__ __device__
-    inline
-    array_size_t get_elems() const
-    {
-        return elems_;
-    }
-
-    __host__ __device__
-    inline
-    array_size_t get_elems_align() const
-    {
-        return elemsAlign_;
-    }
-
-    using offs_align_type = array_size_t[Dims - 1];
-    __host__ __device__
-    inline
-    const offs_align_type &get_offs_align() const
-    {
-        return offsAlign_;
-    }
-
-    __host__ __device__
-    inline
-    array_size_t offset() const
-    {
-        return offset_;
-    }
-
-    __host__ __device__
-    inline
-    array_size_t dim(unsigned dim) const
-    {
-        return this->sizes_[dim];
-    }
-
-    __host__ __device__
-    inline
-    array_size_t dim_align(unsigned dim) const
-    {
-        return this->sizesAlign_[dim];
-    }
-
-    using sizes_type = array_size_t[Dims];
-    __host__ __device__
-    inline
-    const sizes_type &dims() const
-    {
-        return sizes_;
-    }
-
-    __host__ __device__
-    inline
-    const sizes_type &dims_align() const
-    {
-        return *(const sizes_type *) sizesAlign_;
-    }
-
-    CUDARRAYS_TESTED(storage_test, dim_manager)
-    CUDARRAYS_TESTED(storage_test, dim_manager_get_dim)
-};
 
 template <typename T, unsigned Dims>
 class dynarray_base {
@@ -209,8 +61,8 @@ public:
     }
 
     virtual void set_current_gpu(unsigned /*idx*/) {}
-    virtual void to_device(host_storage<T> &host) = 0;
-    virtual void to_host(host_storage<T> &host) = 0;
+    virtual void to_device(host_storage &host) = 0;
+    virtual void to_host(host_storage &host) = 0;
 
 private:
     dim_manager_type dimManager_;
