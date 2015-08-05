@@ -394,7 +394,7 @@ public:
     {
         if (dataDev_ != nullptr) {
             // Free device memory (1 chunk per GPU)
-            for (unsigned idx = 0; idx < hostInfo_->gpus; ++idx) {
+            for (unsigned idx : utils::make_range(hostInfo_->gpus)) {
                 DEBUG("reshape> - freeing %p", dataDev_ - this->get_dim_manager().offset() + hostInfo_->elemsLocal * idx);
                 CUDA_CALL(cudaFree(dataDev_ - this->get_dim_manager().offset() + hostInfo_->elemsLocal * idx));
             }

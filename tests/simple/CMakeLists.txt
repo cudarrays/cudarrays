@@ -3,23 +3,12 @@ aux_source_directory(include LIB_INCLUDE)
 set(LIB_INCLUDE ${CMAKE_SOURCE_DIR}/include)
 include_directories(${LIB_INCLUDE})
 
-string(REPLACE "-std=c++11" "" CMAKE_CXX_FLAGS_FOR_NVCC ${CMAKE_CXX_FLAGS})
-string(REPLACE " -" ",-" CMAKE_CXX_FLAGS_FOR_NVCC ${CMAKE_CXX_FLAGS_FOR_NVCC})
-string(REPLACE " ," "," CMAKE_CXX_FLAGS_FOR_NVCC ${CMAKE_CXX_FLAGS_FOR_NVCC})
-
-set(CUDA_PROPAGATE_HOST_FLAGS OFF)
 set(CUDA_SEPARABLE_COMPILATION ON)
 set(CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
 
 option(CUDA_DEBUG "Compile CUDA code with debug support" ON)
 
-set(CUDA_NVCC_FLAGS "-std=c++11" "--cudart" "static" "-L../../lib" "-lcudarrays" "-Xcompiler" "${CMAKE_CXX_FLAGS_FOR_NVCC}")
-
-string(REPLACE " " ";" HOST_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
-string(REPLACE " " ";" HOST_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
-
-list(APPEND CUDA_NVCC_FLAGS_DEBUG ${HOST_FLAGS_DEBUG})
-list(APPEND CUDA_NVCC_FLAGS_RELEASE ${HOST_FLAGS_RELEASE})
+list(APPEND CUDA_NVCC_FLAGS "--cudart" "static" "-L../../lib" "-lcudarrays")
 
 if(CUDA_VERSION_MAJOR EQUAL "7" AND
    CUDA_VERSION_MINOR EQUAL "5")
