@@ -80,7 +80,7 @@ struct bitset_to_seq;
 
 template <unsigned Bits, unsigned ...Idxs>
 struct bitset_to_seq<Bits, SEQ_WITH_TYPE(unsigned, Idxs...)> {
-    using type = SEQ_REVERSE(SEQ_WITH_TYPE(bool, Bits & (1 << Idxs)...));
+    using type = SEQ_REVERSE(SEQ_WITH_TYPE(bool, (0u != (Bits & (1 << Idxs)))...));
 };
 
 template <unsigned Idx, typename Seq>
@@ -88,24 +88,14 @@ struct seq_to_bitset;
 
 template <unsigned Idx, bool Val, bool ...Vals>
 struct seq_to_bitset<Idx, SEQ_WITH_TYPE(bool, Val, Vals...)> {
-    constexpr static unsigned value_helper()
-    {
-        return unsigned(Val) << (Idx - 1) | seq_to_bitset<Idx - 1, SEQ_WITH_TYPE(bool, Vals...)>::value_helper();
-    }
-
     constexpr static unsigned value()
     {
-        return value_helper();
+        return unsigned(Val) << (Idx - 1) | seq_to_bitset<Idx - 1, SEQ_WITH_TYPE(bool, Vals...)>::value();
     }
 };
 
 template <>
 struct seq_to_bitset<0, SEQ_WITH_TYPE(bool)> {
-    constexpr static unsigned value_helper()
-    {
-        return 0;
-    }
-
     constexpr static unsigned value()
     {
         return 0;

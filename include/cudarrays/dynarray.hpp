@@ -377,7 +377,7 @@ public:
     __array_bounds__
     array_size_t dim() const
     {
-        return array_.dim<Dim>();
+        return array_.template dim<Dim>();
     }
 
     __array_bounds__
@@ -438,7 +438,7 @@ public:
     __array_bounds__
     array_size_t dim() const
     {
-        return array_.dim<Dim>();
+        return array_.template dim<Dim>();
     }
 
     __array_bounds__

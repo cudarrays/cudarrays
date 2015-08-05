@@ -101,10 +101,15 @@ public:
 
         // Fill offsets' array
         array_size_t nextStride = sizeAlign_;
-        for (int i = int(Dims) - 2; i > 0; --i) {
-            strides_[i]   = nextStride;
-            nextStride *= sizes_[i];
+        for (int i = int(Dims) - 1; i > 0; --i) {
+            strides_[i - 1]  = nextStride;
+            nextStride      *= sizes_[i - 1];
         }
+
+        DEBUG("dim_manager> dims: %u", Dims);
+        DEBUG("dim_manager> sizes: %s", utils::to_string(sizes_, Dims).c_str());
+        DEBUG("dim_manager> sizeAlign: %u", sizeAlign_);
+        DEBUG("dim_manager> strides: %s", utils::to_string(strides_, Dims - 1).c_str());
 
         // Compute number of elements
         elemsAlign_ = nextStride;

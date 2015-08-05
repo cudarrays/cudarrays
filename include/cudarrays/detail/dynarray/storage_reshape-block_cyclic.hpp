@@ -66,7 +66,7 @@ class dynarray_storage<T, storage_tag::RESHAPE_BLOCK_CYCLIC, StorageTraits> :
         unsigned gpuDimForArrayY = (dimensions > 1)? hostInfo_->arrayDimToGpus[dim_manager_type::DimIdxY]: 1;
         unsigned gpuDimForArrayX =                   hostInfo_->arrayDimToGpus[dim_manager_type::DimIdxX];
 
-        DEBUG("Reshape> ALLOCATE");
+        DEBUG("reshape> ALLOCATE");
         // Iterate on all array grid dimensions
         for (unsigned pZ : utils::make_range(partZ)) {
             for (unsigned pY : utils::make_range(partY)) {
@@ -76,7 +76,7 @@ class dynarray_storage<T, storage_tag::RESHAPE_BLOCK_CYCLIC, StorageTraits> :
                     // Compute the index of the GPU where the partition must be allocated
                     unsigned idx    = pZ * gpuDimForArrayZ + pY * gpuDimForArrayY + pX * gpuDimForArrayX;
 
-                    DEBUG("Reshape> in: %u,%u,%u -> %u", pZ, pY, pX, idx);
+                    DEBUG("reshape> in: %u,%u,%u -> %u", pZ, pY, pX, idx);
 
                     unsigned gpu = (idx >= config::PEER_GPUS)? 0 : idx;
                     // Set the device where data is allocated
@@ -92,7 +92,7 @@ class dynarray_storage<T, storage_tag::RESHAPE_BLOCK_CYCLIC, StorageTraits> :
                         ASSERT(dataDev_ + linear * hostInfo_->elemsLocal == tmp);
                     }
 
-                    DEBUG("Reshape> - allocated %p (%zd) in GPU %u", tmp, hostInfo_->elemsLocal * sizeof(T), gpu);
+                    DEBUG("reshape> - allocated %p (%zd) in GPU %u", tmp, hostInfo_->elemsLocal * sizeof(T), gpu);
                 }
             }
         }
@@ -109,7 +109,7 @@ public:
         for (unsigned i = 0; i < dimensions; ++i) {
             hostInfo_->mapping[i] = DimsComp - (mapping.info[i] + 1);
         }
-        DEBUG("Reshape> ALLOC: mapping: %s", utils::to_string(hostInfo_->mapping, dimensions).c_str());
+        DEBUG("reshape> ALLOC: mapping: %s", utils::to_string(hostInfo_->mapping, dimensions).c_str());
 
         // Count partitioned dimensions in array and computation
         unsigned arrayPartDims = mapping.get_array_part_dims();
@@ -163,15 +163,15 @@ public:
             hostInfo_->arrayDimToGpus[i] = 0;
         }
 
-        DEBUG("Reshape> ALLOC: gpus: %u", mapping.comp.procs);
-        DEBUG("Reshape> ALLOC: comp  part: %s (%u)", utils::to_string(mapping.comp.info).c_str(), compPartDims);
-        DEBUG("Reshape> ALLOC: comp  grid: %s", utils::to_string(hostInfo_->gpuGrid, hostInfo_->compDims).c_str());
-        DEBUG("Reshape> ALLOC: array grid: %s", utils::to_string(hostInfo_->arrayPartitionGrid, dimensions).c_str());
-        DEBUG("Reshape> ALLOC: local elems: %s (%zd)", utils::to_string(hostInfo_->localDims_, dimensions).c_str(), size_t(hostInfo_->elemsLocal));
-        DEBUG("Reshape> ALLOC: local offs: %s", utils::to_string(localOffs_, dimensions - 1).c_str());
+        DEBUG("reshape> ALLOC: gpus: %u", mapping.comp.procs);
+        DEBUG("reshape> ALLOC: comp  part: %s (%u)", utils::to_string(mapping.comp.info).c_str(), compPartDims);
+        DEBUG("reshape> ALLOC: comp  grid: %s", utils::to_string(hostInfo_->gpuGrid, hostInfo_->compDims).c_str());
+        DEBUG("reshape> ALLOC: array grid: %s", utils::to_string(hostInfo_->arrayPartitionGrid, dimensions).c_str());
+        DEBUG("reshape> ALLOC: local elems: %s (%zd)", utils::to_string(hostInfo_->localDims_, dimensions).c_str(), size_t(hostInfo_->elemsLocal));
+        DEBUG("reshape> ALLOC: local offs: %s", utils::to_string(localOffs_, dimensions - 1).c_str());
 
-        DEBUG("Reshape> ALLOC: grid offsets: %s", utils::to_string(hostInfo_->arrayDimToGpus, dimensions).c_str());
-        DEBUG("Reshape> ALLOC: gpu offsets: %s", utils::to_string(gpuOffs_, dimensions).c_str());
+        DEBUG("reshape> ALLOC: grid offsets: %s", utils::to_string(hostInfo_->arrayDimToGpus, dimensions).c_str());
+        DEBUG("reshape> ALLOC: gpu offsets: %s", utils::to_string(gpuOffs_, dimensions).c_str());
     }
 
     template <unsigned DimsComp>
@@ -182,7 +182,7 @@ public:
         for (unsigned i = 0; i < dimensions; ++i) {
             hostInfo_->mapping[i] = DimsComp - (mapping.info[i] + 1);
         }
-        DEBUG("Reshape> ALLOC: mapping: %s", utils::to_string(hostInfo_->mapping, dimensions).c_str());
+        DEBUG("reshape> ALLOC: mapping: %s", utils::to_string(hostInfo_->mapping, dimensions).c_str());
 
         // Count partitioned dimensions in array and computation
         unsigned arrayPartDims = mapping.get_array_part_dims();
@@ -217,7 +217,7 @@ public:
                 std::vector<unsigned>::iterator pos = factorsGPUs.begin() + j;
                 size_t inc = (j == 0)? factorsGPUs.size() - compPartDims + 1: 1;
 
-                // DEBUG("Reshape> ALLOC: Collapsing%u: %zd:%zd", i, j, j + inc);
+                // DEBUG("reshape> ALLOC: Collapsing%u: %zd:%zd", i, j, j + inc);
                 partition = std::accumulate(pos, pos + inc, 1, std::multiplies<unsigned>());
                 j += inc;
             }
@@ -230,7 +230,7 @@ public:
 
             unsigned partition = 1;
             if (compDim != DimsComp) {
-                DEBUG("Reshape> ALLOC: mapping array dim %d on comp dim %d", i, compDim);
+                DEBUG("reshape> ALLOC: mapping array dim %d on comp dim %d", i, compDim);
                 partition = hostInfo_->gpuGrid[compDim];
             } else {
                 // TODO: REPLICATION
@@ -287,16 +287,16 @@ public:
                 hostInfo_->arrayDimToGpus[i] = 0;
         }
 
-        // DEBUG("Reshape> ALLOC: factors: %s", utils::to_string(factorsGPUs).c_str());
-        DEBUG("Reshape> ALLOC: gpus: %u", mapping.comp.procs);
-        DEBUG("Reshape> ALLOC: comp  part: %s (%u)", utils::to_string(mapping.comp.info).c_str(), compPartDims);
-        DEBUG("Reshape> ALLOC: comp  grid: %s", utils::to_string(hostInfo_->gpuGrid, hostInfo_->compDims).c_str());
-        DEBUG("Reshape> ALLOC: array grid: %s", utils::to_string(hostInfo_->arrayPartitionGrid, dimensions).c_str());
-        DEBUG("Reshape> ALLOC: local elems: %s (%zd)", utils::to_string(hostInfo_->localDims_, dimensions).c_str(), size_t(hostInfo_->elemsLocal));
-        DEBUG("Reshape> ALLOC: local offs: %s", utils::to_string(localOffs_, dimensions - 1).c_str());
+        // DEBUG("reshape> ALLOC: factors: %s", utils::to_string(factorsGPUs).c_str());
+        DEBUG("reshape> ALLOC: gpus: %u", mapping.comp.procs);
+        DEBUG("reshape> ALLOC: comp  part: %s (%u)", utils::to_string(mapping.comp.info).c_str(), compPartDims);
+        DEBUG("reshape> ALLOC: comp  grid: %s", utils::to_string(hostInfo_->gpuGrid, hostInfo_->compDims).c_str());
+        DEBUG("reshape> ALLOC: array grid: %s", utils::to_string(hostInfo_->arrayPartitionGrid, dimensions).c_str());
+        DEBUG("reshape> ALLOC: local elems: %s (%zd)", utils::to_string(hostInfo_->localDims_, dimensions).c_str(), size_t(hostInfo_->elemsLocal));
+        DEBUG("reshape> ALLOC: local offs: %s", utils::to_string(localOffs_, dimensions - 1).c_str());
 
-        DEBUG("Reshape> ALLOC: grid offsets: %s", utils::to_string(hostInfo_->arrayDimToGpus, dimensions).c_str());
-        DEBUG("Reshape> ALLOC: gpu offsets: %s", utils::to_string(gpuOffs_, dimensions).c_str());
+        DEBUG("reshape> ALLOC: grid offsets: %s", utils::to_string(hostInfo_->arrayDimToGpus, dimensions).c_str());
+        DEBUG("reshape> ALLOC: gpu offsets: %s", utils::to_string(gpuOffs_, dimensions).c_str());
     }
 
     template <unsigned DimsComp>
@@ -395,7 +395,7 @@ public:
         if (dataDev_ != nullptr) {
             // Free device memory (1 chunk per GPU)
             for (unsigned idx = 0; idx < hostInfo_->gpus; ++idx) {
-                DEBUG("Reshape> - freeing %p", dataDev_ - this->get_dim_manager().offset() + hostInfo_->elemsLocal * idx);
+                DEBUG("reshape> - freeing %p", dataDev_ - this->get_dim_manager().offset() + hostInfo_->elemsLocal * idx);
                 CUDA_CALL(cudaFree(dataDev_ - this->get_dim_manager().offset() + hostInfo_->elemsLocal * idx));
             }
         }
@@ -408,6 +408,9 @@ public:
     __host__
     void to_host(host_storage &host)
     {
+        DEBUG("=======================");
+        DEBUG("reshape> TO_HOST: BEGIN");
+
         T *unaligned = host.addr<T>();
         auto &dimMgr = this->get_dim_manager();
 
@@ -433,19 +436,21 @@ public:
                                              pY * (dimensions > 1? gpuOffs_[dim_manager_type::DimIdxY]: 0) +
                                              pX *                  gpuOffs_[dim_manager_type::DimIdxX];
 
-                    DEBUG("TO_HOST: Extent: (%u %u %u)", sizeof(T) * hostInfo_->localDims_[dim_manager_type::DimIdxX],
+                    DEBUG("reshape> TO_HOST: Extent: (%u %u %u)", sizeof(T) * hostInfo_->localDims_[dim_manager_type::DimIdxX],
                                                          localY,
                                                          localZ);
 
-                    DEBUG("TO_HOST: Src Block Off: %u", blockOff);
+                    DEBUG("reshape> TO_HOST: Src Block Off: %u", blockOff);
 
-                    DEBUG("TO_HOST: Block (%u, %u, %u)", pZ, pY, pX);
-                    DEBUG("TO_HOST: Dst  (%zd, %zd, %zd)", pZ * localZ * (dimensions > 2? dimMgr.get_strides()[dim_manager_type::DimIdxZ]: 0),
-                                                           pY * localY * (dimensions > 1? dimMgr.get_strides()[dim_manager_type::DimIdxY]: 0),
-                                                           pX * localX);
-                    DEBUG("TO_HOST: Src   (%zd, %zd, %zd)", pZ * (dimensions > 2? gpuOffs_[dim_manager_type::DimIdxZ]: 0),
-                                                            pY * (dimensions > 1? gpuOffs_[dim_manager_type::DimIdxY]: 0),
-                                                            pX *                  gpuOffs_[dim_manager_type::DimIdxX]);
+                    DEBUG("reshape> TO_HOST: Block (%u, %u, %u)", pZ, pY, pX);
+                    DEBUG("reshape> TO_HOST: Dst  (%zd, %zd, %zd)",
+                          pZ * localZ * (dimensions > 2? dimMgr.get_strides()[dim_manager_type::DimIdxZ]: 0),
+                          pY * localY * (dimensions > 1? dimMgr.get_strides()[dim_manager_type::DimIdxY]: 0),
+                          pX * localX);
+                    DEBUG("reshape> TO_HOST: Src   (%zd, %zd, %zd)",
+                          pZ * (dimensions > 2? gpuOffs_[dim_manager_type::DimIdxZ]: 0),
+                          pY * (dimensions > 1? gpuOffs_[dim_manager_type::DimIdxY]: 0),
+                          pX *                  gpuOffs_[dim_manager_type::DimIdxX]);
 
                     myParms.srcPtr = make_cudaPitchedPtr(dataDev_ + blockOff,
                                                          sizeof(T) * hostInfo_->localDims_[dim_manager_type::DimIdxX],
@@ -469,6 +474,9 @@ public:
 
                     if (localZ < 1 || localY < 1 || localZ < 1) continue;
 
+                    DEBUG("reshape> TO_HOST: Extent: (%u %u %u)",
+                          sizeof(T) * localX, localY, localZ);
+
                     myParms.extent = make_cudaExtent(sizeof(T) * localX,
                                                      localY,
                                                      localZ);
@@ -479,11 +487,17 @@ public:
                 }
             }
         }
+
+        DEBUG("reshape> TO_HOST: END");
+        DEBUG("=====================");
     }
 
     __host__
     void to_device(host_storage &host)
     {
+        DEBUG("=========================");
+        DEBUG("reshape> TO_DEVICE: BEGIN");
+
         T *unaligned = host.addr<T>();
         auto &dimMgr = this->get_dim_manager();
 
@@ -509,15 +523,17 @@ public:
                                              pY * (dimensions > 1? gpuOffs_[dim_manager_type::DimIdxY]: 0) +
                                              pX *                  gpuOffs_[dim_manager_type::DimIdxX];
 
-                    DEBUG("TO_DEVICE: Src Block Off: %u", blockOff);
+                    DEBUG("reshape> TO_DEVICE: Src Block Off: %u", blockOff);
 
-                    DEBUG("TO_DEVICE: Block (%u, %u, %u)", pZ, pY, pX);
-                    DEBUG("TO_DEVICE: Dst   (%zd, %zd, %zd)", pZ * (dimensions > 2? gpuOffs_[dim_manager_type::DimIdxZ]: 0),
-                                                              pY * (dimensions > 1? gpuOffs_[dim_manager_type::DimIdxY]: 0),
-                                                              pX *                  gpuOffs_[dim_manager_type::DimIdxX]);
-                    DEBUG("TO_DEVICE: Src   (%zd, %zd, %zd)", pZ * localZ * (dimensions > 2? dimMgr.get_strides()[dim_manager_type::DimIdxZ]: 0),
-                                                              pY * localY * (dimensions > 1? dimMgr.get_strides()[dim_manager_type::DimIdxY]: 0),
-                                                              pX * localX);
+                    DEBUG("reshape> TO_DEVICE: Block (%u, %u, %u)", pZ, pY, pX);
+                    DEBUG("reshape> TO_DEVICE: Dst   (%zd, %zd, %zd)",
+                          pZ * (dimensions > 2? gpuOffs_[dim_manager_type::DimIdxZ]: 0),
+                          pY * (dimensions > 1? gpuOffs_[dim_manager_type::DimIdxY]: 0),
+                          pX *                  gpuOffs_[dim_manager_type::DimIdxX]);
+                    DEBUG("reshape> TO_DEVICE: Src   (%zd, %zd, %zd)",
+                          pZ * localZ * (dimensions > 2? dimMgr.get_strides()[dim_manager_type::DimIdxZ]: 0),
+                          pY * localY * (dimensions > 1? dimMgr.get_strides()[dim_manager_type::DimIdxY]: 0),
+                          pX * localX);
 
                     myParms.dstPtr = make_cudaPitchedPtr(dataDev_ + blockOff,
                                                          sizeof(T) * hostInfo_->localDims_[dim_manager_type::DimIdxX],
@@ -546,9 +562,8 @@ public:
                     if (PartConf::X)
                     localX = std::min(localX, array_index_t(dimMgr.sizesAlign_[dim_manager_type::DimIdxX] - pX * localX));
 
-                    DEBUG("TO_DEVICE: Extent: (%u %u %u)", sizeof(T) * localX,
-                                                           localY,
-                                                           localZ);
+                    DEBUG("reshape> TO_DEVICE: Extent: (%u %u %u)",
+                          sizeof(T) * localX, localY, localZ);
 
                     myParms.extent = make_cudaExtent(sizeof(T) * localX,
                                                      localY,
@@ -560,6 +575,9 @@ public:
                 }
             }
         }
+
+        DEBUG("reshape> TO_DEVICE: END");
+        DEBUG("=======================");
     }
 
     unsigned get_ngpus() const

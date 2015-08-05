@@ -28,7 +28,7 @@ if(CUDA_VERSION_MAJOR LESS "7")
     message(FATAL_ERROR "NVIDIA CUDA Compiler 7.0 or newer is required")
 endif(CUDA_VERSION_MAJOR LESS "7")
 
-set(COMMON_CXX_FLAGS "-Wall -Wextra -Werror -Wformat -Wformat-security -std=c++11 -g")
+set(COMMON_CXX_FLAGS "-Wall -Wextra -Wformat -Wformat-security -std=c++11")
 
 if(OPENMP_FOUND)
     set(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} -fopenmp")
@@ -39,9 +39,14 @@ if(CUDA_DEBUG)
     set(CUDA_NVCC_FLAGS ${COMMON_CXX_FLAGS} -DCUDARRAYS_DEBUG_CUDA=1)
 endif(CUDA_DEBUG)
 
-if(CMAKE_COMPILER_IS_GNUCC)
-    set(CMAKE_CXX_FLAGS_DEBUG "${COMMON_CXX_FLAGS} -O0")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -g -O0")
+if(("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang") OR ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU"))
+    set(CMAKE_CXX_FLAGS "${COMMON_CXX_FLAGS}")
+
+    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native")
+
+    set(CMAKE_EXE_LINKER_FLAGS_DEBUG   "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -g -O0")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -O3")
 
     if(ENABLE_GCOV)
         if(${CMAKE_BUILD_TYPE} MATCHES "Release")
@@ -50,8 +55,7 @@ if(CMAKE_COMPILER_IS_GNUCC)
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} --coverage")
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
     endif(ENABLE_GCOV)
-    set(CMAKE_CXX_FLAGS_RELEASE "${COMMON_CXX_FLAGS} -O3 -march=native")
-endif(CMAKE_COMPILER_IS_GNUCC)
+endif(("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang") OR ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU"))
 
 set(GPU_ARCH "-arch" "sm_35"
              CACHE INTERNAL "")
