@@ -157,7 +157,7 @@ struct argument_manager {
         // Not coherent. Do nothing
     }
 
-    template <typename T, typename StorageType, typename PartConf, template <typename> class CoherencePolicy>
+    template <typename T, typename StorageType, typename PartConf, typename CoherencePolicy>
     static void
     set_coherent_arg(dynarray<T, StorageType, PartConf, CoherencePolicy> &arg, bool Const)
     {

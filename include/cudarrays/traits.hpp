@@ -53,27 +53,31 @@ struct array_type_helper<T *> {
     using type = typename array_type_helper<T>::type;
 };
 
+namespace detail {
+
 template <typename T, array_size_t... Extents>
-struct array_extents_helper_internal {
+struct array_extents_helper {
     using seq = SEQ(Extents...);
 };
 
 template <typename T, size_t Elems, array_size_t... Extents>
-struct array_extents_helper_internal<T[Elems], Extents...> {
+struct array_extents_helper<T[Elems], Extents...> {
     static_assert(Elems != 0, "Bounds of a static dimension cannot be zero.");
 
     // Array elements are interpreted differently, pushing dimension size at the end
-    using seq = typename array_extents_helper_internal<T, Extents..., Elems>::seq;
+    using seq = typename array_extents_helper<T, Extents..., Elems>::seq;
 };
 
 template <typename T, array_size_t... Extents>
-struct array_extents_helper_internal<T *, Extents...> {
-    using seq = typename array_extents_helper_internal<T, 0, Extents...>::seq;
+struct array_extents_helper<T *, Extents...> {
+    using seq = typename array_extents_helper<T, 0, Extents...>::seq;
 };
+
+}
 
 template <typename T>
 struct array_extents_helper {
-    using seq = typename array_extents_helper_internal<T>::seq;
+    using seq = typename detail::array_extents_helper<T>::seq;
 
     static constexpr unsigned         dimensions = SEQ_SIZE(seq);
     static constexpr unsigned dynamic_dimensions = SEQ_COUNT(seq, 0);
@@ -85,30 +89,34 @@ struct multiply_static {
     static constexpr T value = A * B;
 };
 
+namespace detail {
+
 template <unsigned Dim, typename S, array_size_t... Offset>
-struct array_offsets_helper_internal;
+struct array_offsets_helper;
 
 template <typename S, array_size_t Offset>
-struct array_offsets_helper_internal<0u, S, Offset> {
+struct array_offsets_helper<0u, S, Offset> {
     using seq = SEQ_WITH_TYPE(array_size_t);
 };
 
 template <typename S, array_size_t Offset, array_size_t... Offsets>
-struct array_offsets_helper_internal<0u, S, Offset, Offsets...> {
+struct array_offsets_helper<0u, S, Offset, Offsets...> {
     using seq = SEQ(Offsets...);
 };
 
 template <typename S, unsigned Dim, array_size_t Offset, array_size_t... Offsets>
-struct array_offsets_helper_internal<Dim, S, Offset, Offsets...> {
-    using seq = typename array_offsets_helper_internal<Dim - 1,
-                                                       S,
-                                                       Offset * SEQ_AT(S, Dim - 1),
-                                                       Offset,
-                                                       Offsets...>::seq;
+struct array_offsets_helper<Dim, S, Offset, Offsets...> {
+    using seq = typename array_offsets_helper<Dim - 1,
+                                              S,
+                                              Offset * SEQ_AT(S, Dim - 1),
+                                              Offset,
+                                              Offsets...>::seq;
 };
 
+}
+
 template <typename S>
-using array_offsets_helper = array_offsets_helper_internal<SEQ_SIZE(S) - 1, S, SEQ_AT(S, SEQ_SIZE(S) - 1)>;
+using array_offsets_helper = detail::array_offsets_helper<SEQ_SIZE(S) - 1, S, SEQ_AT(S, SEQ_SIZE(S) - 1)>;
 
 template <typename T>
 struct array_traits {

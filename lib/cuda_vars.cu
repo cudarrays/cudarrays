@@ -29,6 +29,7 @@
 #include "cudarrays/gpu.cuh"
 
 namespace cudarrays {
+
 __constant__
 unsigned global_grid_x;
 __constant__

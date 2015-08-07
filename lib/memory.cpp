@@ -41,8 +41,7 @@
 
 namespace cudarrays {
 
-typedef char * myptr;
-
+using myptr = char *;
 
 static handler_fn no_handler;
 
@@ -56,13 +55,14 @@ public:
     handler_sigsegv(myptr begin, size_t count) :
         begin_(begin),
         count_(count),
-        fn_(NULL),
+        fn_(nullptr),
         set_(false)
     {
     }
 
     bool operator()(bool b)
     {
+        ASSERT(set_, "memory> Function handler not set");
         return fn_(b);
     }
 
@@ -81,14 +81,12 @@ public:
         return count_;
     }
 
-    bool set_handler(const handler_fn &fn, bool modified)
+    void set_handler(const handler_fn &fn)
     {
-        if (modified || !set_) {
-            fn_ = fn;
-            set_ = true;
-        }
-
-        return false;
+        if (set_)
+            DEBUG("memory> Overwriting handler");
+        fn_ = fn;
+        set_ = true;
     }
 
     void reset_handler()
@@ -100,13 +98,13 @@ public:
     }
 };
 
-typedef std::map<myptr, handler_sigsegv> map_handler;
+using map_handler = std::map<myptr, handler_sigsegv>;
 
 map_handler handlers;
 
 static struct sigaction defaultAction;
 
-static const int Signum_(SIGSEGV);
+static const int Signum_{SIGSEGV};
 
 void handler_sigsegv_main(int s, siginfo_t *info, void *ctx)
 {
@@ -116,8 +114,8 @@ void handler_sigsegv_main(int s, siginfo_t *info, void *ctx)
 
     myptr addr = myptr(info->si_addr);
 
-    if (!isWrite) DEBUG("Read SIGSEGV for %p", addr);
-    else          DEBUG("Write SIGSEGV for %p", addr);
+    if (!isWrite) DEBUG("memory> Read SIGSEGV for %p", addr);
+    else          DEBUG("memory> Write SIGSEGV for %p", addr);
 
     bool resolved = false;
 
@@ -129,7 +127,7 @@ void handler_sigsegv_main(int s, siginfo_t *info, void *ctx)
     }
 
     if (resolved == false) {
-        FATAL("Uoops! I could not find a mapping for %p. I will abort the execution", addr);
+        DEBUG("memory> Uoops! I could not find a mapping for %p. Forwarding it to the OS.", addr);
 
         // TODO: set the signal mask and other stuff
         if (defaultAction.sa_flags & SA_SIGINFO)
@@ -139,7 +137,7 @@ void handler_sigsegv_main(int s, siginfo_t *info, void *ctx)
 }
 
 void
-protect_range(void *_addr, size_t count, const handler_fn &fn, bool modified)
+protect_range(void *_addr, size_t count, const handler_fn &fn)
 {
     uint64_t page = (uint64_t(_addr) >> 12);
     myptr align_addr = myptr(page << 12);
@@ -151,13 +149,13 @@ protect_range(void *_addr, size_t count, const handler_fn &fn, bool modified)
         (addr >= it->second.start() &&
          addr <  it->second.end())) {
 
-        it->second.set_handler(fn, modified);
+        it->second.set_handler(fn);
 
-        DEBUG("%p-%p -> NONE", addr, addr + count);
+        DEBUG("memory> %p-%p -> NONE", addr, addr + count);
         int err = mprotect(align_addr, count, PROT_NONE);
         assert(err == 0);
     } else {
-        FATAL("Mapping %p NOT FOUND", addr);
+        FATAL("memory> Mapping %p NOT FOUND", addr);
     }
 }
 
@@ -174,11 +172,10 @@ unprotect_range(void *_addr)
         (addr >= it->second.start() &&
          addr <  it->second.end())) {
         int err = mprotect(align_addr, it->second.size(), PROT_READ | PROT_WRITE);
-        DEBUG("%p-%p -> RW", it->second.start(), it->second.end());
+        DEBUG("memory> %p-%p -> RW", it->second.start(), it->second.end());
         assert(err == 0);
-        // it->second.reset_handler();
     } else {
-        FATAL("Mapping %p NOT FOUND", addr);
+        FATAL("memory> Mapping %p NOT FOUND", addr);
     }
 }
 
@@ -192,9 +189,9 @@ register_range(void *_addr, size_t count)
     if (it != handlers.end() &&
         (addr >= it->second.start() &&
          addr <  it->second.end())) {
-        FATAL("Mapping %p-%p overlaps with %p-%p", addr, addr + count, it->second.start(), it->second.end());
+        FATAL("memory> Mapping %p-%p overlaps with %p-%p", addr, addr + count, it->second.start(), it->second.end());
     } else {
-        DEBUG("REGISTERING mapping %p-%p", addr, addr + count);
+        DEBUG("memory> REGISTERING mapping %p-%p", addr, addr + count);
         handlers.insert(map_handler::value_type(addr + count,
                                                 handler_sigsegv(addr, count)));
     }
@@ -211,7 +208,7 @@ unregister_range(void *_addr)
         (addr >= it->second.start() &&
          addr <  it->second.end())) {
         unprotect_range(addr);
-        DEBUG("Removing mapping %p-%p", it->second.start(), it->second.end());
+        DEBUG("memory> Removing mapping %p-%p", it->second.start(), it->second.end());
         handlers.erase(it);
     } else {
         // Not found!
@@ -230,9 +227,9 @@ handler_sigsegv_overload()
     sigemptyset(&segvAction.sa_mask);
 
     if (sigaction(Signum_, &segvAction, &defaultAction) < 0) {
-        FATAL("Error installing SIGSEGV handler: %s", strerror(errno));
+        FATAL("memory> Error installing SIGSEGV handler: %s", strerror(errno));
     } else {
-        DEBUG("Install SIGSEGV handler");
+        DEBUG("memory> Install SIGSEGV handler");
     }
 }
 
@@ -240,9 +237,9 @@ void
 handler_sigsegv_restore()
 {
     if (sigaction(Signum_, &defaultAction, NULL) < 0) {
-        FATAL("Error restoring SIGSEGV handler: %s", strerror(errno));
+        FATAL("memory> Error restoring SIGSEGV handler: %s", strerror(errno));
     } else {
-        DEBUG("Restore SIGSEGV handler");
+        DEBUG("memory> Restore SIGSEGV handler");
     }
 }
 

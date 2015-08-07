@@ -26,28 +26,61 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. */
 
-#pragma once
-#ifndef CUDARRAYS_MEMORY_HPP_
-#define CUDARRAYS_MEMORY_HPP_
+#include <array>
+#include <iostream>
 
-#include <functional>
+#include <cudarrays/common.hpp>
+
+#include <cudarrays/types.hpp>
+#include <cudarrays/launch.hpp>
 
 namespace cudarrays {
-
-// Handler takes a bool that says if the range is accessed for write
-using handler_fn = std::function<bool (bool)>;
-
-void register_range(void *addr, size_t count);
-void unregister_range(void *addr);
-
-void protect_range(void *addr, size_t count, const handler_fn &fn);
-void unprotect_range(void *addr);
-
-void handler_sigsegv_overload();
-void handler_sigsegv_restore();
-
+void init_lib();
 }
 
-#endif
+using namespace cudarrays;
+
+unsigned INPUTSET = 0;
+bool TEST = true;
+
+array_size_t VECADD_ELEMS[1] = { 1024L * 1024L };
+
+bool
+launch_test_vecadd()
+{
+    static const array_size_t ELEMS = VECADD_ELEMS[INPUTSET];
+
+    using my_array = vector<float>;
+
+    my_array A{{ELEMS}};
+    my_array B{{ELEMS}};
+    my_array C{{ELEMS}};
+
+    {
+        for (unsigned i = 0; i < ELEMS; ++i) {
+            A(i)      = float(i);
+            B(i)      = float(i + 1.f);
+
+            C(i)      = 0.f;
+        }
+    }
+
+    {
+        for (unsigned i = 0; i < ELEMS; ++i) {
+            C(i) = A(i) + B(i);
+        }
+    }
+
+    return true;
+}
+
+int main()
+{
+    init_lib();
+
+    launch_test_vecadd();
+
+    return 0;
+}
 
 /* vim:set ft=cpp backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab: */

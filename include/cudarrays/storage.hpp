@@ -176,62 +176,6 @@ struct storage_part
     using xyz = storage_conf<Impl, partition::XYZ>;
 };
 
-struct automatic : storage_part<storage_tag::AUTO> {
-    static constexpr const char *name = "AUTO";
-};
-
-struct reshape : storage_part<storage_tag::RESHAPE_BLOCK> {
-    static constexpr const char *name = "Reshape BLOCK";
-};
-
-using reshape_block = reshape;
-
-struct reshape_cyclic : storage_part<storage_tag::RESHAPE_CYCLIC> {
-    static constexpr const char *name = "Reshape CYCLIC";
-};
-
-struct reshape_block_cyclic : storage_part<storage_tag::RESHAPE_BLOCK_CYCLIC> {
-    static constexpr const char *name = "Reshape BLOCK-CYCLIC";
-};
-
-struct vm : storage_part<storage_tag::VM> {
-    static constexpr const char *name = "Virtual Memory";
-};
-
-struct replicate : storage_part<storage_tag::REPLICATED> {
-    static constexpr const char *name = "Replicate";
-};
-
-
-static constexpr int DimInvalid = -1;
-
-template <unsigned DimsComp, unsigned Dims>
-struct compute_mapping {
-    compute_conf<DimsComp> comp;
-    std::array<int, Dims> info;
-
-    unsigned get_array_part_dims() const
-    {
-        return utils::count_if(info, [](int m) { return m != DimInvalid; });
-    }
-
-    bool is_array_dim_part(unsigned dim) const
-    {
-        return info[dim] != DimInvalid;
-    }
-
-    std::array<int, Dims> get_array_to_comp() const
-    {
-        std::array<int, Dims> ret;
-        // Register the mapping
-        for (auto i : utils::make_range(Dims)) {
-            ret[i] = is_array_dim_part(i)? int(DimsComp) - (info[i] + 1):
-                                           DimInvalid;
-        }
-        return ret;
-    }
-};
-
 template <typename T, T Val1, T Val2>
 struct is_greater {
     static constexpr bool value = Val1 > Val2;
@@ -298,6 +242,61 @@ template <typename T, typename StorageType, typename PartConf>
 constexpr unsigned storage_traits<T, StorageType, PartConf>::dynamic_dimensions;
 template <typename T, typename StorageType, typename PartConf>
 constexpr partition storage_traits<T, StorageType, PartConf>::partition_value;
+
+static constexpr int DimInvalid = -1;
+
+struct automatic : storage_part<storage_tag::AUTO> {
+    static constexpr const char *name = "AUTO";
+};
+
+struct reshape : storage_part<storage_tag::RESHAPE_BLOCK> {
+    static constexpr const char *name = "Reshape BLOCK";
+};
+
+using reshape_block = reshape;
+
+struct reshape_cyclic : storage_part<storage_tag::RESHAPE_CYCLIC> {
+    static constexpr const char *name = "Reshape CYCLIC";
+};
+
+struct reshape_block_cyclic : storage_part<storage_tag::RESHAPE_BLOCK_CYCLIC> {
+    static constexpr const char *name = "Reshape BLOCK-CYCLIC";
+};
+
+struct vm : storage_part<storage_tag::VM> {
+    static constexpr const char *name = "Virtual Memory";
+};
+
+struct replicate : storage_part<storage_tag::REPLICATED> {
+    static constexpr const char *name = "Replicate";
+};
+
+template <unsigned DimsComp, unsigned Dims>
+struct compute_mapping {
+    compute_conf<DimsComp> comp;
+    std::array<int, Dims> info;
+
+    unsigned get_array_part_dims() const
+    {
+        return utils::count_if(info, [](int m) { return m != DimInvalid; });
+    }
+
+    bool is_array_dim_part(unsigned dim) const
+    {
+        return info[dim] != DimInvalid;
+    }
+
+    std::array<int, Dims> get_array_to_comp() const
+    {
+        std::array<int, Dims> ret;
+        // Register the mapping
+        for (auto i : utils::make_range(Dims)) {
+            ret[i] = is_array_dim_part(i)? int(DimsComp) - (info[i] + 1):
+                                           DimInvalid;
+        }
+        return ret;
+    }
+};
 
 }
 

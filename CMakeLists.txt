@@ -51,7 +51,7 @@ if(("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang") OR ("${CMAKE_CXX_COMPILER_ID}" 
     string(REPLACE " -" ",-" CMAKE_CXX_FLAGS_FOR_NVCC ${CMAKE_CXX_FLAGS_FOR_NVCC})
     string(REPLACE " ," "," CMAKE_CXX_FLAGS_FOR_NVCC ${CMAKE_CXX_FLAGS_FOR_NVCC})
 
-    list(APPEND CUDA_NVCC_FLAGS "-std=c++11" "-Xcompiler" "${CMAKE_CXX_FLAGS_FOR_NVCC}")
+    list(APPEND CUDA_NVCC_FLAGS "-std=c++11" "-Xcompiler" "${CMAKE_CXX_FLAGS_FOR_NVCC}" "-keep")
 
     list(APPEND CUDA_NVCC_FLAGS_DEBUG "-O0" "-g")
     list(APPEND CUDA_NVCC_FLAGS_RELEASE "-O3" "-Xcompiler" "-march=native")

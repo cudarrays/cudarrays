@@ -56,7 +56,7 @@ namespace cudarrays {
 template <typename T,
           typename StorageType = layout::rmo,
           typename PartConf = automatic::none,
-          template <typename> class CoherencePolicy = default_coherence>
+          typename CoherencePolicy = default_coherence>
 class dynarray :
     public coherent {
 public:
@@ -68,13 +68,12 @@ public:
 
     using       difference_type = array_index_t;
     using            value_type = typename array_traits_type::value_type;
-    using coherence_policy_type = CoherencePolicy<dynarray>;
+    using coherence_policy_type = CoherencePolicy;
     using          indexer_type = linearizer_hybrid<typename storage_traits_type::offsets_seq>;
 
-    using device_storage_type =
-        dynarray_storage<value_type,
-                         PartConf::final_impl,
-                         storage_traits_type>;
+    using device_storage_type = dynarray_storage<value_type,
+                                                 PartConf::final_impl,
+                                                 storage_traits_type>;
 
     static constexpr auto dimensions = array_traits_type::dimensions;
 
@@ -85,14 +84,11 @@ public:
         coherencePolicy_(coherence),
         device_(permuter_type::reorder(array_traits_type::make_extents(extents)), align)
     {
-        coherencePolicy_.bind(this);
-
         // Alloc host memory
         host_.alloc(device_.get_dim_manager().get_elems_align() * sizeof(value_type),
                     device_.get_dim_manager().offset());
-        // TODO: Move this to a better place
-        register_range(this->get_host_storage().template base_addr<value_type>(),
-                       this->get_host_storage().size());
+
+        coherencePolicy_.bind(*this);
     }
 
     __host__
@@ -116,7 +112,7 @@ public:
     __host__
     virtual ~dynarray()
     {
-        unregister_range(this->get_host_storage().template base_addr<value_type>());
+        coherencePolicy_.unbind();
     }
 
     template <typename ...Idxs>
@@ -181,7 +177,22 @@ public:
         return coherencePolicy_;
     }
 
-    host_storage &get_host_storage()
+    void *host_addr()
+    {
+        return host_.base_addr();
+    }
+
+    const void *host_addr() const
+    {
+        return host_.base_addr();
+    }
+
+    size_t size() const
+    {
+        return host_.size();
+    }
+
+    const host_storage &get_host_storage() const
     {
         return host_;
     }
@@ -466,7 +477,7 @@ dynarray_cref<Array> make_cref(const Array &a)
 }
 
 namespace std {
-template <typename T, typename StorageType, class PartConf, template <typename> class CoherencePolicy>
+template <typename T, typename StorageType, class PartConf, typename CoherencePolicy>
 struct is_convertible<cudarrays::dynarray<T, StorageType, PartConf, CoherencePolicy>,
                       cudarrays::dynarray_ref<cudarrays::dynarray<T, StorageType, PartConf, CoherencePolicy>>> {
     static constexpr bool value = true;
@@ -480,7 +491,7 @@ struct is_convertible<cudarrays::dynarray<T, StorageType, PartConf, CoherencePol
     }
 };
 
-template <typename T, typename StorageType, class PartConf, template <typename> class CoherencePolicy>
+template <typename T, typename StorageType, class PartConf, typename CoherencePolicy>
 struct is_convertible<cudarrays::dynarray<T, StorageType, PartConf, CoherencePolicy>,
                       cudarrays::dynarray_cref<cudarrays::dynarray<T, StorageType, PartConf, CoherencePolicy>>> {
     static constexpr bool value = true;

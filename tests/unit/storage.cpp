@@ -277,12 +277,12 @@ TEST_F(storage_test, host_storage)
     cudarrays::host_storage mgr{};
 
     mgr.alloc(10, 0);
-    ASSERT_EQ(mgr.addr<void>(), mgr.base_addr<void>());
+    ASSERT_EQ(mgr.addr(), mgr.base_addr());
 
     cudarrays::host_storage mgr2{};
 
     mgr.alloc(10, 1);
-    ASSERT_NE(mgr.addr<char>(), mgr.base_addr<char>());
+    ASSERT_NE(mgr.addr(), mgr.base_addr());
     ASSERT_EQ(mgr.addr<char>() - mgr.base_addr<char>(), 1);
 }
 

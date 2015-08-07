@@ -34,27 +34,27 @@
 
 namespace cudarrays {
 
-template <typename T, typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence>
+template <typename T, typename PartConf = automatic::none, typename CoherencePolicy = default_coherence>
 using dynarray1d = dynarray<T *, layout::rmo, PartConf, CoherencePolicy>;
-template <typename T, typename StorageType = layout::rmo, typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence>
+template <typename T, typename StorageType = layout::rmo, typename PartConf = automatic::none, typename CoherencePolicy = default_coherence>
 using dynarray2d = dynarray<T **, StorageType, PartConf, CoherencePolicy>;
-template <typename T, typename StorageType = layout::rmo, typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence>
+template <typename T, typename StorageType = layout::rmo, typename PartConf = automatic::none, typename CoherencePolicy = default_coherence>
 using dynarray3d = dynarray<T ***, StorageType, PartConf, CoherencePolicy>;
 
-template <typename T, typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence>
+template <typename T, typename PartConf = automatic::none, typename CoherencePolicy = default_coherence>
 using vector = dynarray1d<T, PartConf, CoherencePolicy>;
 
-template <typename T, typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence>
+template <typename T, typename PartConf = automatic::none, typename CoherencePolicy = default_coherence>
 using vector_ref = dynarray_ref<vector<T, PartConf, CoherencePolicy>>;
-template <typename T, typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence>
+template <typename T, typename PartConf = automatic::none, typename CoherencePolicy = default_coherence>
 using vector_cref = dynarray_cref<vector<T, PartConf, CoherencePolicy>>;
 
 #define TYPE_VECTOR(n,t) \
-template <typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence> \
+template <typename PartConf = automatic::none, typename CoherencePolicy = default_coherence> \
 using vector_##n = vector<t, PartConf, CoherencePolicy>;                                                     \
-template <typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence> \
+template <typename PartConf = automatic::none, typename CoherencePolicy = default_coherence> \
 using vector_##n##_ref = vector_ref<vector<t, PartConf, CoherencePolicy>>;                                   \
-template <typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence> \
+template <typename PartConf = automatic::none, typename CoherencePolicy = default_coherence> \
 using vector_##n##_cref = vector_cref<vector<t, PartConf, CoherencePolicy>>;
 
 TYPE_VECTOR(b,bool)
@@ -64,20 +64,20 @@ TYPE_VECTOR(f32,float)
 TYPE_VECTOR(f64,double)
 #undef TYPE_VECTOR
 
-template <typename T, typename StorageType = layout::rmo, typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence>
+template <typename T, typename StorageType = layout::rmo, typename PartConf = automatic::none, typename CoherencePolicy = default_coherence>
 using matrix       = dynarray2d<T, StorageType, PartConf, CoherencePolicy>;
 
-template <typename T, typename StorageType = layout::rmo, typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence>
+template <typename T, typename StorageType = layout::rmo, typename PartConf = automatic::none, typename CoherencePolicy = default_coherence>
 using matrix_ref   = dynarray_ref<matrix<T, StorageType, PartConf, CoherencePolicy>>;
-template <typename T, typename StorageType = layout::rmo, typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence>
+template <typename T, typename StorageType = layout::rmo, typename PartConf = automatic::none, typename CoherencePolicy = default_coherence>
 using matrix_cref  = dynarray_cref<matrix<T, StorageType, PartConf, CoherencePolicy>>;
 
 #define TYPE_MATRIX(n,t) \
-template <typename StorageType = layout::rmo, typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence> \
+template <typename StorageType = layout::rmo, typename PartConf = automatic::none, typename CoherencePolicy = default_coherence> \
 using matrix_##n  = matrix<t, StorageType, PartConf, CoherencePolicy>;                                                                           \
-template <typename StorageType = layout::rmo, typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence> \
+template <typename StorageType = layout::rmo, typename PartConf = automatic::none, typename CoherencePolicy = default_coherence> \
 using matrix_##n##_ref  = matrix_ref<matrix<t, StorageType, PartConf, CoherencePolicy>>;                                                                           \
-template <typename StorageType = layout::rmo, typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence> \
+template <typename StorageType = layout::rmo, typename PartConf = automatic::none, typename CoherencePolicy = default_coherence> \
 using matrix_##n##_cref = matrix_ref<matrix<t, StorageType, PartConf, CoherencePolicy>>;
 
 TYPE_MATRIX(b,bool)
@@ -87,20 +87,20 @@ TYPE_MATRIX(f32,float)
 TYPE_MATRIX(f64,double)
 #undef TYPE_MATRIX
 
-template <typename T, typename StorageType = layout::rmo, typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence>
+template <typename T, typename StorageType = layout::rmo, typename PartConf = automatic::none, typename CoherencePolicy = default_coherence>
 using volume       = dynarray3d<T, StorageType, PartConf, CoherencePolicy>;
 
-template <typename T, typename StorageType = layout::rmo, typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence>
+template <typename T, typename StorageType = layout::rmo, typename PartConf = automatic::none, typename CoherencePolicy = default_coherence>
 using volume_ref   = dynarray_ref<volume<T, StorageType, PartConf, CoherencePolicy>>;
-template <typename T, typename StorageType = layout::rmo, typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence>
+template <typename T, typename StorageType = layout::rmo, typename PartConf = automatic::none, typename CoherencePolicy = default_coherence>
 using volume_cref  = dynarray_cref<volume<T, StorageType, PartConf, CoherencePolicy>>;
 
 #define TYPE_VOLUME(n,t) \
-template <typename StorageType = layout::rmo, typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence> \
+template <typename StorageType = layout::rmo, typename PartConf = automatic::none, typename CoherencePolicy = default_coherence> \
 using volume_##n  = volume<t, StorageType, PartConf, CoherencePolicy>;                                                                           \
-template <typename StorageType = layout::rmo, typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence> \
+template <typename StorageType = layout::rmo, typename PartConf = automatic::none, typename CoherencePolicy = default_coherence> \
 using volume_##n##_ref  = volume_ref<volume<t, StorageType, PartConf, CoherencePolicy>>;                                                                           \
-template <typename StorageType = layout::rmo, typename PartConf = automatic::none, template <typename> class CoherencePolicy = default_coherence> \
+template <typename StorageType = layout::rmo, typename PartConf = automatic::none, typename CoherencePolicy = default_coherence> \
 using volume_##n##_cref = volume_ref<volume<t, StorageType, PartConf, CoherencePolicy>>;
 
 TYPE_VOLUME(b,bool)

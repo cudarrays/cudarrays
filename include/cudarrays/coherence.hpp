@@ -30,19 +30,21 @@
 #ifndef CUDARRAYS_COHERENCE_HPP_
 #define CUDARRAYS_COHERENCE_HPP_
 
-#include "common.hpp"
-#include "memory.hpp"
+#include <vector>
 
 #include "detail/utils/log.hpp"
 
 namespace cudarrays {
 
-class host_storage;
+class coherent;
 
 class coherence_policy {
 public:
     virtual void release(const std::vector<unsigned> &gpus, bool Const) = 0;
     virtual void acquire() = 0;
+
+    virtual void bind(coherent &obj) = 0;
+    virtual void unbind() = 0;
 };
 
 class coherent {
@@ -56,7 +58,10 @@ public:
     virtual void to_device() = 0;
     virtual void to_host() = 0;
 
-    virtual host_storage &get_host_storage() = 0;
+    virtual void *host_addr() = 0;
+    virtual const void *host_addr() const = 0;
+
+    virtual size_t size() const = 0;
 };
 
 }

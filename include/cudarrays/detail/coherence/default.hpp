@@ -34,28 +34,48 @@
 
 namespace cudarrays {
 
-// TODO: Remove template, only accept objects that inherit from coherent
-template <typename Coherent>
 class default_coherence :
     public coherence_policy {
 public:
-    enum state {
-        SHARED = 1,
-        GPU    = 2,
-        CPU    = 4
+    enum location : unsigned {
+        GPU    = 0b01,
+        CPU    = 0b10,
+        SHARED = 0b11
+    };
+
+    enum class ownership {
+        GPU,
+        CPU
     };
 
     default_coherence() :
         obj_(nullptr),
-        state_(CPU)
+        location_(location::CPU),
+        owner_(ownership::CPU)
     {
     }
 
-    void bind(coherent *obj)
+    virtual ~default_coherence()
     {
-        // TODO: improve binding logic
-        if (!obj_)
-            obj_ = obj;
+        unbind();
+    }
+
+    void bind(coherent &obj)
+    {
+        if (!obj_) {
+            obj_ = &obj;
+
+            register_range(obj_->host_addr(),
+                           obj_->size());
+        }
+    }
+
+    void unbind()
+    {
+        if (obj_) {
+            unregister_range(obj_->host_addr());
+            obj_ = nullptr;
+        }
     }
 
     bool is_bound() const
@@ -65,68 +85,79 @@ public:
 
     void release(const std::vector<unsigned> &gpus, bool Const)
     {
+        DEBUG("Coherence> Release: %p", obj_->host_addr());
+
+        if (owner_ != ownership::GPU) {
+            DEBUG("Coherence> Ownership -> GPU");
+            owner_ = ownership::GPU;
+        }
+
         if (!obj_->is_distributed()) {
             bool ok = obj_->distribute(gpus);
             ASSERT(ok, "Error while distributing array");
         }
 
-        DEBUG("Coherence> Release: %p", obj_->get_host_storage().base_addr<void>());
-
-        if (state_ == CPU) {
-            DEBUG("Coherence> obj TO DEVICE: %p", obj_->get_host_storage().base_addr<void>());
+        if (location_ == location::CPU) {
+            DEBUG("Coherence> obj TO DEVICE: %p", obj_->host_addr());
             obj_->to_device();
 
             if (!Const) {
-                state_ = GPU;
+                location_ = location::GPU;
                 DEBUG("Coherence> CPU -> GPU");
             } else {
-                state_ = SHARED;
+                location_ = location::SHARED;
                 DEBUG("Coherence> CPU -> SHARED");
             }
-        } else if (state_ == GPU) {
-        } else { // state_ == SHARED
+        } else if (location_ == location::GPU) {
+        } else { // location_ == SHARED
             if (!Const) {
-                state_ = GPU;
+                location_ = location::GPU;
                 DEBUG("Coherence> SHARED -> GPU");
             }
         }
+
+        // Protect memory so that it is not accessible during GPU execution
+        protect_range(obj_->host_addr(),
+                      obj_->size(),
+                      [this](bool write) -> bool
+                      {
+                          void *ptr = obj_->host_addr();
+
+                          unprotect_range(ptr);
+
+                          DEBUG("Coherence> obj TO HOST: %p", ptr);
+                          obj_->to_host();
+
+                          if (write) {
+                            location_ = location::CPU;
+                            DEBUG("Coherence> GPU -> CPU");
+                          } else {
+                            location_ = location::SHARED;
+                            DEBUG("Coherence> GPU -> SHARED");
+                          }
+
+                          return true;
+                      });
     }
 
     void acquire()
     {
-        DEBUG("Coherence> Acquire: %p", obj_->get_host_storage().base_addr<void>());
+        DEBUG("Coherence> Acquire: %p", obj_->host_addr());
 
-        if (state_ == GPU) {
-            // Delay acquire
-            protect_range(obj_->get_host_storage().base_addr<void>(),
-                          obj_->get_host_storage().size(),
-                          [this](bool write) -> bool
-                          {
-                              void *ptr = obj_->get_host_storage().base_addr<void>();
+        ASSERT(owner_ == ownership::GPU);
 
-                              unprotect_range(ptr);
-
-                              DEBUG("Coherence> obj TO HOST: %p", ptr);
-                              obj_->to_host();
-
-                              if (write) {
-                                state_ = CPU;
-                                DEBUG("Coherence> GPU -> CPU");
-                              } else {
-                                state_ = SHARED;
-                                DEBUG("Coherence> GPU -> SHARED");
-                              }
-
-                              return true;
-                          }, true);
-        }
+        DEBUG("Coherence> Ownership -> CPU");
+        owner_ = ownership::CPU;
     }
 
 private:
     coherent *obj_;
-    state state_;
+    location location_;
+    ownership owner_;
 };
 
 }
 
 #endif
+
+/* vim:set ft=cpp backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab: */

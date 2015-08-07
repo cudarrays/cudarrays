@@ -39,5 +39,8 @@ set(COMMON_SRC common.hpp)
 add_executable(alloc alloc.cpp ${COMMON_SRC} ${LIB_INCLUDE})
 target_link_libraries(alloc ${CMAKE_IMPORT_LIBRARY_PREFIX}cudarrays${CMAKE_IMPORT_LIBRARY_SUFFIX} ${CUDA_LIBRARIES})
 
+add_executable(host host.cpp ${COMMON_SRC} ${LIB_INCLUDE})
+target_link_libraries(host ${CMAKE_IMPORT_LIBRARY_PREFIX}cudarrays${CMAKE_IMPORT_LIBRARY_SUFFIX} ${CUDA_LIBRARIES})
+
 add_executable(storage_type storage_type.cpp ${COMMON_SRC} ${LIB_INCLUDE})
 target_link_libraries(storage_type ${CMAKE_IMPORT_LIBRARY_PREFIX}cudarrays${CMAKE_IMPORT_LIBRARY_SUFFIX} ${CUDA_LIBRARIES})

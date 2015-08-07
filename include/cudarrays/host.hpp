@@ -30,6 +30,8 @@
 #ifndef CUDARRAYS_HOST_HPP_
 #define CUDARRAYS_HOST_HPP_
 
+#include <memory>
+
 #include "compiler.hpp"
 #include "config.hpp"
 #include "utils.hpp"
@@ -39,13 +41,13 @@ namespace cudarrays {
 class host_storage {
 private:
     struct state {
-        void *data_;
-        array_size_t offset_;
-        size_t hostSize_;
+        void *data_          = nullptr;
+        array_size_t offset_ = 0;
+        size_t hostSize_     = 0;
     };
 
     // Store the state of the object in the heap to minimize the size in the GPU
-    state *state_;
+    std::unique_ptr<state> state_;
 
 private:
     void free_data();
@@ -57,32 +59,32 @@ public:
 
     void alloc(array_size_t bytes, array_size_t offset, void *addr = nullptr);
 
-    template <typename T>
+    template <typename T = void>
     inline const T *
     addr() const
     {
-        return (const T *)reinterpret_cast<const T *>(state_->data_);
+        return reinterpret_cast<const T *>(reinterpret_cast<const T *>(state_->data_));
     }
 
-    template <typename T>
+    template <typename T = void>
     inline T *
     addr()
     {
-        return (T *)reinterpret_cast<T *>(state_->data_);
+        return reinterpret_cast<T *>(reinterpret_cast<T *>(state_->data_));
     }
 
-    template <typename T>
+    template <typename T = void>
     inline const T *
     base_addr() const
     {
-        return (const T *)(reinterpret_cast<const char *>(state_->data_) - state_->offset_);
+        return reinterpret_cast<const T *>(reinterpret_cast<const char *>(state_->data_) - state_->offset_);
     }
 
-    template <typename T>
+    template <typename T = void>
     inline T *
     base_addr()
     {
-        return (T *)(reinterpret_cast<char *>(state_->data_) - state_->offset_);
+        return reinterpret_cast<T *>(reinterpret_cast<char *>(state_->data_) - state_->offset_);
     }
 
     inline size_t
