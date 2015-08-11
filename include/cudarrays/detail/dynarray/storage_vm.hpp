@@ -242,7 +242,7 @@ public:
     distribute(const compute_mapping<DimsComp, dimensions> &mapping)
     {
         if (!dataDev_) {
-            hostInfo_ = new storage_host_info(mapping.comp.procs);
+            hostInfo_.reset(new storage_host_info(mapping.comp.procs));
 
             if (mapping.comp.procs == 1) {
                 hostInfo_->localDims = this->get_dim_manager().dims();
@@ -345,8 +345,8 @@ public:
     dynarray_storage(const extents<dimensions> &ext,
                      const align_t &align) :
         base_storage_type(ext, align),
-        dataDev_(NULL),
-        hostInfo_(NULL)
+        dataDev_(nullptr),
+        hostInfo_(nullptr)
     {
     }
 
@@ -370,10 +370,6 @@ public:
             for (auto idx : utils::make_range(hostInfo_->npages)) {
                 CUDA_CALL(cudaFree(&data[config::CUDA_VM_ALIGN_ELEMS<T>() * idx]));
             }
-        }
-
-        if (hostInfo_ != NULL) {
-            delete hostInfo_;
         }
 #endif
     }
@@ -505,21 +501,18 @@ private:
     __host__ void
     compute_distribution(const compute_mapping<DimsComp, dimensions> &mapping)
     {
-        DEBUG("=========================");
-        DEBUG("VM> DISTRIBUTE BEGIN");
+        TRACE_FUNCTION();
 
-        if (hostInfo_ != NULL) delete hostInfo_;
-        hostInfo_ = new storage_host_info(mapping.comp.procs);
+        if (!hostInfo_) {
+            hostInfo_.reset(new storage_host_info(mapping.comp.procs));
 
-        compute_distribution_internal(mapping);
-
-        DEBUG("VM> DISTRIBUTE END");
-        DEBUG("=========================");
+            compute_distribution_internal(mapping);
+        }
     }
 
     T *dataDev_;
 
-    storage_host_info *hostInfo_;
+    std::unique_ptr<storage_host_info> hostInfo_;
 
     CUDARRAYS_TESTED(lib_storage_test, host_vm)
 };

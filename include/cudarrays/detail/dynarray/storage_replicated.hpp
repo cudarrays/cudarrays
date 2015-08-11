@@ -95,7 +95,7 @@ private:
         }
     };
 
-    storage_host_info *hostInfo_;
+    std::unique_ptr<storage_host_info> hostInfo_;
 
 public:
     __host__
@@ -110,7 +110,7 @@ public:
     __host__
     virtual ~dynarray_storage()
     {
-        if (hostInfo_ != nullptr) {
+        if (hostInfo_) {
             // Free GPU memory
             for (unsigned gpu : utils::make_range(config::MAX_GPUS)) {
                 if (hostInfo_->allocsDev[gpu] != nullptr) {
@@ -119,8 +119,6 @@ public:
                     CUDA_CALL(cudaFree(hostInfo_->allocsDev[gpu] - this->get_dim_manager().offset()));
                 }
             }
-
-            delete hostInfo_;
         }
     }
 
@@ -128,36 +126,52 @@ public:
     __host__ bool
     distribute(const compute_mapping<DimsComp, dimensions> &mapping)
     {
-        DEBUG("Replicated> Distributing");
+        DEBUG("===========================");
+        DEBUG("REPLICATE> DISTRIBUTE BEGIN");
+
+        bool ret = false;
+
         if (!hostInfo_) {
             std::vector<unsigned> gpus;
             for (unsigned idx : utils::make_range(mapping.comp.procs)) {
                 gpus.push_back(idx);
             }
 
-            hostInfo_ = new storage_host_info{gpus};
+            hostInfo_.reset(new storage_host_info{gpus});
 
             alloc(this->get_dim_manager().get_elems_align() * sizeof(T),
                   this->get_dim_manager().offset(), gpus);
 
-            return true;
+            ret = true;
         }
-        return false;
+
+        DEBUG("=========================");
+        DEBUG("REPLICATE> DISTRIBUTE END");
+
+        return ret;
     }
 
     __host__ bool
     distribute(const std::vector<unsigned> &gpus)
     {
-        DEBUG("Replicated> Distributing2");
+        DEBUG("============================");
+        DEBUG("REPLICATE> DISTRIBUTE2 BEGIN");
+
+        bool ret = false;
+
         if (!hostInfo_) {
-            hostInfo_ = new storage_host_info{gpus};
+            hostInfo_.reset(new storage_host_info{gpus});
 
             alloc(this->get_dim_manager().get_elems_align() * sizeof(T),
                   this->get_dim_manager().offset(), gpus);
 
-            return true;
+            ret = true;
         }
-        return false;
+
+        DEBUG("==========================");
+        DEBUG("REPLICATE> DISTRIBUTE2 END");
+
+        return ret;
     }
 
     __host__ bool
@@ -260,6 +274,8 @@ public:
 
     void to_device(host_storage &host)
     {
+        TRACE_FUNCTION();
+
         ASSERT(this->get_ngpus() != 0);
 
         // Request copy-to-device
