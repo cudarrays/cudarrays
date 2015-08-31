@@ -210,21 +210,14 @@ public:
     {
         traces_ = new unsigned long long[warps_ * 2];
 
-        cudaError_t err;
-        err = cudaMalloc((void **)&tracesStartDev_, warps_ * sizeof(long long));
-        assert(err == cudaSuccess);
-        err = cudaMalloc((void **)&tracesEndDev_, warps_ * sizeof(long long));
-        assert(err == cudaSuccess);
+        CUDA_CALL(cudaMalloc((void **)&tracesStartDev_, warps_ * sizeof(long long)));
+        CUDA_CALL(cudaMalloc((void **)&tracesEndDev_, warps_ * sizeof(long long)));
 
-        err = cudaMemset(tracesStartDev_, 0, warps_ * sizeof(long long));
-        assert(err == cudaSuccess);
-        err = cudaMemset(tracesEndDev_, 0, warps_ * sizeof(long long));
-        assert(err == cudaSuccess);
+        CUDA_CALL(cudaMemset(tracesStartDev_, 0, warps_ * sizeof(long long)));
+        CUDA_CALL(cudaMemset(tracesEndDev_, 0, warps_ * sizeof(long long)));
 
-        err = cudaMemcpyToSymbol(trace_start_buffer__, &tracesStartDev_, sizeof(void *), 0);
-        assert(err == cudaSuccess);
-        err = cudaMemcpyToSymbol(trace_end_buffer__, &tracesEndDev_, sizeof(void *), 0);
-        assert(err == cudaSuccess);
+        CUDA_CALL(cudaMemcpyToSymbol(trace_start_buffer__, &tracesStartDev_, sizeof(void *), 0));
+        CUDA_CALL(cudaMemcpyToSymbol(trace_end_buffer__, &tracesEndDev_, sizeof(void *), 0));
     }
 
     __host__
@@ -232,11 +225,8 @@ public:
     {
         delete [] traces_;
 
-        cudaError_t err;
-        err = cudaFree(tracesStartDev_);
-        assert(err == cudaSuccess);
-        err = cudaFree(tracesEndDev_);
-        assert(err == cudaSuccess);
+        CUDA_CALL(cudaFree(tracesStartDev_));
+        CUDA_CALL(cudaFree(tracesEndDev_));
     }
 
     __host__
@@ -269,21 +259,14 @@ public:
     {
         traces_ = new unsigned long long[blocks_ * 2];
 
-        cudaError_t err;
-        err = cudaMalloc((void **)&tracesStartDev_, blocks_ * sizeof(long long));
-        assert(err == cudaSuccess);
-        err = cudaMalloc((void **)&tracesEndDev_, blocks_ * sizeof(long long));
-        assert(err == cudaSuccess);
+        CUDA_CALL(cudaMalloc((void **)&tracesStartDev_, blocks_ * sizeof(long long)));
+        CUDA_CALL(cudaMalloc((void **)&tracesEndDev_, blocks_ * sizeof(long long)));
 
-        err = cudaMemset(tracesStartDev_, 0, blocks_ * sizeof(long long));
-        assert(err == cudaSuccess);
-        err = cudaMemset(tracesEndDev_, 0, blocks_ * sizeof(long long));
-        assert(err == cudaSuccess);
+        CUDA_CALL(cudaMemset(tracesStartDev_, 0, blocks_ * sizeof(long long)));
+        CUDA_CALL(cudaMemset(tracesEndDev_, 0, blocks_ * sizeof(long long)));
 
-        err = cudaMemcpyToSymbol(trace_start_buffer__, &tracesStartDev_, sizeof(void *), 0);
-        assert(err == cudaSuccess);
-        err = cudaMemcpyToSymbol(trace_end_buffer__, &tracesEndDev_, sizeof(void *), 0);
-        assert(err == cudaSuccess);
+        CUDA_CALL(cudaMemcpyToSymbol(trace_start_buffer__, &tracesStartDev_, sizeof(void *), 0));
+        CUDA_CALL(cudaMemcpyToSymbol(trace_end_buffer__, &tracesEndDev_, sizeof(void *), 0));
     }
 
     __host__
@@ -291,11 +274,8 @@ public:
     {
         delete [] traces_;
 
-        cudaError_t err;
-        err = cudaFree(tracesStartDev_);
-        assert(err == cudaSuccess);
-        err = cudaFree(tracesEndDev_);
-        assert(err == cudaSuccess);
+        CUDA_CALL(cudaFree(tracesStartDev_));
+        CUDA_CALL(cudaFree(tracesEndDev_));
     }
 
     __host__

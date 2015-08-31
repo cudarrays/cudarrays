@@ -60,9 +60,9 @@ template <typename T,
 class dynarray :
     public coherent {
 public:
-    using           array_type = T;
-    using    array_traits_type = array_traits<array_type>;
-    using  storage_traits_type = storage_traits<array_type, StorageType, PartConf>;
+    using            array_type = T;
+    using     array_traits_type = array_traits<array_type>;
+    using   storage_traits_type = storage_traits<array_type, StorageType, PartConf>;
 
     using         permuter_type = typename storage_traits_type::permuter_type;
 
@@ -79,7 +79,7 @@ public:
 
     __host__
     explicit dynarray(const extents<array_traits_type::dynamic_dimensions> &extents,
-                      const align_t &align = align_t{0, 0},
+                      const align_t &align = align_t{},
                       coherence_policy_type coherence = coherence_policy_type()) :
         coherencePolicy_(coherence),
         device_(permuter_type::reorder(array_traits_type::make_extents(extents)), align)
@@ -115,23 +115,9 @@ public:
         coherencePolicy_.unbind();
     }
 
-    template <typename ...Idxs>
-    __array_index__
-    value_type &operator()(Idxs ...idxs)
-    {
-        return access_element_helper<SEQ_GEN_INC(unsigned(sizeof...(Idxs)))>::at(device_, host_, array_index_t(idxs)...);
-    }
-
-    template <typename ...Idxs>
-    __array_index__
-    const value_type &operator()(Idxs ...idxs) const
-    {
-        return access_element_helper<SEQ_GEN_INC(unsigned(sizeof...(Idxs)))>::at_const(device_, host_, array_index_t(idxs)...);
-    }
-
     template <unsigned DimsComp>
     __host__ bool
-    distribute(compute_mapping<DimsComp, array_traits_type::dimensions> mapping)
+    distribute(compute_mapping<DimsComp, dimensions> mapping)
     {
         auto mapping2 = mapping;
         mapping2.info = permuter_type::reorder(mapping2.info);
@@ -192,11 +178,6 @@ public:
         return host_.size();
     }
 
-    const host_storage &get_host_storage() const
-    {
-        return host_;
-    }
-
     void to_device()
     {
         device_.to_device(host_);
@@ -210,20 +191,37 @@ public:
     //
     // Common operations
     //
+    template <typename ...Idxs>
+    __array_index__
+    value_type &operator()(Idxs ...idxs)
+    {
+        static_assert(sizeof...(Idxs) == dimensions, "Wrong number of indexes");
+
+        return access_element_helper<SEQ_GEN_INC(dimensions)>::at(device_, host_, array_index_t(idxs)...);
+    }
+
+    template <typename ...Idxs>
+    __array_index__
+    const value_type &operator()(Idxs ...idxs) const
+    {
+        static_assert(sizeof...(Idxs) == dimensions, "Wrong number of indexes");
+
+        return access_element_helper<SEQ_GEN_INC(dimensions)>::at_const(device_, host_, array_index_t(idxs)...);
+    }
 
     //
     // Iterator interface
     //
-    using       iterator = myiterator<dynarray, false>;
-    using const_iterator = myiterator<dynarray, true>;
+    using       iterator = array_iterator<dynarray, false>;
+    using const_iterator = array_iterator<dynarray, true>;
 
     using       reverse_iterator = std::reverse_iterator<iterator>;
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
     iterator begin()
     {
-        array_index_t dims[array_traits_type::dimensions];
-        std::fill(dims, dims + array_traits_type::dimensions, 0);
+        array_index_t dims[dimensions];
+        std::fill(dims, dims + dimensions, 0);
         return iterator(*this, dims);
     }
 
@@ -234,15 +232,15 @@ public:
 
     const_iterator cbegin() const
     {
-        array_index_t dims[array_traits_type::dimensions];
-        std::fill(dims, dims + array_traits_type::dimensions, 0);
+        array_index_t dims[dimensions];
+        std::fill(dims, dims + dimensions, 0);
         return const_iterator(*this, dims);
     }
 
     reverse_iterator rbegin()
     {
-        array_index_t dims[array_traits_type::dimensions];
-        for (unsigned i = 0; i < array_traits_type::dimensions; ++i) {
+        array_index_t dims[dimensions];
+        for (unsigned i = 0; i < dimensions; ++i) {
             dims[i] = this->dim(i) - 1;
         }
         return reverse_iterator(iterator(*this, dims));
@@ -250,10 +248,10 @@ public:
 
     iterator end()
     {
-        array_index_t dims[array_traits_type::dimensions];
+        array_index_t dims[dimensions];
         dims[0] = this->dim(0);
-        if (array_traits_type::dimensions > 1) {
-            std::fill(dims + 1, dims + array_traits_type::dimensions, 0);
+        if (dimensions > 1) {
+            std::fill(dims + 1, dims + dimensions, 0);
         }
         return iterator(*this, dims);
     }
@@ -265,19 +263,19 @@ public:
 
     const_iterator cend() const
     {
-        array_index_t dims[array_traits_type::dimensions];
+        array_index_t dims[dimensions];
         dims[0] = this->dim(0);
-        if (array_traits_type::dimensions > 1) {
-            std::fill(dims + 1, dims + array_traits_type::dimensions, 0);
+        if (dimensions > 1) {
+            std::fill(dims + 1, dims + dimensions, 0);
         }
         return const_iterator(*this, dims);
     }
 
     reverse_iterator rend()
     {
-        array_index_t dims[array_traits_type::dimensions];
+        array_index_t dims[dimensions];
         dims[0] = -1;
-        for (unsigned i = 0; i < array_traits_type::dimensions; ++i) {
+        for (unsigned i = 0; i < dimensions; ++i) {
             dims[i] = this->dim(i) - 1;
         }
         return reverse_iterator(iterator(*this, dims));
@@ -290,16 +288,16 @@ public:
 
     const_reverse_iterator crend() const
     {
-        array_index_t dims[array_traits_type::dimensions];
+        array_index_t dims[dimensions];
         dims[0] = -1;
-        for (unsigned i = 0; i < array_traits_type::dimensions; ++i) {
+        for (unsigned i = 0; i < dimensions; ++i) {
             dims[i] = this->dim(i) - 1;
         }
         return const_reverse_iterator(const_iterator(*this, dims));
     }
 
-    friend myiterator<dynarray, false>;
-    friend myiterator<dynarray, true>;
+    friend iterator;
+    friend const_iterator;
 
 private:
     template <typename Selector>
@@ -311,14 +309,15 @@ private:
         __array_index__
         static
         value_type &at(device_storage_type &device,
-                       host_storage   &host,
+                       host_storage &host,
                        Idxs ...idxs)
         {
+            static_assert(sizeof...(Idxs) == sizeof...(Vals), "Wrong number of indexes");
 #ifdef __CUDA_ARCH__
-            return device.access_pos(permuter_type::template select<Vals>(idxs...)...);
+            return device.access_pos(permuter_type::template select<Vals>(std::forward<Idxs>(idxs)...)...);
 #else
             auto idx = indexer_type::access_pos(device.get_dim_manager().get_strides(),
-                                                permuter_type::template select<Vals>(idxs...)...);
+                                                permuter_type::template select<Vals>(std::forward<Idxs>(idxs)...)...);
             return host.addr<value_type>()[idx];
 #endif
         }
@@ -327,14 +326,15 @@ private:
         __array_index__
         static
         const value_type &at_const(const device_storage_type &device,
-                                   const host_storage   &host,
+                                   const host_storage &host,
                                    Idxs ...idxs)
         {
+            static_assert(sizeof...(Idxs) == sizeof...(Vals), "Wrong number of indexes");
 #ifdef __CUDA_ARCH__
-            return device.access_pos(permuter_type::template select<Vals>(idxs...)...);
+            return device.access_pos(permuter_type::template select<Vals>(std::forward<Idxs>(idxs)...)...);
 #else
             auto idx = indexer_type::access_pos(device.get_dim_manager().get_strides(),
-                                                permuter_type::template select<Vals>(idxs...)...);
+                                                permuter_type::template select<Vals>(std::forward<Idxs>(idxs)...)...);
             return host.addr<value_type>()[idx];
 #endif
         }
@@ -343,7 +343,7 @@ private:
 
     coherence_policy_type coherencePolicy_;
     device_storage_type   device_;
-    host_storage     host_;
+    host_storage host_;
 };
 
 template <typename Array>
@@ -407,11 +407,6 @@ public:
     {
         return array_.get_coherence_policy();
     }
-
-    host_storage &get_host_storage()
-    {
-        return array_.get_host_storage();
-    }
 };
 
 template <typename Array>
@@ -472,7 +467,6 @@ dynarray_cref<Array> make_cref(const Array &a)
 {
     return dynarray_cref<Array>(a);
 }
-
 
 }
 

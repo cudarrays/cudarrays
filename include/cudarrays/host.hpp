@@ -32,26 +32,12 @@
 
 #include <memory>
 
-#include "compiler.hpp"
-#include "config.hpp"
+#include "common.hpp"
 #include "utils.hpp"
 
 namespace cudarrays {
 
 class host_storage {
-private:
-    struct state {
-        void *data_          = nullptr;
-        array_size_t offset_ = 0;
-        size_t hostSize_     = 0;
-    };
-
-    // Store the state of the object in the heap to minimize the size in the GPU
-    std::unique_ptr<state> state_;
-
-private:
-    void free_data();
-
 public:
     host_storage();
 
@@ -92,6 +78,18 @@ public:
     {
         return state_->hostSize_;
     }
+
+private:
+    void free_data();
+
+    struct state {
+        void *data_          = nullptr;
+        array_size_t offset_ = 0;
+        size_t hostSize_     = 0;
+    };
+
+    // Store the state of the object in the heap to minimize the size in the GPU
+    std::unique_ptr<state> state_;
 
     CUDARRAYS_TESTED(storage_test, host_storage)
 };

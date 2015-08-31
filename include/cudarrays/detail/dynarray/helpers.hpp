@@ -34,6 +34,7 @@
 #include <vector>
 
 #include "../../storage.hpp"
+#include "../../compute.hpp"
 
 namespace cudarrays {
 
@@ -42,7 +43,7 @@ namespace cudarrays {
  */
 template <unsigned DimsComp>
 static std::array<unsigned, DimsComp>
-helper_distribution_get_gpu_grid(const compute_conf<DimsComp> &comp)
+helper_distribution_get_gpu_grid(const cudarrays::compute_conf<DimsComp> &comp)
 {
     std::array<unsigned, DimsComp> gpuGrid;
 

@@ -45,10 +45,10 @@ struct iterator_adaptor {
 };
 
 template <typename Array, bool Const>
-struct myiterator_traits;
+struct array_iterator_traits;
 
 template <typename Array>
-struct myiterator_traits<Array, false> {
+struct array_iterator_traits<Array, false> {
     using difference_type = typename Array::difference_type;
     using      value_type = typename Array::value_type;
     using       reference = value_type &;
@@ -56,7 +56,7 @@ struct myiterator_traits<Array, false> {
 };
 
 template <typename Array>
-struct myiterator_traits<Array, true> {
+struct array_iterator_traits<Array, true> {
     using difference_type = typename Array::difference_type;
     using      value_type = typename Array::value_type;
     using       reference = const value_type &;
@@ -69,7 +69,7 @@ namespace std {
 
 template <typename Array, bool Const>
 struct iterator_traits<cudarrays::iterator_adaptor<Array, Const> > {
-    using traits_base = cudarrays::myiterator_traits<Array, Const>;
+    using traits_base = cudarrays::array_iterator_traits<Array, Const>;
 
     using difference_type = typename traits_base::difference_type;
     using      value_type = typename traits_base::value_type;
@@ -82,12 +82,12 @@ struct iterator_traits<cudarrays::iterator_adaptor<Array, Const> > {
 namespace cudarrays {
 
 template <typename Array, bool Const, unsigned Dims>
-struct myiterator_dereference;
+struct array_iterator_dereference;
 
 template <typename Array>
-struct myiterator_dereference<Array, true, 1> {
+struct array_iterator_dereference<Array, true, 1> {
     static inline
-    typename myiterator_traits<Array, true>::reference
+    typename array_iterator_traits<Array, true>::reference
     get_element(const Array &array, const array_index_t cursor[Array::dimensions])
     {
         return array(cursor[0]);
@@ -95,9 +95,9 @@ struct myiterator_dereference<Array, true, 1> {
 };
 
 template <typename Array>
-struct myiterator_dereference<Array, false, 1> {
+struct array_iterator_dereference<Array, false, 1> {
     static inline
-    typename myiterator_traits<Array, false>::reference
+    typename array_iterator_traits<Array, false>::reference
     get_element(Array &array, const array_index_t cursor[Array::dimensions])
     {
         return array(cursor[0]);
@@ -105,9 +105,9 @@ struct myiterator_dereference<Array, false, 1> {
 };
 
 template <typename Array>
-struct myiterator_dereference<Array, true, 2> {
+struct array_iterator_dereference<Array, true, 2> {
     static inline
-    typename myiterator_traits<Array, true>::reference
+    typename array_iterator_traits<Array, true>::reference
     get_element(const Array &array, const array_index_t cursor[Array::dimensions])
     {
         return array(cursor[0], cursor[1]);
@@ -115,9 +115,9 @@ struct myiterator_dereference<Array, true, 2> {
 };
 
 template <typename Array>
-struct myiterator_dereference<Array, false, 2> {
+struct array_iterator_dereference<Array, false, 2> {
     static inline
-    typename myiterator_traits<Array, false>::reference
+    typename array_iterator_traits<Array, false>::reference
     get_element(Array &array, const array_index_t cursor[Array::dimensions])
     {
         return array(cursor[0], cursor[1]);
@@ -125,9 +125,9 @@ struct myiterator_dereference<Array, false, 2> {
 };
 
 template <typename Array>
-struct myiterator_dereference<Array, true, 3> {
+struct array_iterator_dereference<Array, true, 3> {
     static inline
-    typename myiterator_traits<Array, true>::reference
+    typename array_iterator_traits<Array, true>::reference
     get_element(const Array &array, const array_index_t cursor[Array::dimensions])
     {
         return array(cursor[0], cursor[1], cursor[2]);
@@ -135,9 +135,9 @@ struct myiterator_dereference<Array, true, 3> {
 };
 
 template <typename Array>
-struct myiterator_dereference<Array, false, 3> {
+struct array_iterator_dereference<Array, false, 3> {
     static inline
-    typename myiterator_traits<Array, false>::reference
+    typename array_iterator_traits<Array, false>::reference
     get_element(Array &array, const array_index_t cursor[Array::dimensions])
     {
         return array(cursor[0], cursor[1], cursor[2]);
@@ -145,7 +145,7 @@ struct myiterator_dereference<Array, false, 3> {
 };
 
 template <typename Array, bool Const, unsigned Dims>
-class myiterator_access_detail {
+class array_iterator_access_detail {
     using traits_base = std::iterator_traits<cudarrays::iterator_adaptor<Array, Const>>;
 
     using difference_type = typename traits_base::difference_type;
@@ -157,7 +157,7 @@ class myiterator_access_detail {
     using array_reference = typename std::conditional<Const, const Array &, Array &>::type;
     using array_pointer   = typename std::conditional<Const, const Array *, Array *>::type;
 
-    using dereference_type = myiterator_dereference<Array, Const, Dims>;
+    using dereference_type = array_iterator_dereference<Array, Const, Dims>;
 
 public:
     inline
@@ -174,26 +174,24 @@ public:
 
 protected:
     inline
-    myiterator_access_detail() :
+    array_iterator_access_detail() :
         parent_(NULL)
     {
         fill(idx_, -1);
     }
 
     inline
-    myiterator_access_detail(array_reference parent) :
+    array_iterator_access_detail(array_reference parent) :
         parent_(&parent)
     {
         fill(idx_, 0);
     }
 
     inline
-    myiterator_access_detail(array_reference parent, array_index_t off[Dims]) :
+    array_iterator_access_detail(array_reference parent, array_index_t off[Dims]) :
         parent_(&parent)
     {
-        for (unsigned dim = 0; dim < Dims; ++dim) {
-            idx_[dim] = off[dim];
-        }
+        std::copy(idx_, idx_ + Dims, off);
     }
 
     template <bool Unit>
@@ -241,30 +239,30 @@ protected:
     }
 
     inline
-    bool less_than(const myiterator_access_detail &it) const
+    bool less_than(const array_iterator_access_detail &it) const
     {
         return less<false>(it);
     }
 
     inline
-    bool less_eq_than(const myiterator_access_detail &it) const
+    bool less_eq_than(const array_iterator_access_detail &it) const
     {
         return less<true>(it);
     }
 
     inline
-    bool greater_than(const myiterator_access_detail &it) const
+    bool greater_than(const array_iterator_access_detail &it) const
     {
         return greater<false>(it);
     }
 
     inline
-    bool greater_eq_than(const myiterator_access_detail &it) const
+    bool greater_eq_than(const array_iterator_access_detail &it) const
     {
         return greater<true>(it);
     }
 
-    difference_type subtract(const myiterator_access_detail &it) const
+    difference_type subtract(const array_iterator_access_detail &it) const
     {
         // TODO: optimize
         difference_type ret = 0;
@@ -282,7 +280,7 @@ protected:
 
 private:
     template <bool Equal>
-    bool less(const myiterator_access_detail &it) const
+    bool less(const array_iterator_access_detail &it) const
     {
         for (auto dim : utils::make_range(Dims)) {
             if (idx_[dim] > it.idx_[dim]) {
@@ -297,7 +295,7 @@ private:
 
     template <bool Equal>
     inline
-    bool greater(const myiterator_access_detail &it) const
+    bool greater(const array_iterator_access_detail &it) const
     {
         for (auto dim : utils::make_range(Dims)) {
             if (idx_[dim] < it.idx_[dim]) {
@@ -315,9 +313,9 @@ private:
 };
 
 template <typename Array, bool Const>
-class myiterator :
-    public myiterator_access_detail<Array, Const, Array::dimensions> {
-    using parent_type = myiterator_access_detail<Array, Const, Array::dimensions>;
+class array_iterator :
+    public array_iterator_access_detail<Array, Const, Array::dimensions> {
+    using parent_type = array_iterator_access_detail<Array, Const, Array::dimensions>;
     using array_reference = typename std::conditional<Const, const Array &, Array &>::type;
 
 public:
@@ -332,100 +330,100 @@ public:
     static constexpr bool is_const = Const;
 
     inline
-    myiterator(array_reference parent) :
+    array_iterator(array_reference parent) :
         parent_type(parent)
     {
     }
 
     inline
-    myiterator(array_reference parent, array_index_t off[Array::dimensions]) :
+    array_iterator(array_reference parent, array_index_t off[Array::dimensions]) :
         parent_type(parent, off)
     {
     }
 
-    inline bool operator==(myiterator it) const
+    inline bool operator==(array_iterator it) const
     {
         return parent_type::parent_ == it.parent_ && utils::equal(parent_type::idx_, it.idx_);
     }
 
-    inline bool operator!=(myiterator it) const
+    inline bool operator!=(array_iterator it) const
     {
         return !(*this == it);
     }
 
-    inline myiterator &operator++()
+    inline array_iterator &operator++()
     {
         parent_type::template inc<true>(1);
         return *this;
     }
 
-    inline myiterator operator++(int)
+    inline array_iterator operator++(int)
     {
-        myiterator res(*this);
+        array_iterator res(*this);
         ++(*this);
         return res;
     }
 
-    inline myiterator &operator--()
+    inline array_iterator &operator--()
     {
         parent_type::template dec<true>(1);
         return *this;
     }
 
-    inline myiterator operator--(int)
+    inline array_iterator operator--(int)
     {
-        myiterator res(*this);
+        array_iterator res(*this);
         --(*this);
         return res;
     }
 
-    inline myiterator &operator+=(difference_type off)
+    inline array_iterator &operator+=(difference_type off)
     {
         parent_type::template inc<false>(off);
         return *this;
     }
 
-    inline myiterator &operator-=(difference_type off)
+    inline array_iterator &operator-=(difference_type off)
     {
         parent_type::template dec<false>(off);
         return *this;
     }
 
-    inline myiterator operator+(difference_type inc) const
+    inline array_iterator operator+(difference_type inc) const
     {
-        myiterator res(*this);
+        array_iterator res(*this);
         res += inc;
         return res;
     }
 
-    inline myiterator operator-(difference_type dec) const
+    inline array_iterator operator-(difference_type dec) const
     {
-        myiterator res(*this);
+        array_iterator res(*this);
         res -= dec;
         return res;
     }
 
-    inline difference_type operator-(const myiterator &i) const
+    inline difference_type operator-(const array_iterator &i) const
     {
         return parent_type::subtract(i);
     }
 
-    inline bool operator<(const myiterator &i) const
+    inline bool operator<(const array_iterator &i) const
     {
         return parent_type::less_than(i);
     }
 
-    inline bool operator<=(const myiterator &i) const
+    inline bool operator<=(const array_iterator &i) const
     {
         return parent_type::less_eq_than(i);
     }
 
-    inline bool operator>(const myiterator &i) const
+    inline bool operator>(const array_iterator &i) const
     {
         return parent_type::greater_than(i);
     }
 
-    inline bool operator>=(const myiterator &i) const
+    inline bool operator>=(const array_iterator &i) const
     {
         return parent_type::greater_eq_than(i);
     }

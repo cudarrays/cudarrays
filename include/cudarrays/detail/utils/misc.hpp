@@ -33,9 +33,10 @@
 #include <cstddef>
 #include <tuple>
 #include <type_traits>
+#include <string>
 #include <vector>
 
-#include "../../config.hpp"
+#include "../../common.hpp"
 
 namespace utils {
 
@@ -73,7 +74,6 @@ T div_ceil(T a, U b)
 {
     static_assert(std::is_integral<T>::value &&
                   std::is_integral<U>::value, "div_ceil works on integral types only");
-    ASSERT(b > U(0));
     T res = a / b;
     if (a % b != 0) ++res;
     return res;
@@ -107,6 +107,39 @@ do {                                                       \
         abort();                                           \
     }                                                      \
 } while (0)
+
+static inline std::string
+string_replace_all(std::string str, const std::string& from, const std::string& to)
+{
+    size_t start_pos = 0;
+    while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+    }
+    return str;
+}
+
+static inline std::vector<std::string>
+string_tokenize(std::string str, const std::string& delimiter)
+{
+    std::vector<std::string> ret;
+    // Skip delimiters at beginning.
+    auto lastPos = str.find_first_not_of(delimiter, 0);
+    // Find first "non-delimiter".
+    auto pos     = str.find_first_of(delimiter, lastPos);
+
+    while (pos != std::string::npos || lastPos != std::string::npos) {
+        // Found a token, add it to the vector.
+        ret.push_back(str.substr(lastPos, pos - lastPos));
+        // Skip delimiters.  Note the "not_of"
+        lastPos = str.find_first_not_of(delimiter, pos);
+        // Find next "non-delimiter"
+        pos = str.find_first_of(delimiter, lastPos);
+    }
+
+    return ret;
+}
+
 
 }
 

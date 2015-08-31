@@ -9,6 +9,7 @@ flags = [
 '-Wextra',
 '-Werror',
 '-I../include',
+'-I../build/include',
 '-std=c++11'
 ]
 

@@ -149,21 +149,21 @@ void test_conf(unsigned gpus)
     ok = launch_test_stencil<typename Impl::x>({compute::x, gpus},
                                                {NIL, 0},
                                                {NIL, 0});
-    printf("%s X %u: %d\n", Impl::name, gpus, ok);
+    printf("%s X %u: %d\n", Impl::name().c_str(), gpus, ok);
     ok = launch_test_stencil<typename Impl::y>({compute::y, gpus},
                                                {1, NIL},
                                                {1, NIL});
-    printf("%s Y %u: %d\n", Impl::name, gpus, ok);
+    printf("%s Y %u: %d\n", Impl::name().c_str(), gpus, ok);
 
     if (gpus == 1 || gpus >= 4) {
         ok = launch_test_stencil<typename Impl::xy>({compute::xy, gpus},
                                                     {1, 0},
                                                     {1, 0});
-        printf("%s XY %u: %d\n", Impl::name, gpus, ok);
+        printf("%s XY %u: %d\n", Impl::name().c_str(), gpus, ok);
         ok = launch_test_stencil<typename Impl::xy>({compute::xy, gpus},
                                                     {0, 1},
                                                     {0, 1});
-        printf("%s YX %u: %d\n", Impl::name, gpus, ok);
+        printf("%s YX %u: %d\n", Impl::name().c_str(), gpus, ok);
     }
 }
 
@@ -174,7 +174,7 @@ int main()
     ok = launch_test_stencil<replicate::none>({compute::none, 1},
                                               {NIL, NIL},
                                               {NIL, NIL});
-    printf("%s %u: %d\n", replicate::name, 1, ok);
+    printf("%s %u: %d\n", replicate::name().c_str(), 1, ok);
 
     for (auto gpus : {1, 2, 4}) {
         test_conf<vm>(gpus);

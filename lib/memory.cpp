@@ -41,20 +41,31 @@
 
 namespace cudarrays {
 
-using myptr = char *;
+std::string to_string(mem_access_type access_type)
+{
+    switch (access_type) {
+    case MEM_NONE:       return "NONE";
+    case MEM_READ:       return "READ";
+    case MEM_WRITE:      return "WRITE";
+    case MEM_READ_WRITE: return "READ_WRITE";
+    default:             abort();
+    };
+}
 
-static handler_fn no_handler;
+using myptr = char *;
 
 class handler_sigsegv {
     myptr begin_;
     size_t count_;
+    mem_access_type prot_;
     handler_fn fn_;
     bool set_;
 
 public:
-    handler_sigsegv(myptr begin, size_t count) :
+    handler_sigsegv(myptr begin, size_t count, mem_access_type prot) :
         begin_(begin),
         count_(count),
+        prot_(prot),
         fn_(nullptr),
         set_(false)
     {
@@ -79,6 +90,16 @@ public:
     size_t size() const
     {
         return count_;
+    }
+
+    mem_access_type protection() const
+    {
+        return prot_;
+    }
+
+    void set_protection(mem_access_type prot)
+    {
+        prot_ = prot;
     }
 
     void set_handler(const handler_fn &fn)
@@ -137,26 +158,32 @@ void handler_sigsegv_main(int s, siginfo_t *info, void *ctx)
 }
 
 void
-protect_range(void *_addr, size_t count, const handler_fn &fn)
+protect_range(void *_addr, size_t count, mem_access_type access_type, const handler_fn &fn)
 {
     uint64_t page = (uint64_t(_addr) >> 12);
     myptr align_addr = myptr(page << 12);
     myptr addr = myptr(_addr);
 
     map_handler::iterator it = handlers.upper_bound(addr);
-    // Check for overlaps
-    if (it != handlers.end() &&
-        (addr >= it->second.start() &&
-         addr <  it->second.end())) {
 
-        it->second.set_handler(fn);
-
-        DEBUG("memory> %p-%p -> NONE", addr, addr + count);
-        int err = mprotect(align_addr, count, PROT_NONE);
-        assert(err == 0);
-    } else {
+    if (it == handlers.end())
         FATAL("memory> Mapping %p NOT FOUND", addr);
-    }
+
+    handler_sigsegv &handler = it->second;
+
+    // Check for overlaps
+    ASSERT(addr >= handler.start() && addr <  handler.end(),
+           "memory> Invalid mapping for %p", addr);
+
+    if (access_type == handler.protection())
+        return;
+
+    handler.set_protection(access_type);
+    handler.set_handler(fn);
+
+    DEBUG("memory> %p-%p -> %s", addr, addr + count, to_string(access_type).c_str());
+    int err = mprotect(align_addr, count, PROT_NONE);
+    assert(err == 0);
 }
 
 void
@@ -172,7 +199,9 @@ unprotect_range(void *_addr)
         (addr >= it->second.start() &&
          addr <  it->second.end())) {
         int err = mprotect(align_addr, it->second.size(), PROT_READ | PROT_WRITE);
-        DEBUG("memory> %p-%p -> RW", it->second.start(), it->second.end());
+        DEBUG("memory> %p-%p -> %s", it->second.start(),
+                                     it->second.end(),
+                                     to_string(mem_access_type::MEM_READ_WRITE));
         assert(err == 0);
     } else {
         FATAL("memory> Mapping %p NOT FOUND", addr);
@@ -193,7 +222,7 @@ register_range(void *_addr, size_t count)
     } else {
         DEBUG("memory> REGISTERING mapping %p-%p", addr, addr + count);
         handlers.insert(map_handler::value_type(addr + count,
-                                                handler_sigsegv(addr, count)));
+                                                handler_sigsegv(addr, count, MEM_READ_WRITE)));
     }
 }
 

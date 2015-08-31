@@ -85,10 +85,10 @@ public:
 
     void release(const std::vector<unsigned> &gpus, bool Const)
     {
-        DEBUG("Coherence> Release: %p", obj_->host_addr());
+        DEBUG("Release: %p", obj_->host_addr());
 
         if (owner_ != ownership::GPU) {
-            DEBUG("Coherence> Ownership -> GPU");
+            DEBUG("Ownership -> GPU");
             owner_ = ownership::GPU;
         }
 
@@ -97,43 +97,46 @@ public:
             ASSERT(ok, "Error while distributing array");
         }
 
+        mem_access_type prot = mem_access_type::MEM_NONE;
+
         if (location_ == location::CPU) {
-            DEBUG("Coherence> obj TO DEVICE: %p", obj_->host_addr());
+            DEBUG("obj TO DEVICE: %p", obj_->host_addr());
             obj_->to_device();
 
             if (!Const) {
                 location_ = location::GPU;
-                DEBUG("Coherence> CPU -> GPU");
+                DEBUG("CPU -> GPU");
             } else {
                 location_ = location::SHARED;
-                DEBUG("Coherence> CPU -> SHARED");
+                DEBUG("CPU -> SHARED");
             }
         } else if (location_ == location::GPU) {
         } else { // location_ == SHARED
             if (!Const) {
                 location_ = location::GPU;
-                DEBUG("Coherence> SHARED -> GPU");
+                DEBUG("SHARED -> GPU");
             }
         }
 
         // Protect memory so that it is not accessible during GPU execution
         protect_range(obj_->host_addr(),
                       obj_->size(),
+                      prot,
                       [this](bool write) -> bool
                       {
-                          void *ptr = obj_->host_addr();
+                          void *ptr = this->obj_->host_addr();
 
                           unprotect_range(ptr);
 
-                          DEBUG("Coherence> obj TO HOST: %p", ptr);
-                          obj_->to_host();
+                          DEBUG("obj TO HOST: %p", ptr);
+                          this->obj_->to_host();
 
                           if (write) {
                             location_ = location::CPU;
-                            DEBUG("Coherence> GPU -> CPU");
+                            DEBUG("GPU -> CPU");
                           } else {
                             location_ = location::SHARED;
-                            DEBUG("Coherence> GPU -> SHARED");
+                            DEBUG("GPU -> SHARED");
                           }
 
                           return true;
@@ -142,11 +145,11 @@ public:
 
     void acquire()
     {
-        DEBUG("Coherence> Acquire: %p", obj_->host_addr());
+        DEBUG("Acquire: %p", obj_->host_addr());
 
         ASSERT(owner_ == ownership::GPU);
 
-        DEBUG("Coherence> Ownership -> CPU");
+        DEBUG("Ownership -> CPU");
         owner_ = ownership::CPU;
     }
 

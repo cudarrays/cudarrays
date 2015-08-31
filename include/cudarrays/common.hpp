@@ -38,8 +38,9 @@
 #include <cstdint>
 #include <cstdlib>
 
+#include <cudarrays/config.hpp>
+
 #include "compiler.hpp"
-#include "config.hpp"
 
 namespace cudarrays {
 
@@ -53,6 +54,8 @@ enum partition : unsigned {
     YZ   = 0b110,
     XYZ  = 0b111
 };
+
+static constexpr int DimInvalid = -1;
 
 void init_lib();
 void fini_lib();

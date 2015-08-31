@@ -417,15 +417,15 @@ protected:
         dim3 total_grid = conf_.grid;
         dim3 block = conf_.block;
 
-        DEBUG("Launch> GPUS: %u\n", gpus_);
-        DEBUG("Launch> orig: %zd %zd %zd", total_grid.z, total_grid.y, total_grid.x);
+        DEBUG("GPUS: %u", gpus_);
+        DEBUG("orig: %zd %zd %zd", total_grid.z, total_grid.y, total_grid.x);
 
         dim3 step;
         dim3 grid;
 
         std::tie(step, grid) = compute_tiles();
 
-        DEBUG("Launch> step: %zd %zd %zd", step.z, step.y, step.x);
+        DEBUG("step: %zd %zd %zd", step.z, step.y, step.x);
 
         if (CUDARRAYS_COMPILER_INFO) {
             // TODO: implement
@@ -454,8 +454,8 @@ protected:
                 off.x = 0;
                 for (unsigned k : utils::make_range(gpuGrid_[2 - (3 - Dims)])) {
                     dim3 local = grid;
-                    DEBUG("MemcpyToSymbol> local: %zd %zd %zd", local.z, local.y, local.x);
-                    DEBUG("MemcpyToSymbol> off: %zd %zd %zd", off.z, off.y, off.x);
+                    DEBUG("local: %zd %zd %zd", local.z, local.y, local.x);
+                    DEBUG("off: %zd %zd %zd", off.z, off.y, off.x);
 
                     if (off.z + step.z > total_grid.z) {
                         if (off.z <= total_grid.z)
@@ -478,8 +478,8 @@ protected:
                         cudaError_t err = cudaSetDevice(gpu);
                         ASSERT(err == cudaSuccess);
 
-                        DEBUG("MemcpyToSymbol> gpu %zd: %zd %zd %zd", gpu, i, j, k);
-                        DEBUG("MemcpyToSymbol> grid: %zd %zd %zd", local.z, local.y, local.x);
+                        DEBUG("gpu %zd: %zd %zd %zd", gpu, i, j, k);
+                        DEBUG("grid: %zd %zd %zd", local.z, local.y, local.x);
 
                         update_gpu_global_grid(total_grid);
                         update_gpu_offset(off);
@@ -505,8 +505,8 @@ protected:
                 off.x = 0;
                 for (unsigned k : utils::make_range(gpuGrid_[2 - (3 - Dims)])) {
                     dim3 local = grid;
-                    DEBUG("Launch> local: %zd %zd %zd", local.z, local.y, local.x);
-                    DEBUG("Launch> off: %zd %zd %zd", off.z, off.y, off.x);
+                    DEBUG("local: %zd %zd %zd", local.z, local.y, local.x);
+                    DEBUG("off: %zd %zd %zd", off.z, off.y, off.x);
 
                     if (off.z + step.z > total_grid.z) {
                         if (off.z <= total_grid.z)
@@ -528,8 +528,8 @@ protected:
                     if (local.z > 0 && local.y > 0 && local.x > 0) {
                         cudaError_t err = cudaSetDevice(gpu);
                         ASSERT(err == cudaSuccess);
-                        DEBUG("Launch> gpu %zd: %zd %zd %zd", gpu, i, j, k);
-                        DEBUG("Launch> grid: %zd %zd %zd", local.z, local.y, local.x);
+                        DEBUG("gpu %zd: %zd %zd %zd", gpu, i, j, k);
+                        DEBUG("grid: %zd %zd %zd", local.z, local.y, local.x);
 
                         if (transposeXY_) {
                             std::swap(local.x, local.y);
@@ -667,7 +667,7 @@ launcher<DimsComp, R, Args...>
 launch_(const char *name,
         R(&f)(Args...),
         const cuda_conf &conf,
-        compute_conf<DimsComp> gpuConf = {partition::NONE, 1},
+        compute_conf<DimsComp> gpuConf = {compute::none, 1},
         bool transposeXY = false)
 {
     return launcher<DimsComp, R, Args...>(f, name, conf, gpuConf, transposeXY);
@@ -678,7 +678,7 @@ launcher_async<DimsComp, R, Args...>
 launch_async_(const char *name,
               R(&f)(Args...),
               const cuda_conf &conf,
-              compute_conf<DimsComp> gpuConf = {partition::NONE, 1},
+              compute_conf<DimsComp> gpuConf = {compute::none, 1},
               bool transposeXY = false)
 {
     return launcher_async<DimsComp, R, Args...>(f, name, conf, gpuConf, transposeXY);

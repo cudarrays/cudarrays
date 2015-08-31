@@ -28,7 +28,7 @@ if(CUDA_VERSION_MAJOR LESS "7")
     message(FATAL_ERROR "NVIDIA CUDA Compiler 7.0 or newer is required")
 endif(CUDA_VERSION_MAJOR LESS "7")
 
-set(COMMON_CXX_FLAGS "-Wall -Wextra -Wformat -Wformat-security -std=c++11")
+set(COMMON_CXX_FLAGS "-Wall -Wextra -Wformat -Wformat-security -std=c++11 -I${CMAKE_BINARY_DIR}/include")
 
 if(OPENMP_FOUND)
     set(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} -fopenmp")
@@ -68,7 +68,7 @@ if(("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang") OR ("${CMAKE_CXX_COMPILER_ID}" 
     endif(ENABLE_GCOV)
 endif(("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang") OR ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU"))
 
-set(GPU_ARCH "-arch" "sm_35"
+set(GPU_ARCH "-arch" "sm_20"
              CACHE INTERNAL "")
 set(CUDARRAYS_LIB "" CACHE INTERNAL "")
 

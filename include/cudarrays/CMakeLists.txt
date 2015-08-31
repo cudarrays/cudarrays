@@ -1,7 +1,12 @@
+set(CUDARRAYS_INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
+set(CUDARRAYS_ROOT_DIR ${CMAKE_SOURCE_DIR})
+
+configure_file(config.hpp.in config.hpp)
+
 set(CUDARRAYS_BASE_HEADERS coherence.hpp
                       coherence.hpp
                       common.hpp
-                      config.hpp
+                      config.hpp.in
                       compiler.hpp
                       compute.hpp
                       dim_manager.hpp

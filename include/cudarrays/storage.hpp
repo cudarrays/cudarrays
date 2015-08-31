@@ -38,7 +38,6 @@
 #include <type_traits>
 
 #include "common.hpp"
-#include "compute.hpp"
 #include "traits.hpp"
 #include "utils.hpp"
 
@@ -60,6 +59,27 @@ enum class storage_tag {
     VM,
     REPLICATED,
 };
+
+static std::string
+enum_to_string(storage_tag tag)
+{
+    switch (tag) {
+    case storage_tag::AUTO:
+        return "AUTO";
+    case storage_tag::RESHAPE_BLOCK:
+        return "RESHAPE_BLOCK";
+    case storage_tag::RESHAPE_CYCLIC:
+        return "RESHAPE_CYCLIC";
+    case storage_tag::RESHAPE_BLOCK_CYCLIC:
+        return "RESHAPE_BLOCK_CYCLIC";
+    case storage_tag::VM:
+        return "VM";
+    case storage_tag::REPLICATED:
+        return "REPLICATED";
+    default:
+        FATAL("Invalid storage_tag value");
+    };
+}
 
 template <partition Part, unsigned Dims>
 struct storage_part_dim_helper {
@@ -125,17 +145,17 @@ template <unsigned Dims, typename StorageType>
 struct make_dim_order;
 
 template <unsigned Dims>
-struct make_dim_order<Dims, layout::rmo> {
+struct make_dim_order<Dims, cudarrays::layout::rmo> {
     using seq_type = SEQ_GEN_INC(Dims);
 };
 
 template <unsigned Dims>
-struct make_dim_order<Dims, layout::cmo> {
+struct make_dim_order<Dims, cudarrays::layout::cmo> {
     using seq_type = SEQ_REVERSE(SEQ_GEN_INC(Dims));
 };
 
 template <unsigned Dims, unsigned... Order>
-struct make_dim_order<Dims, layout::custom<Order...>> {
+struct make_dim_order<Dims, cudarrays::layout::custom<Order...>> {
     using seq_type = SEQ(Order...);
 };
 
@@ -174,6 +194,11 @@ struct storage_part
     using yz = storage_conf<Impl, partition::YZ>;
 
     using xyz = storage_conf<Impl, partition::XYZ>;
+
+    static std::string name()
+    {
+        return enum_to_string(Impl);
+    }
 };
 
 template <typename T, T Val1, T Val2>
@@ -207,7 +232,7 @@ struct storage_traits {
         SEQ_REORDER(
             typename array_traits_type::extents_seq,
             dim_order_seq);
-    // Nullify static extents if all static dimensions are not the last physical dimensions
+    // Nullify static extents if the last physical dimensions are not static
     using extents_seq =
         typename
         std::conditional<SEQ_FIND_LAST(extents_pre_seq, 0) == -1 ||
@@ -243,60 +268,14 @@ constexpr unsigned storage_traits<T, StorageType, PartConf>::dynamic_dimensions;
 template <typename T, typename StorageType, typename PartConf>
 constexpr partition storage_traits<T, StorageType, PartConf>::partition_value;
 
-static constexpr int DimInvalid = -1;
+using automatic            = storage_part<storage_tag::AUTO>;
+using reshape_block        = storage_part<storage_tag::RESHAPE_BLOCK>;
+using reshape_cyclic       = storage_part<storage_tag::RESHAPE_CYCLIC>;
+using reshape_block_cyclic = storage_part<storage_tag::RESHAPE_BLOCK_CYCLIC>;
+using vm                   = storage_part<storage_tag::VM>;
+using replicate            = storage_part<storage_tag::REPLICATED>;
 
-struct automatic : storage_part<storage_tag::AUTO> {
-    static constexpr const char *name = "AUTO";
-};
-
-struct reshape : storage_part<storage_tag::RESHAPE_BLOCK> {
-    static constexpr const char *name = "Reshape BLOCK";
-};
-
-using reshape_block = reshape;
-
-struct reshape_cyclic : storage_part<storage_tag::RESHAPE_CYCLIC> {
-    static constexpr const char *name = "Reshape CYCLIC";
-};
-
-struct reshape_block_cyclic : storage_part<storage_tag::RESHAPE_BLOCK_CYCLIC> {
-    static constexpr const char *name = "Reshape BLOCK-CYCLIC";
-};
-
-struct vm : storage_part<storage_tag::VM> {
-    static constexpr const char *name = "Virtual Memory";
-};
-
-struct replicate : storage_part<storage_tag::REPLICATED> {
-    static constexpr const char *name = "Replicate";
-};
-
-template <unsigned DimsComp, unsigned Dims>
-struct compute_mapping {
-    compute_conf<DimsComp> comp;
-    std::array<int, Dims> info;
-
-    unsigned get_array_part_dims() const
-    {
-        return utils::count_if(info, [](int m) { return m != DimInvalid; });
-    }
-
-    bool is_array_dim_part(unsigned dim) const
-    {
-        return info[dim] != DimInvalid;
-    }
-
-    std::array<int, Dims> get_array_to_comp() const
-    {
-        std::array<int, Dims> ret;
-        // Register the mapping
-        for (auto i : utils::make_range(Dims)) {
-            ret[i] = is_array_dim_part(i)? int(DimsComp) - (info[i] + 1):
-                                           DimInvalid;
-        }
-        return ret;
-    }
-};
+using reshape = reshape_block;
 
 }
 

@@ -31,111 +31,276 @@
 #define CUDARRAYS_DETAIL_UTILS_LOG_HPP_
 
 #include <cstdio>
+#include <cstring>
+#include <limits>
 #include <string>
 #include <utility>
 
+#include <sstream>
+
 #include "../../common.hpp"
 
+#include "misc.hpp"
+
 namespace cudarrays {
-namespace detail {
+    struct function_name {
+        std::string prefix;
+        std::string func;
+    };
+
+    template <typename T>
+    std::string
+    array_to_string(T *array, unsigned dims)
+    {
+        std::stringstream str_tmp;
+
+        for (unsigned i = 0; i < dims; ++i) {
+            str_tmp << array[i];
+            if (i < dims - 1) str_tmp << ", ";
+        }
+
+        return str_tmp.str();
+    }
+
     static constexpr size_t TmpBufferSize_ = 4096;
     thread_local static char TmpBuffer_[TmpBufferSize_];
 
-    template <typename... Args>
-    static void
-    print(FILE *out, std::string msg, Args &&...args)
+    template <typename T>
+    static inline
+    const T &replace_string(const T &arg)
     {
-        std::string msg_nl = msg + "\n";
-        fprintf(out, msg_nl.c_str(), args...);
+        return arg;
     }
 
-    template <typename... Args>
-    static void
-    print(FILE *out, std::string msg)
+    static inline
+    const char *replace_string(const char *arg)
     {
-        std::string msg_nl = msg + "\n";
-        fprintf(out, msg_nl.c_str(), nullptr);
+        return arg;
     }
 
-    template <typename... Args>
-    static void
-    print(FILE * /*out*/)
+    static inline
+    const char *replace_string(const std::string &arg)
     {
+        return arg.c_str();
+    }
+
+    template <typename T>
+    static inline
+    const T &replace_array(const T &arg)
+    {
+        return arg;
+    }
+
+    template <typename T, size_t dims>
+    static std::string replace_array(const T (&array)[dims])
+    {
+        return array_to_string(array, dims);
+    }
+
+    template <typename T>
+    static std::string replace_array(const T (&array)[0])
+    {
+        return array_to_string(array, 0);
+    }
+
+    template <size_t dims>
+    static const char *replace_array(const char (&array)[dims])
+    {
+        return array;
+    }
+
+    static inline const char *replace_array(const char (&array)[0])
+    {
+        return array;
+    }
+
+    template <typename T, size_t Dims>
+    static std::string replace_array(const std::array<T, Dims> &array)
+    {
+        return array_to_string(array.data(), Dims);
     }
 
     template <typename... Args>
     static std::string
-    format_str(std::string msg, Args &&...args)
+    format_str(const std::string &msg, const Args &...args)
     {
-        std::string msg_nl = msg + "\n";
-        snprintf(TmpBuffer_, TmpBufferSize_, msg_nl.c_str(), args...);
+        snprintf(TmpBuffer_, TmpBufferSize_, msg.c_str(), replace_string(replace_array(args))...);
 
         return std::string{TmpBuffer_};
     }
 
     template <typename... Args>
     static std::string
-    format_str(std::string msg)
+    format_str(const std::string &msg)
     {
-        std::string msg_nl = msg + "\n";
-        snprintf(TmpBuffer_, TmpBufferSize_, msg_nl.c_str(), nullptr);
+        snprintf(TmpBuffer_, TmpBufferSize_, msg.c_str(), nullptr);
 
         return std::string{TmpBuffer_};
     }
-}
 
-template <typename... Args>
-static void
-DEBUG(std::string msg, Args &&...args)
-{
-    if (!config::OPTION_DEBUG) return;
+    static std::string
+    format_header(std::string file, unsigned line, const std::string &tag, const function_name &fun)
+    {
+        std::string ret = "[" + tag + "]";
 
-    detail::print(stdout, msg, std::forward<Args>(args)...);
-}
+        if (config::OPTION_LOG_SHOW_PATH) {
+            if (config::OPTION_LOG_SHORT_PATH) {
+                static size_t dir_root_len    = std::numeric_limits<size_t>::max();
+                static size_t dir_install_len = std::numeric_limits<size_t>::max();
 
-class DEBUG_SCOPE {
-    std::string msg_;
+                if (dir_root_len == std::numeric_limits<size_t>::max())
+                    dir_root_len = strlen(CUDARRAYS_ROOT_DIR);
+                if (dir_install_len == std::numeric_limits<size_t>::max())
+                    dir_install_len = strlen(CUDARRAYS_INSTALL_DIR);
 
-public:
+                auto pos = file.find(CUDARRAYS_ROOT_DIR);
+                if (pos != std::string::npos)
+                    file = file.substr(pos + dir_root_len + 1);
+                else if ((pos = file.find(CUDARRAYS_INSTALL_DIR)) != std::string::npos)
+                    file = file.substr(pos + dir_install_len + 1);
+            }
+            ret += " " + file + ":" + std::to_string(line);
+        }
+        if (config::OPTION_LOG_SHOW_SYMBOL) {
+            ret += " " + fun.func;
+        }
+
+        return ret;
+    }
+
+    static inline function_name
+    format_function_name(const char *name)
+    {
+        function_name ret;
+        std::string nameStr(name);
+
+        auto pos = nameStr.find(" [with");
+        if (pos != std::string::npos)
+            nameStr = nameStr.substr(0, pos);
+        if (config::OPTION_LOG_STRIP_NAMESPACE)
+            nameStr = utils::string_replace_all(nameStr, "cudarrays::", "");
+
+        ret.func = nameStr;
+
+        return ret;
+    }
+
     template <typename... Args>
-    DEBUG_SCOPE(std::string msg, Args &&...args) :
-        msg_(detail::format_str(msg, std::forward<Args>(args)...))
+    static void
+    print(FILE *out,
+          const std::string &file,
+          unsigned line,
+          const std::string &tag,
+          const function_name &fun,
+          const std::string &msg, const Args &...args)
     {
-        if (!config::OPTION_DEBUG) return;
+        std::string header = format_header(file, line, tag, fun);
+        std::string body   = format_str(msg, args...);
 
-        std::string line = std::string(msg_.size() + 6, '=');
-
-        detail::print(stdout, line + "BEGIN");
-        detail::print(stdout, msg_);
+        fprintf(out, "%s %s\n", header.c_str(), body.c_str());
     }
 
-    ~DEBUG_SCOPE()
+    template <typename... Args>
+    static void
+    print(FILE *out,
+          const std::string &file,
+          unsigned line,
+          const std::string &tag,
+          const function_name &fun)
     {
-        if (!config::OPTION_DEBUG) return;
+        std::string header = format_header(file, line, tag, fun);
 
-        std::string line = std::string(msg_.size() + 4, '=');
-
-        detail::print(stdout, msg_ + "END");
-        detail::print(stdout, line);
+        fprintf(out, "%s ", header.c_str());
     }
-};
 
-#define TRACE_FUNCTION() DEBUG_SCOPE(__PRETTY_FUNCTION__)
+    class trace_scope {
+        bool enable_;
+        std::string file_;
+        unsigned line_;
+        std::string tag_;
+        function_name fun_;
+        std::string msg_;
 
-#define FATAL(...) do {                                                  \
-        cudarrays::detail::print(stderr, "%s:%d\n", __FILE__, __LINE__); \
-        cudarrays::detail::print(stderr, __VA_ARGS__);                   \
-        abort();                                                         \
+    public:
+        template <typename... Args>
+        trace_scope(bool enable,
+                    const std::string &file,
+                    unsigned line,
+                    const std::string &tag,
+                    const function_name &fun,
+                    const std::string &msg, const Args &...args) :
+            enable_(enable),
+            file_(file),
+            line_(line),
+            tag_(tag),
+            fun_(fun),
+            msg_(format_str(msg, args...))
+        {
+            if (!enable) return;
+
+            static const std::string StringBegin = "BEGIN";
+
+            std::string uline(msg_.size() + StringBegin.size() + 1, '=');
+
+            print(stdout, file_, line_, tag_, fun_, uline);
+            print(stdout, file_, line_, tag_, fun_, msg_ + " " + StringBegin);
+        }
+
+        trace_scope(bool enable,
+                    const std::string &file,
+                    unsigned line,
+                    const std::string &tag,
+                    const function_name &fun) :
+            trace_scope(enable, file, line, tag, fun, "")
+        {}
+
+
+        ~trace_scope()
+        {
+            if (!enable_) return;
+            static const std::string StringEnd = "END";
+
+            std::string uline(msg_.size() + StringEnd.size() + 1, '=');
+
+            print(stdout, file_, line_, tag_, fun_, msg_ + " " + StringEnd);
+            print(stdout, file_, line_, tag_, fun_, uline);
+        }
+    };
+
+#define TRACE_FUNCTION() \
+    cudarrays::trace_scope(config::OPTION_LOG_TRACE, __FILE__, __LINE__, "TRACE", \
+                           cudarrays::format_function_name(__PRETTY_FUNCTION__))
+
+#define DEBUG(...)                                                                            \
+    do {                                                                                      \
+        if (!config::OPTION_LOG_DEBUG) break;                                                 \
+        cudarrays::print(stdout, __FILE__, __LINE__, "DEBUG",                                 \
+                         cudarrays::format_function_name(__PRETTY_FUNCTION__),##__VA_ARGS__); \
+    } while (0)
+
+#define INFO(...)                                                                             \
+    do {                                                                                      \
+        if (!config::OPTION_LOG_VERBOSE) break;                                               \
+        cudarrays::print(stdout, __FILE__, __LINE__, "INFO",                                  \
+                         cudarrays::format_function_name(__PRETTY_FUNCTION__),##__VA_ARGS__); \
+    } while (0)
+
+#define FATAL(...) do {                                                                       \
+        cudarrays::print(stderr, __FILE__, __LINE__, "FATAL",                                 \
+                         cudarrays::format_function_name(__PRETTY_FUNCTION__),##__VA_ARGS__); \
+        abort();                                                                              \
     } while (0)
 
 
-#define ASSERT(c,...) do {                                                   \
-        if (!(c)) {                                                          \
-            cudarrays::detail::print(stderr,##__VA_ARGS__);                  \
-            cudarrays::detail::print(stderr, "%s:%d\n", __FILE__, __LINE__); \
-            cudarrays::detail::print(stderr, "Condition '"#c"' not met");    \
-            abort();                                                         \
-        }                                                                    \
+#define ASSERT(c,...) do {                                                                        \
+        if (!(c)) {                                                                               \
+            cudarrays::print(stderr, __FILE__, __LINE__, "ASSERT",                                \
+                             cudarrays::format_function_name(__PRETTY_FUNCTION__),                \
+                             "Condition '"#c"' not met");                                         \
+            cudarrays::print(stderr, __FILE__, __LINE__, "ASSERT",                                \
+                             cudarrays::format_function_name(__PRETTY_FUNCTION__),##__VA_ARGS__); \
+            abort();                                                                              \
+        }                                                                                         \
     } while (0)
 }
 

@@ -150,49 +150,49 @@ void test_conf(unsigned gpus)
                                                  {NIL, NIL, 0},
                                                  {NIL, NIL, 0},
                                                  {NIL, NIL, 0});
-    printf("%s X %u: %d\n", Impl::name, gpus, ok);
+    printf("%s X %u: %d\n", Impl::name().c_str(), gpus, ok);
     ok = launch_test_matrixadd<typename Impl::y>({compute::y, gpus},
                                                  {NIL, 1, NIL},
                                                  {NIL, 1, NIL},
                                                  {NIL, 1, NIL});
-    printf("%s Y %u: %d\n", Impl::name, gpus, ok);
+    printf("%s Y %u: %d\n", Impl::name().c_str(), gpus, ok);
     ok = launch_test_matrixadd<typename Impl::z>({compute::z, gpus},
                                                  {2, NIL, NIL},
                                                  {2, NIL, NIL},
                                                  {2, NIL, NIL});
-    printf("%s Z %u: %d\n", Impl::name, gpus, ok);
+    printf("%s Z %u: %d\n", Impl::name().c_str(), gpus, ok);
 
     if (gpus == 1 || gpus >= 4) {
         ok = launch_test_matrixadd<typename Impl::xy>({compute::xy, gpus},
                                                       {NIL, 1, 0},
                                                       {NIL, 1, 0},
                                                       {NIL, 1, 0});
-        printf("%s XY %u: %d\n", Impl::name, gpus, ok);
+        printf("%s XY %u: %d\n", Impl::name().c_str(), gpus, ok);
         ok = launch_test_matrixadd<typename Impl::xy>({compute::xy, gpus},
                                                       {NIL, 0, 1},
                                                       {NIL, 0, 1},
                                                       {NIL, 0, 1});
-        printf("%s YX %u: %d\n", Impl::name, gpus, ok);
+        printf("%s YX %u: %d\n", Impl::name().c_str(), gpus, ok);
         ok = launch_test_matrixadd<typename Impl::xz>({compute::xz, gpus},
                                                       {2, NIL, 0},
                                                       {2, NIL, 0},
                                                       {2, NIL, 0});
-        printf("%s XZ %u: %d\n", Impl::name, gpus, ok);
+        printf("%s XZ %u: %d\n", Impl::name().c_str(), gpus, ok);
         ok = launch_test_matrixadd<typename Impl::xz>({compute::xz, gpus},
                                                       {0, NIL, 2},
                                                       {0, NIL, 2},
                                                       {0, NIL, 2});
-        printf("%s ZX %u: %d\n", Impl::name, gpus, ok);
+        printf("%s ZX %u: %d\n", Impl::name().c_str(), gpus, ok);
         ok = launch_test_matrixadd<typename Impl::yz>({compute::yz, gpus},
                                                       {2, 1, NIL},
                                                       {2, 1, NIL},
                                                       {2, 1, NIL});
-        printf("%s YZ %u: %d\n", Impl::name, gpus, ok);
+        printf("%s YZ %u: %d\n", Impl::name().c_str(), gpus, ok);
         ok = launch_test_matrixadd<typename Impl::yz>({compute::yz, gpus},
                                                       {1, 2, NIL},
                                                       {1, 2, NIL},
                                                       {1, 2, NIL});
-        printf("%s ZY %u: %d\n", Impl::name, gpus, ok);
+        printf("%s ZY %u: %d\n", Impl::name().c_str(), gpus, ok);
     }
 }
 

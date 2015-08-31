@@ -239,7 +239,7 @@ class dynarray_storage<T, storage_tag::VM, StorageTraits> :
 public:
     template <unsigned DimsComp>
     __host__ bool
-    distribute(const compute_mapping<DimsComp, dimensions> &mapping)
+    distribute(const cudarrays::compute_mapping<DimsComp, dimensions> &mapping)
     {
         if (!dataDev_) {
             hostInfo_.reset(new storage_host_info(mapping.comp.procs));
@@ -252,8 +252,6 @@ public:
                 compute_distribution(mapping);
                 // TODO: remove when the allocation is properly done
                 alloc(mapping.comp.procs);
-
-                //DEBUG("VM> ALLOC: SHIIIIT: %s", to_string(offsGPU_, Dims - 1).c_str());
             }
 
             return true;
@@ -277,7 +275,7 @@ public:
                 // TODO: remove when the allocation is properly done
                 alloc(mapping.comp.procs);
 
-                //DEBUG("VM> ALLOC: SHIIIIT: %s", to_string(offsGPU_, Dims - 1).c_str());
+                //DEBUG("ALLOC: SHIIIIT: %s", to_string(offsGPU_, Dims - 1));
             }
 
             return true;
@@ -415,7 +413,7 @@ private:
         unsigned npages = 0;
 
         // Allocate data in the GPU memory
-        for (std::pair<bool, typename my_allocator::page_stats> ret = cursor.advance();
+        for (auto ret = cursor.advance();
              !ret.first || ret.second.get_total() > 0;
              ret = cursor.advance()) {
             typename my_allocator::page_stats page = ret.second;
@@ -424,16 +422,17 @@ private:
 
             CUDA_CALL(cudaMalloc((void **) &curr, config::CUDA_VM_ALIGN));
 
-            DEBUG("VM> ALLOCATING: %zd in %u (%zd)", config::CUDA_VM_ALIGN, page.gpu, size_t(curr) % config::CUDA_VM_ALIGN);
+            DEBUG("ALLOCATING: %zd bytes in %u (%zd)",
+                  config::CUDA_VM_ALIGN, page.gpu, size_t(curr) % config::CUDA_VM_ALIGN);
 
-            DEBUG("VM> ALLOCATE: %p in %u (final: %u total: %zd)",
+            DEBUG("ALLOCATE: %p in %u (final: %u total: %zd)",
                   curr, page.gpu, unsigned(ret.first), size_t(ret.second.get_total()));
 
             if (last == NULL) {
                 dataDev_ = (T *) curr;
             } else {
                 // Check if the driver is allocating contiguous virtual addresses
-                assert(last + config::CUDA_VM_ALIGN == curr);
+                ASSERT(last + config::CUDA_VM_ALIGN == curr);
             }
             std::swap(last, curr);
             ++npages;
@@ -446,7 +445,7 @@ private:
 
     template <unsigned DimsComp>
     __host__
-    void compute_distribution_internal(const compute_mapping<DimsComp, dimensions> &mapping)
+    void compute_distribution_internal(const cudarrays::compute_mapping<DimsComp, dimensions> &mapping)
     {
         std::array<int, dimensions> arrayDimToCompDim;
         std::array<unsigned, DimsComp> gpuGrid;
@@ -482,24 +481,24 @@ private:
         std::array<unsigned, dimensions> arrayDimToGpus = helper_distribution_get_array_dim_to_gpus(gpuGridOffs, arrayDimToCompDim);
         hostInfo_->arrayDimToGpus = arrayDimToGpus;
 
-        DEBUG("VM> BASE INFO");
-        DEBUG("VM> - array dims: %s", to_string(dims).c_str());
-        DEBUG("VM> - comp  dims: %u", DimsComp);
-        DEBUG("VM> - comp -> array: %s", to_string(arrayDimToCompDim).c_str());
+        DEBUG("BASE INFO");
+        DEBUG("- array dims: %s", dims);
+        DEBUG("- comp  dims: %u", DimsComp);
+        DEBUG("- comp -> array: %s", arrayDimToCompDim);
 
-        DEBUG("VM> PARTITIONING");
-        DEBUG("VM> - gpus: %u", mapping.comp.procs);
-        DEBUG("VM> - comp  part: %s (%u)", to_string(mapping.comp.info).c_str(), mapping.comp.get_part_dims());
-        DEBUG("VM> - comp  grid: %s", to_string(gpuGrid).c_str());
-        DEBUG("VM> - array grid: %s", to_string(arrayPartitionGrid).c_str());
-        DEBUG("VM> - local dims: %s", to_string(hostInfo_->localDims).c_str());
+        DEBUG("PARTITIONING");
+        DEBUG("- gpus: %u", mapping.comp.procs);
+        DEBUG("- comp  part: %s (%u)", mapping.comp.info, mapping.comp.get_part_dims());
+        DEBUG("- comp  grid: %s", gpuGrid);
+        DEBUG("- array grid: %s", arrayPartitionGrid);
+        DEBUG("- local dims: %s", hostInfo_->localDims);
 
-        DEBUG("VM> - array grid offsets: %s", to_string(arrayDimToGpus).c_str());
+        DEBUG("- array grid offsets: %s", arrayDimToGpus);
     }
 
     template <unsigned DimsComp>
     __host__ void
-    compute_distribution(const compute_mapping<DimsComp, dimensions> &mapping)
+    compute_distribution(const cudarrays::compute_mapping<DimsComp, dimensions> &mapping)
     {
         TRACE_FUNCTION();
 

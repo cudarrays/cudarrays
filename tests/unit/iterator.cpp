@@ -50,8 +50,8 @@ public:
 
     using difference_type = cudarrays::array_index_t;
 
-    using iterator       = cudarrays::myiterator<array_test, false>;
-    using const_iterator = cudarrays::myiterator<array_test, true>;
+    using iterator       = cudarrays::array_iterator<array_test, false>;
+    using const_iterator = cudarrays::array_iterator<array_test, true>;
 
     using reverse_iterator       = std::reverse_iterator<iterator>;
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;

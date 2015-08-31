@@ -122,20 +122,6 @@ sort(C &cont, Compare &&op) -> decltype(std::sort(std::begin(cont), std::end(con
 
 template <typename T>
 std::string
-to_string(T *array, unsigned dims)
-{
-    std::stringstream str_tmp;
-
-    for (unsigned i = 0; i < dims; ++i) {
-        str_tmp << array[i];
-        if (i < dims - 1) str_tmp << ", ";
-    }
-
-    return str_tmp.str();
-}
-
-template <typename T>
-std::string
 to_string(const T &obj)
 {
     std::stringstream str_tmp;
@@ -148,27 +134,6 @@ to_string(const T &obj)
     }
 
     return str_tmp.str();
-}
-
-template <typename T, size_t dims>
-std::string
-to_string(const T (&array)[dims])
-{
-    return to_string(array, dims);
-}
-
-template <typename T>
-std::string
-to_string(const T (&array)[0])
-{
-    return to_string(array, 0);
-}
-
-template <typename T, size_t Dims>
-std::string
-to_string(const std::array<T, Dims> &array)
-{
-    return to_string(array.data(), Dims);
 }
 
 }

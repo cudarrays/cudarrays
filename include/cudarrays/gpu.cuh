@@ -30,6 +30,8 @@
 #ifndef CUDARRAYS_GPU_CUH_
 #define CUDARRAYS_GPU_CUH_
 
+#include <cuda_runtime_api.h>
+
 #include "common.hpp"
 
 namespace cudarrays {

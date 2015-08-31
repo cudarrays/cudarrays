@@ -32,6 +32,8 @@
 
 #include <array>
 #include <cstdint>
+#include <string>
+#include <vector>
 
 namespace cudarrays {
 #ifdef LONG_INDEX
@@ -42,9 +44,16 @@ using array_index_t = int32_t;
 using array_size_t = uint32_t;
 #endif
 
+#ifndef CUDARRAYS_ROOT_DIR
+#define CUDARRAYS_ROOT_DIR "@CUDARRAYS_ROOT_DIR@"
+#endif
+
+#ifndef CUDARRAYS_INSTALL_DIR
+#define CUDARRAYS_INSTALL_DIR "@CUDARRAYS_INSTALL_DIR@"
+#endif
+
 template <unsigned Dims>
 using extents = std::array<array_size_t, Dims>;
-
 
 template <typename... T>
 auto make_extents(T... values) -> extents<sizeof...(T)>
@@ -53,7 +62,14 @@ auto make_extents(T... values) -> extents<sizeof...(T)>
 }
 
 namespace config {
-extern bool OPTION_DEBUG;
+extern bool OPTION_LOG_DEBUG;
+extern bool OPTION_LOG_TRACE;
+extern bool OPTION_LOG_VERBOSE;
+extern bool OPTION_LOG_SHOW_PATH;
+extern bool OPTION_LOG_SHORT_PATH;
+extern bool OPTION_LOG_SHOW_SYMBOL;
+extern bool OPTION_LOG_STRIP_NAMESPACE;
+extern std::vector<std::string> OPTION_LOG_FILTER;
 
 extern unsigned MAX_GPUS;
 extern unsigned PEER_GPUS;
@@ -69,8 +85,8 @@ CUDA_VM_ALIGN_ELEMS()
     return CUDA_VM_ALIGN/sizeof(T);
 }
 
-}
-}
+} // namespace config
+} // namespace cudarrays
 
 #endif
 

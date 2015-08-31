@@ -30,7 +30,7 @@
 #ifndef CUDARRAYS_DIM_MANAGER_HPP_
 #define CUDARRAYS_DIM_MANAGER_HPP_
 
-#include "config.hpp"
+#include "common.hpp"
 #include "utils.hpp"
 
 namespace cudarrays {
@@ -39,10 +39,10 @@ struct align_t {
     array_size_t alignment;
     array_size_t position;
 
-    explicit align_t(array_size_t _alignment = 0,
-                     array_index_t _position = 0) :
-        alignment(_alignment),
-        position(_position)
+    align_t(array_size_t alignment_ = 1,
+            array_size_t position_  = 0) :
+        alignment(alignment_),
+        position(position_)
     {
     }
 
@@ -77,27 +77,17 @@ public:
     static constexpr unsigned DimIdxY = 1 - FirstDim;
     static constexpr unsigned DimIdxX = 2 - FirstDim;
 
-private:
-    array_size_t sizes_[Dims];
-    array_size_t sizeAlign_; // Lowest-order dimension
-    array_size_t strides_[Dims - 1];
-
-    array_size_t offset_;
-
-    array_size_t elemsAlign_;
-
-public:
     __host__
-    dim_manager(const extents<Dims> &extents,
+    dim_manager(const extents<Dims> &ext,
                 const align_t &align)
     {
-        ASSERT(extents.size() == Dims);
+        ASSERT(ext.size() == Dims);
 
         // Initialize array sizes
-        utils::copy(extents, sizes_);
+        utils::copy(ext, sizes_);
 
         // Compute offset and aligned size of the lowest order dimension
-        std::tie(offset_, sizeAlign_) = align.align(extents[Dims - 1]);
+        std::tie(offset_, sizeAlign_) = align.align(ext[Dims - 1]);
 
         // Fill offsets' array
         array_size_t nextStride = sizeAlign_;
@@ -106,10 +96,10 @@ public:
             nextStride      *= sizes_[i - 1];
         }
 
-        DEBUG("dim_manager> dims: %u", Dims);
-        DEBUG("dim_manager> sizes: %s", utils::to_string(sizes_, Dims).c_str());
-        DEBUG("dim_manager> sizeAlign: %u", sizeAlign_);
-        DEBUG("dim_manager> strides: %s", utils::to_string(strides_, Dims - 1).c_str());
+        DEBUG("dims: %u", Dims);
+        DEBUG("sizes: %s", sizes_);
+        DEBUG("sizeAlign: %u", sizeAlign_);
+        DEBUG("strides: %s", strides_);
 
         // Compute number of elements
         elemsAlign_ = nextStride;
@@ -181,6 +171,15 @@ public:
         }
         return ret;
     }
+
+private:
+    array_size_t sizes_[Dims];
+    array_size_t sizeAlign_; // Lowest-order dimension
+    array_size_t strides_[Dims - 1];
+
+    array_size_t offset_;
+
+    array_size_t elemsAlign_;
 
     CUDARRAYS_TESTED(storage_test, dim_manager)
     CUDARRAYS_TESTED(storage_test, dim_manager_get_dim)

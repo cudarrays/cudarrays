@@ -32,7 +32,6 @@
 #include <cstddef>
 
 #include "common.hpp"
-#include "config.hpp"
 #include "utils.hpp"
 
 namespace cudarrays {
@@ -128,7 +127,8 @@ struct array_traits {
     static constexpr unsigned dynamic_dimensions = SEQ_COUNT(extents_seq, 0);
     static constexpr unsigned  static_dimensions = dimensions - dynamic_dimensions;
 
-    static extents<dimensions> make_extents(const extents<dynamic_dimensions> &ext)
+    static extents<dimensions>
+    make_extents(const extents<dynamic_dimensions> &ext)
     {
         extents<dimensions> ret = extents_seq::as_array();
 

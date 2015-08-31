@@ -34,13 +34,22 @@
 
 namespace cudarrays {
 
+enum mem_access_type : int {
+    MEM_NONE  = 0,
+    MEM_READ  = 1,
+    MEM_WRITE = 2,
+    MEM_READ_WRITE = MEM_READ | MEM_WRITE
+};
+
 // Handler takes a bool that says if the range is accessed for write
 using handler_fn = std::function<bool (bool)>;
+
+static handler_fn no_handler = nullptr;
 
 void register_range(void *addr, size_t count);
 void unregister_range(void *addr);
 
-void protect_range(void *addr, size_t count, const handler_fn &fn);
+void protect_range(void *addr, size_t count, mem_access_type access_type, const handler_fn &fn = no_handler);
 void unprotect_range(void *addr);
 
 void handler_sigsegv_overload();

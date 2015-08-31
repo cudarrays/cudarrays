@@ -10,6 +10,7 @@ flags = [
 '-std=c++11',
 '-Werror',
 '-I../cudarrays',
+'-I../../build/include/cudarrays',
 '-DCOLLECT_STATS=1',
 ]
 

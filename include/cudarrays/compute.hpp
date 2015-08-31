@@ -39,13 +39,13 @@ namespace cudarrays {
 
 enum compute : unsigned {
     none = partition::NONE,
-    x = partition::X,
-    y = partition::Y,
-    z = partition::Z,
-    xy = partition::XY,
-    xz = partition::XZ,
-    yz = partition::YZ,
-    xyz = partition::XYZ
+    x    = partition::X,
+    y    = partition::Y,
+    z    = partition::Z,
+    xy   = partition::XY,
+    xz   = partition::XZ,
+    yz   = partition::YZ,
+    xyz  = partition::XYZ
 };
 
 template <unsigned Dims>
@@ -54,11 +54,11 @@ struct compute_part_helper;
 template <>
 struct compute_part_helper<1> {
     static std::array<bool, 1>
-    make_array(compute c)
+    make_array(cudarrays::compute c)
     {
         std::array<bool, 1> ret;
-        if (c == compute::none)   ret = { false };
-        else if (c == compute::x) ret = { true  };
+        if (c == cudarrays::compute::none)   ret = { false };
+        else if (c == cudarrays::compute::x) ret = { true  };
         else abort();
         return ret;
     }
@@ -67,13 +67,13 @@ struct compute_part_helper<1> {
 template <>
 struct compute_part_helper<2> {
     static std::array<bool, 2>
-    make_array(compute c)
+    make_array(cudarrays::compute c)
     {
         std::array<bool, 2> ret;
-        if (c == compute::none)    ret = { false, false };
-        else if (c == compute::x)  ret = { false, true  };
-        else if (c == compute::y)  ret = { true, false  };
-        else if (c == compute::xy) ret = { true, true   };
+        if (c == cudarrays::compute::none)    ret = { false, false };
+        else if (c == cudarrays::compute::x)  ret = { false, true  };
+        else if (c == cudarrays::compute::y)  ret = { true, false  };
+        else if (c == cudarrays::compute::xy) ret = { true, true   };
         else abort();
         return ret;
     }
@@ -82,17 +82,17 @@ struct compute_part_helper<2> {
 template <>
 struct compute_part_helper<3> {
     static std::array<bool, 3>
-    make_array(compute c)
+    make_array(cudarrays::compute c)
     {
         std::array<bool, 3> ret;
-        if (c == compute::none)     ret = { false, false, false };
-        else if (c == compute::x)   ret = { false, false, true  };
-        else if (c == compute::y)   ret = { false, true,  false };
-        else if (c == compute::z)   ret = { true,  false, false };
-        else if (c == compute::xy)  ret = { false, true,  true  };
-        else if (c == compute::xz)  ret = { true,  false, true  };
-        else if (c == compute::yz)  ret = { true,  true,  false };
-        else if (c == compute::xyz) ret = { true,  true,  true  };
+        if (c == cudarrays::compute::none)     ret = { false, false, false };
+        else if (c == cudarrays::compute::x)   ret = { false, false, true  };
+        else if (c == cudarrays::compute::y)   ret = { false, true,  false };
+        else if (c == cudarrays::compute::z)   ret = { true,  false, false };
+        else if (c == cudarrays::compute::xy)  ret = { false, true,  true  };
+        else if (c == cudarrays::compute::xz)  ret = { true,  false, true  };
+        else if (c == cudarrays::compute::yz)  ret = { true,  true,  false };
+        else if (c == cudarrays::compute::xyz) ret = { true,  true,  true  };
         else abort();
         return ret;
     }
@@ -117,6 +117,33 @@ struct compute_conf {
     unsigned get_part_dims() const
     {
         return utils::count(info, true);
+    }
+};
+
+template <unsigned DimsComp, unsigned Dims>
+struct compute_mapping {
+    compute_conf<DimsComp> comp;
+    std::array<int, Dims> info;
+
+    unsigned get_array_part_dims() const
+    {
+        return utils::count_if(info, [](int m) { return m != DimInvalid; });
+    }
+
+    bool is_array_dim_part(unsigned dim) const
+    {
+        return info[dim] != DimInvalid;
+    }
+
+    std::array<int, Dims> get_array_to_comp() const
+    {
+        std::array<int, Dims> ret;
+        // Register the mapping
+        for (auto i : utils::make_range(Dims)) {
+            ret[i] = is_array_dim_part(i)? int(DimsComp) - (info[i] + 1):
+                                           DimInvalid;
+        }
+        return ret;
     }
 };
 

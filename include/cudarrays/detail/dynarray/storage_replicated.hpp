@@ -53,14 +53,14 @@ private:
     __host__
     void alloc(array_size_t elems, array_size_t offset, const std::vector<unsigned> &gpus)
     {
-        DEBUG("Replicated> ALLOC begin");
+        DEBUG("ALLOC begin");
         for (unsigned idx : gpus) {
             unsigned gpu = (idx >= config::PEER_GPUS)? 0 : idx;
 
             CUDA_CALL(cudaSetDevice(gpu));
             CUDA_CALL(cudaMalloc((void **) &hostInfo_->allocsDev[idx], elems * sizeof(T)));
 
-            DEBUG("Replicated> ALLOC %u (%u) : %p", idx, gpu, hostInfo_->allocsDev[idx]);
+            DEBUG("ALLOC %u (%u) : %p", idx, gpu, hostInfo_->allocsDev[idx]);
 
             // Update offset
             hostInfo_->allocsDev[idx] += offset;
@@ -90,7 +90,7 @@ private:
 
         ~storage_host_info()
         {
-            if (mergeTmp != nullptr)   delete []mergeTmp;
+            if (mergeTmp   != nullptr) delete []mergeTmp;
             if (mergeFinal != nullptr) delete []mergeFinal;
         }
     };
@@ -114,7 +114,7 @@ public:
             // Free GPU memory
             for (unsigned gpu : utils::make_range(config::MAX_GPUS)) {
                 if (hostInfo_->allocsDev[gpu] != nullptr) {
-                    DEBUG("Replicated> ALLOC freeing %u : %p", gpu, hostInfo_->allocsDev[gpu] - this->get_dim_manager().offset());
+                    DEBUG("ALLOC freeing %u : %p", gpu, hostInfo_->allocsDev[gpu] - this->get_dim_manager().offset());
                     // Update offset
                     CUDA_CALL(cudaFree(hostInfo_->allocsDev[gpu] - this->get_dim_manager().offset()));
                 }
@@ -124,10 +124,9 @@ public:
 
     template <size_t DimsComp>
     __host__ bool
-    distribute(const compute_mapping<DimsComp, dimensions> &mapping)
+    distribute(const cudarrays::compute_mapping<DimsComp, dimensions> &mapping)
     {
-        DEBUG("===========================");
-        DEBUG("REPLICATE> DISTRIBUTE BEGIN");
+        TRACE_FUNCTION();
 
         bool ret = false;
 
@@ -145,17 +144,13 @@ public:
             ret = true;
         }
 
-        DEBUG("=========================");
-        DEBUG("REPLICATE> DISTRIBUTE END");
-
         return ret;
     }
 
     __host__ bool
     distribute(const std::vector<unsigned> &gpus)
     {
-        DEBUG("============================");
-        DEBUG("REPLICATE> DISTRIBUTE2 BEGIN");
+        TRACE_FUNCTION();
 
         bool ret = false;
 
@@ -167,9 +162,6 @@ public:
 
             ret = true;
         }
-
-        DEBUG("==========================");
-        DEBUG("REPLICATE> DISTRIBUTE2 END");
 
         return ret;
     }
@@ -194,7 +186,7 @@ public:
     set_current_gpu(unsigned idx)
     {
         dataDev_ = hostInfo_->allocsDev[idx];
-        DEBUG("Replicated> Index %u > setting data dev: %p", idx, dataDev_);
+        DEBUG("Index %u > setting data dev: %p", idx, dataDev_);
     }
 
     unsigned get_ngpus() const
@@ -229,7 +221,7 @@ public:
             // Request copy-to-device
             for (unsigned idx : utils::make_range(config::MAX_GPUS)) {
                 if (hostInfo_->allocsDev[idx] != nullptr) {
-                    DEBUG("Replicated> gpu %u > to host: %p", idx, hostInfo_->allocsDev[idx] - this->get_dim_manager().offset());
+                    DEBUG("gpu %u > to host: %p", idx, hostInfo_->allocsDev[idx] - this->get_dim_manager().offset());
                     CUDA_CALL(cudaMemcpy(host.base_addr<T>(),
                                          hostInfo_->allocsDev[idx] - this->get_dim_manager().offset(),
                                          this->get_dim_manager().get_bytes(),
@@ -254,7 +246,7 @@ public:
                                          this->get_dim_manager().get_bytes(),
                                          cudaMemcpyDeviceToHost));
 
-                    DEBUG("Replicated> gpu %u > to host: %p", idx, hostInfo_->allocsDev[idx] - this->get_dim_manager().offset());
+                    DEBUG("gpu %u > to host: %p", idx, hostInfo_->allocsDev[idx] - this->get_dim_manager().offset());
 
                     #pragma omp parallel for
                     for (array_size_t j = 0; j < this->get_dim_manager().get_elems_align(); ++j) {
@@ -265,7 +257,7 @@ public:
                 }
             }
 
-            DEBUG("Replicated> Updating main host copy");
+            DEBUG("Updating main host copy");
             std::copy(hostInfo_->mergeFinal,
                       hostInfo_->mergeFinal + this->get_dim_manager().get_elems_align(),
                       host.base_addr<T>());
@@ -281,7 +273,7 @@ public:
         // Request copy-to-device
         for (unsigned idx : utils::make_range(config::MAX_GPUS)) {
             if (hostInfo_->allocsDev[idx] != nullptr) {
-                DEBUG("Replicated> Index %u > to dev: %p", idx, hostInfo_->allocsDev[idx] - this->get_dim_manager().offset());
+                DEBUG("Index %u > to dev: %p", idx, hostInfo_->allocsDev[idx] - this->get_dim_manager().offset());
                 CUDA_CALL(cudaMemcpy(hostInfo_->allocsDev[idx] - this->get_dim_manager().offset(),
                                      host.base_addr<T>(),
                                      this->get_dim_manager().get_bytes(),

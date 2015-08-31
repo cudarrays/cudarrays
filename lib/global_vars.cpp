@@ -36,7 +36,14 @@
 namespace cudarrays {
 
 namespace config {
-bool OPTION_DEBUG;
+bool OPTION_LOG_DEBUG;
+bool OPTION_LOG_TRACE;
+bool OPTION_LOG_VERBOSE;
+bool OPTION_LOG_SHORT_PATH;
+bool OPTION_LOG_SHOW_PATH;
+bool OPTION_LOG_STRIP_NAMESPACE;
+bool OPTION_LOG_SHOW_SYMBOL;
+std::vector<std::string> OPTION_LOG_FILTER;
 
 unsigned MAX_GPUS;
 unsigned PEER_GPUS;

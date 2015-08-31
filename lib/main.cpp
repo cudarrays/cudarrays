@@ -44,7 +44,16 @@ namespace cudarrays {
 void init_lib()
 {
     // Initialize logging
-    config::OPTION_DEBUG = utils::getenv<bool>("CUDARRAYS_DEBUG", false);
+    config::OPTION_LOG_DEBUG           = utils::getenv<bool>("CUDARRAYS_DEBUG", false);
+    config::OPTION_LOG_TRACE           = utils::getenv<bool>("CUDARRAYS_TRACE", false);
+    config::OPTION_LOG_VERBOSE         = utils::getenv<bool>("CUDARRAYS_VERBOSE", false);
+    config::OPTION_LOG_SHOW_PATH       = utils::getenv<bool>("CUDARRAYS_LOG_SHOW_PATH", false);
+    config::OPTION_LOG_SHORT_PATH      = utils::getenv<bool>("CUDARRAYS_LOG_SHORT_PATH", true);
+    config::OPTION_LOG_SHOW_SYMBOL     = utils::getenv<bool>("CUDARRAYS_LOG_SHOW_SYMBOL", false);
+    config::OPTION_LOG_STRIP_NAMESPACE = utils::getenv<bool>("CUDARRAYS_LOG_STRIP_NAMESPACE", true);
+    std::string filter                 = utils::getenv<std::string>("CUDARRAYS_LOG_FILTER", "");
+
+    config::OPTION_LOG_FILTER          = utils::string_tokenize(filter, ",");
 
     // Get gpus from environment variable
     config::MAX_GPUS = utils::getenv<unsigned>("CUDARRAYS_GPUS", 0);
@@ -67,21 +76,21 @@ void init_lib()
 
     int devices;
     err = cudaGetDeviceCount(&devices);
-    assert(err == cudaSuccess);
+    ASSERT(err == cudaSuccess);
 
     for (int d1 = 0; d1 < devices; ++d1) {
         err = cudaSetDevice(d1);
-        assert(err == cudaSuccess);
+        ASSERT(err == cudaSuccess);
         unsigned peers = 1;
         for (int d2 = 0; d2 < devices; ++d2) {
             if (d1 != d2) {
                 int access;
                 err = cudaDeviceCanAccessPeer(&access, d1, d2);
-                assert(err == cudaSuccess);
+                ASSERT(err == cudaSuccess);
 
                 if (access) {
                     err = cudaDeviceEnablePeerAccess(d2, 0);
-                    assert(err == cudaSuccess);
+                    ASSERT(err == cudaSuccess);
 
                     ++peers;
                 }
@@ -89,39 +98,17 @@ void init_lib()
         }
 #if CUDARRAYS_DEBUG_CUDA == 1
         err = cudaSetDevice(d1);
-        assert(err == cudaSuccess);
+        ASSERT(err == cudaSuccess);
         size_t value;
         err = cudaDeviceGetLimit(&value, cudaLimitStackSize);
-        assert(err == cudaSuccess);
+        ASSERT(err == cudaSuccess);
         err = cudaDeviceSetLimit(cudaLimitStackSize, value * 4);
-        assert(err == cudaSuccess);
+        ASSERT(err == cudaSuccess);
 
         printf("GPU %u: Increasing stack size to %zd\n", d1, value * 2);
 #endif
 
         config::PEER_GPUS = std::max(config::PEER_GPUS, peers);
-    }
-
-    // WARM-UP
-    if (0)
-    {
-        size_t S = 512 * 1024;
-        std::vector<char *> ptrs;
-
-        for (int d = 0; d < devices; ++d) {
-            char *curr;
-
-            err = cudaSetDevice(d);
-            assert(err == cudaSuccess);
-            err = cudaMalloc((void **) &curr, S);
-            assert(err == cudaSuccess);
-            ptrs.push_back(curr);
-        }
-
-        for (auto ptr : ptrs) {
-            err = cudaFree(ptr);
-            assert(err == cudaSuccess);
-        }
     }
 
     if (config::MAX_GPUS == 0)
