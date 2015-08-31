@@ -393,6 +393,8 @@ private:
     __host__
     void alloc(unsigned gpus)
     {
+        TRACE_FUNCTION();
+
         using my_allocator = page_allocator<dimensions>;
 
         extents<dimensions> elems;

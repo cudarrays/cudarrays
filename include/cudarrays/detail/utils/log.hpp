@@ -268,8 +268,9 @@ namespace cudarrays {
     };
 
 #define TRACE_FUNCTION() \
-    cudarrays::trace_scope(config::OPTION_LOG_TRACE, __FILE__, __LINE__, "TRACE", \
-                           cudarrays::format_function_name(__PRETTY_FUNCTION__))
+    cudarrays::trace_scope                                            \
+        tracer__(config::OPTION_LOG_TRACE, __FILE__, __LINE__, "TRACE", \
+                 cudarrays::format_function_name(__PRETTY_FUNCTION__))
 
 #define DEBUG(...)                                                                            \
     do {                                                                                      \
