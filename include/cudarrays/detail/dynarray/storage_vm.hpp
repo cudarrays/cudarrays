@@ -225,7 +225,7 @@ class dynarray_storage<T, storage_tag::VM, StorageTraits> :
         unsigned gpus;
 
         extents<dimensions> localDims;
-        std::array<unsigned, dimensions>     arrayDimToGpus;
+        std::array<unsigned, dimensions> arrayDimToGpus;
 
         unsigned npages;
 
@@ -249,7 +249,7 @@ public:
                 fill(hostInfo_->arrayDimToGpus, 0);
                 alloc(mapping.comp.procs);
             } else {
-                compute_distribution(mapping);
+                compute_distribution_internal(mapping);
                 // TODO: remove when the allocation is properly done
                 alloc(mapping.comp.procs);
             }
@@ -494,19 +494,6 @@ private:
         DEBUG("- local dims: %s", hostInfo_->localDims);
 
         DEBUG("- array grid offsets: %s", arrayDimToGpus);
-    }
-
-    template <unsigned DimsComp>
-    __host__ void
-    compute_distribution(const cudarrays::compute_mapping<DimsComp, dimensions> &mapping)
-    {
-        TRACE_FUNCTION();
-
-        if (!hostInfo_) {
-            hostInfo_.reset(new storage_host_info(mapping.comp.procs));
-
-            compute_distribution_internal(mapping);
-        }
     }
 
     T *dataDev_;
