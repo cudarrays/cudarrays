@@ -33,10 +33,6 @@
 #include <cudarrays/dynarray.hpp>
 #include <cudarrays/launch.hpp>
 
-namespace cudarrays {
-void init_lib();
-}
-
 #include "matrixmul_kernel.cuh"
 
 using namespace cudarrays;
@@ -52,7 +48,7 @@ launch_test_matrixmul(compute_conf<2> gpus, std::array<int, 2> infoC,
                                             std::array<int, 2> infoA,
                                             std::array<int, 2> infoB)
 {
-    if (gpus.procs > config::MAX_GPUS) return false;
+    if (gpus.procs > system::gpu_count()) return false;
 
     static const array_size_t ELEMS = matrixmul_ELEMS[INPUTSET];
 
@@ -140,8 +136,6 @@ launch_test_matrixmul(compute_conf<2> gpus, std::array<int, 2> infoC,
 
 int main()
 {
-    init_lib();
-
     static const int NIL = -1;
 
     bool ok = false;

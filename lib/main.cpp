@@ -27,6 +27,7 @@
  * THE SOFTWARE. */
 
 #include <algorithm>
+#include <atomic>
 #include <cstdlib>
 #include <cstddef>
 
@@ -34,41 +35,31 @@
 
 #include "cudarrays/common.hpp"
 #include "cudarrays/memory.hpp"
+#include "cudarrays/system.hpp"
 #include "cudarrays/utils.hpp"
 
 #include "cudarrays/detail/utils/log.hpp"
 
 namespace cudarrays {
 
-// __attribute__((constructor(65535)))
+static std::atomic_flag initialized = ATOMIC_FLAG_INIT;
+static volatile bool initializing = true;
+
 void init_lib()
 {
-    // Initialize logging
-    config::OPTION_LOG_DEBUG           = utils::getenv<bool>("CUDARRAYS_DEBUG", false);
-    config::OPTION_LOG_TRACE           = utils::getenv<bool>("CUDARRAYS_TRACE", false);
-    config::OPTION_LOG_VERBOSE         = utils::getenv<bool>("CUDARRAYS_VERBOSE", false);
-    config::OPTION_LOG_SHOW_PATH       = utils::getenv<bool>("CUDARRAYS_LOG_SHOW_PATH", false);
-    config::OPTION_LOG_SHORT_PATH      = utils::getenv<bool>("CUDARRAYS_LOG_SHORT_PATH", true);
-    config::OPTION_LOG_SHOW_SYMBOL     = utils::getenv<bool>("CUDARRAYS_LOG_SHOW_SYMBOL", false);
-    config::OPTION_LOG_STRIP_NAMESPACE = utils::getenv<bool>("CUDARRAYS_LOG_STRIP_NAMESPACE", true);
-    std::string filter                 = utils::getenv<std::string>("CUDARRAYS_LOG_FILTER", "");
-
-    config::OPTION_LOG_FILTER          = utils::string_tokenize(filter, ",");
-
-    // Get gpus from environment variable
-    config::MAX_GPUS = utils::getenv<unsigned>("CUDARRAYS_GPUS", 0);
-
-    // VM alignment used by the CUDA driver
-    config::CUDA_VM_ALIGN = utils::getenv<array_size_t>("CUDARRAYS_VM_ALIGN", 1 * 1024 * 1024);
-
-    // Page size to be emulated in VM based allocators
-    config::PAGE_ALIGN = utils::getenv<array_size_t>("CUDARRAYS_PAGE_ALIGN", 4 * 1024);
-
-    config::PAGES_PER_ARENA = config::CUDA_VM_ALIGN / config::PAGE_ALIGN;
+    // Only first thread initializes
+    if (initialized.test_and_set()) {
+        // Wait for other threads to finish library initialization
+        while (initializing);
+        return;
+    }
 
     DEBUG("Inizializing CUDArrays");
-    if (config::MAX_GPUS != 0)
-        DEBUG("- Max GPUS: %zd", config::MAX_GPUS);
+
+    // TODO: add checks for valid alignment alues
+
+    if (system::MAX_GPUS.value() != 0)
+        DEBUG("- Max GPUS: %zd", system::MAX_GPUS.value());
     else
         DEBUG("- Max GPUS: autodetect");
 
@@ -77,6 +68,9 @@ void init_lib()
     int devices;
     err = cudaGetDeviceCount(&devices);
     ASSERT(err == cudaSuccess);
+
+    if (system::MAX_GPUS.value() == 0)
+        system::GPUS = devices;
 
     for (int d1 = 0; d1 < devices; ++d1) {
         err = cudaSetDevice(d1);
@@ -108,18 +102,18 @@ void init_lib()
         printf("GPU %u: Increasing stack size to %zd\n", d1, value * 2);
 #endif
 
-        config::PEER_GPUS = std::max(config::PEER_GPUS, peers);
+        system::PEER_GPUS = std::max(system::PEER_GPUS, peers);
     }
-
-    if (config::MAX_GPUS == 0)
-        config::MAX_GPUS = config::PEER_GPUS;
 
     handler_sigsegv_overload();
 
-    DEBUG("- Peer GPUS: %zd", config::PEER_GPUS);
+    DEBUG("- GPUS: %zd", system::GPUS);
+    DEBUG("- Peer GPUS: %zd", system::PEER_GPUS);
 
     // Merge information provided by the compiler
     cudarrays_compiler_register_info__();
+
+    initializing = false;
 }
 
 //__attribute__((destructor(65535)))

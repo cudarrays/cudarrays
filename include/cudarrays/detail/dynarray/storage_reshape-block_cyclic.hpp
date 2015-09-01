@@ -78,7 +78,7 @@ class dynarray_storage<T, storage_tag::RESHAPE_BLOCK_CYCLIC, StorageTraits> :
 
                     DEBUG("in: %u,%u,%u -> %u", pZ, pY, pX, idx);
 
-                    unsigned gpu = (idx >= config::PEER_GPUS)? 0 : idx;
+                    unsigned gpu = idx;
                     // Set the device where data is allocated
                     CUDA_CALL(cudaSetDevice(gpu));
                     // Perform memory allocation
@@ -143,7 +143,7 @@ public:
         }
 
         // Adjust to VM SIZE
-        static const array_size_t CUDA_VM_ALIGN_ELEMS = config::CUDA_VM_ALIGN/sizeof(T);
+        static const array_size_t CUDA_VM_ALIGN_ELEMS = system::CUDA_VM_ALIGN/sizeof(T);
         hostInfo_->elemsLocal = round_next(hostInfo_->elemsLocal, CUDA_VM_ALIGN_ELEMS);
 
         array_size_t prevLocalOff = 1;
@@ -243,7 +243,7 @@ public:
         }
 
         // Adjust to VM SIZE
-        array_size_t CUDA_VM_ALIGN_ELEMS = config::CUDA_VM_ALIGN/sizeof(T);
+        array_size_t CUDA_VM_ALIGN_ELEMS = system::CUDA_VM_ALIGN/sizeof(T);
         hostInfo_->elemsLocal = round_next(hostInfo_->elemsLocal, CUDA_VM_ALIGN_ELEMS);
 
         array_size_t off = 1;

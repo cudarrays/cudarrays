@@ -33,6 +33,7 @@
 #include <memory>
 
 #include "../../utils.hpp"
+#include "../../system.hpp"
 
 #include "base.hpp"
 
@@ -54,16 +55,14 @@ private:
     void alloc(array_size_t elems, array_size_t offset, const std::vector<unsigned> &gpus)
     {
         DEBUG("ALLOC begin");
-        for (unsigned idx : gpus) {
-            unsigned gpu = (idx >= config::PEER_GPUS)? 0 : idx;
-
+        for (unsigned gpu : gpus) {
             CUDA_CALL(cudaSetDevice(gpu));
-            CUDA_CALL(cudaMalloc((void **) &hostInfo_->allocsDev[idx], elems * sizeof(T)));
+            CUDA_CALL(cudaMalloc((void **) &hostInfo_->allocsDev[gpu], elems * sizeof(T)));
 
-            DEBUG("ALLOC %u (%u) : %p", idx, gpu, hostInfo_->allocsDev[idx]);
+            DEBUG("ALLOC in GPU %u : %p", gpu, hostInfo_->allocsDev[gpu]);
 
             // Update offset
-            hostInfo_->allocsDev[idx] += offset;
+            hostInfo_->allocsDev[gpu] += offset;
         }
 
         dataDev_ = nullptr;
@@ -80,7 +79,7 @@ private:
 
         storage_host_info(const std::vector<unsigned> &_gpus) :
             gpus(_gpus),
-            allocsDev(config::MAX_GPUS),
+            allocsDev(system::gpu_count()),
             mergeTmp(nullptr),
             mergeFinal(nullptr)
         {
@@ -112,7 +111,7 @@ public:
     {
         if (hostInfo_) {
             // Free GPU memory
-            for (unsigned gpu : utils::make_range(config::MAX_GPUS)) {
+            for (unsigned gpu : utils::make_range(system::gpu_count())) {
                 if (hostInfo_->allocsDev[gpu] != nullptr) {
                     DEBUG("ALLOC freeing %u : %p", gpu, hostInfo_->allocsDev[gpu] - this->get_dim_manager().offset());
                     // Update offset
@@ -132,8 +131,8 @@ public:
 
         if (!hostInfo_) {
             std::vector<unsigned> gpus;
-            for (unsigned idx : utils::make_range(mapping.comp.procs)) {
-                gpus.push_back(idx);
+            for (unsigned gpu : utils::make_range(mapping.comp.procs)) {
+                gpus.push_back(gpu);
             }
 
             hostInfo_.reset(new storage_host_info{gpus});
@@ -172,29 +171,29 @@ public:
         return hostInfo_ != nullptr;
     }
 
-    T *get_dev_ptr(unsigned idx = 0)
+    T *get_dev_ptr(unsigned gpu = 0)
     {
-        return hostInfo_->allocsDev[idx];
+        return hostInfo_->allocsDev[gpu];
     }
 
-    const T *get_dev_ptr(unsigned idx = 0) const
+    const T *get_dev_ptr(unsigned gpu = 0) const
     {
-        return hostInfo_->allocsDev[idx];
+        return hostInfo_->allocsDev[gpu];
     }
 
     void
-    set_current_gpu(unsigned idx)
+    set_current_gpu(unsigned gpu)
     {
-        dataDev_ = hostInfo_->allocsDev[idx];
-        DEBUG("Index %u > setting data dev: %p", idx, dataDev_);
+        dataDev_ = hostInfo_->allocsDev[gpu];
+        DEBUG("Index %u > setting data dev: %p", gpu, dataDev_);
     }
 
     unsigned get_ngpus() const
     {
         if (hostInfo_ == nullptr)
             return 0;
-        return config::MAX_GPUS - std::count(hostInfo_->allocsDev.begin(),
-                                             hostInfo_->allocsDev.end(), nullptr);
+        return system::gpu_count() - std::count(hostInfo_->allocsDev.begin(),
+                                                hostInfo_->allocsDev.end(), nullptr);
     }
 
     template <typename... Idxs>
@@ -218,12 +217,12 @@ public:
         ASSERT(this->get_ngpus() != 0);
 
         if (this->get_ngpus() == 1) {
-            // Request copy-to-device
-            for (unsigned idx : utils::make_range(config::MAX_GPUS)) {
-                if (hostInfo_->allocsDev[idx] != nullptr) {
-                    DEBUG("gpu %u > to host: %p", idx, hostInfo_->allocsDev[idx] - this->get_dim_manager().offset());
+            // Request copy-to-device. No merge required
+            for (unsigned gpu : utils::make_range(system::gpu_count())) {
+                if (hostInfo_->allocsDev[gpu] != nullptr) {
+                    DEBUG("gpu %u > to host: %p", gpu, hostInfo_->allocsDev[gpu] - this->get_dim_manager().offset());
                     CUDA_CALL(cudaMemcpy(host.base_addr<T>(),
-                                         hostInfo_->allocsDev[idx] - this->get_dim_manager().offset(),
+                                         hostInfo_->allocsDev[gpu] - this->get_dim_manager().offset(),
                                          this->get_dim_manager().get_bytes(),
                                          cudaMemcpyDeviceToHost));
                 }
@@ -239,15 +238,16 @@ public:
                       hostInfo_->mergeFinal);
 
             // Request copy-to-device
-            for (unsigned idx : utils::make_range(config::MAX_GPUS)) {
-                if (hostInfo_->allocsDev[idx] != nullptr) {
+            for (unsigned gpu : utils::make_range(system::gpu_count())) {
+                if (hostInfo_->allocsDev[gpu] != nullptr) {
                     CUDA_CALL(cudaMemcpy(hostInfo_->mergeTmp,
-                                         hostInfo_->allocsDev[idx] - this->get_dim_manager().offset(),
+                                         hostInfo_->allocsDev[gpu] - this->get_dim_manager().offset(),
                                          this->get_dim_manager().get_bytes(),
                                          cudaMemcpyDeviceToHost));
 
-                    DEBUG("gpu %u > to host: %p", idx, hostInfo_->allocsDev[idx] - this->get_dim_manager().offset());
+                    DEBUG("gpu %u > to host: %p", gpu, hostInfo_->allocsDev[gpu] - this->get_dim_manager().offset());
 
+                    // Merge step
                     #pragma omp parallel for
                     for (array_size_t j = 0; j < this->get_dim_manager().get_elems_align(); ++j) {
                         if (memcmp(hostInfo_->mergeTmp + j, host.base_addr<T>() + j, sizeof(T)) != 0) {
@@ -271,10 +271,10 @@ public:
         ASSERT(this->get_ngpus() != 0);
 
         // Request copy-to-device
-        for (unsigned idx : utils::make_range(config::MAX_GPUS)) {
-            if (hostInfo_->allocsDev[idx] != nullptr) {
-                DEBUG("Index %u > to dev: %p", idx, hostInfo_->allocsDev[idx] - this->get_dim_manager().offset());
-                CUDA_CALL(cudaMemcpy(hostInfo_->allocsDev[idx] - this->get_dim_manager().offset(),
+        for (unsigned gpu : utils::make_range(system::gpu_count())) {
+            if (hostInfo_->allocsDev[gpu] != nullptr) {
+                DEBUG("Index %u > to dev: %p", gpu, hostInfo_->allocsDev[gpu] - this->get_dim_manager().offset());
+                CUDA_CALL(cudaMemcpy(hostInfo_->allocsDev[gpu] - this->get_dim_manager().offset(),
                                      host.base_addr<T>(),
                                      this->get_dim_manager().get_bytes(),
                                      cudaMemcpyHostToDevice));

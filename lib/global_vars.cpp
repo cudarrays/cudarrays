@@ -28,31 +28,21 @@
 
 #include <cstdlib>
 #include <cstddef>
+#include <unistd.h>
 
 #include "cudarrays/common.hpp"
-#include "cudarrays/storage.hpp"
 #include "cudarrays/memory.hpp"
+#include "cudarrays/storage.hpp"
 
 namespace cudarrays {
 
-namespace config {
-bool OPTION_LOG_DEBUG;
-bool OPTION_LOG_TRACE;
-bool OPTION_LOG_VERBOSE;
-bool OPTION_LOG_SHORT_PATH;
-bool OPTION_LOG_SHOW_PATH;
-bool OPTION_LOG_STRIP_NAMESPACE;
-bool OPTION_LOG_SHOW_SYMBOL;
-std::vector<std::string> OPTION_LOG_FILTER;
-
-unsigned MAX_GPUS;
-unsigned PEER_GPUS;
-
-array_size_t CUDA_VM_ALIGN;
-
-array_size_t PAGE_ALIGN;
-array_size_t PAGES_PER_ARENA;
-}
+utils::option<bool> LOG_DEBUG{"CUDARRAYS_LOG_DEBUG", false};
+utils::option<bool> LOG_TRACE{"CUDARRAYS_LOG_TRACE", false};
+utils::option<bool> LOG_VERBOSE{"CUDARRAYS_LOG_VERBOSE", false};
+utils::option<bool> LOG_SHOW_PATH{"CUDARRAYS_LOG_SHOW_PATH", false};
+utils::option<bool> LOG_SHORT_PATH{"CUDARRAYS_LOG_SHORT_PATH", false};
+utils::option<bool> LOG_SHOW_SYMBOL{"CUDARRAYS_LOG_SHOW_SYMBOL", false};
+utils::option<bool> LOG_STRIP_NAMESPACE{"CUDARRAYS_LOG_STRIP_NAMESPACE", false};
 
 #if defined(CUDARRAYS_TRACE_BLOCK) || defined(CUDARRAYS_TRACE_WARP)
 __attribute__((weak))

@@ -44,8 +44,6 @@ vecadd_kernel( vector_ref<float> C,
 
 int main()
 {
-    init_lib();
-
     static const array_size_t ELEMS = 1024;
     // Declare vectors
     vector<float> A{{ELEMS}};

@@ -33,10 +33,6 @@
 #include <cudarrays/dynarray.hpp>
 #include <cudarrays/launch.hpp>
 
-namespace cudarrays {
-void init_lib();
-}
-
 #include "matrixadd_kernel.cuh"
 
 using namespace cudarrays;
@@ -52,7 +48,7 @@ launch_test_matrixadd(compute_conf<3> gpus, std::array<int, 3> infoC,
                                             std::array<int, 3> infoA,
                                             std::array<int, 3> infoB)
 {
-    if (gpus.procs > config::MAX_GPUS) return false;
+    if (gpus.procs > system::gpu_count()) return false;
 
     static const array_size_t ELEMS_Z = MATRIXADD_ELEMS[0];
     static const array_size_t ELEMS_Y = MATRIXADD_ELEMS[1];
@@ -198,8 +194,6 @@ void test_conf(unsigned gpus)
 
 int main()
 {
-    init_lib();
-
     for (unsigned gpus : {1, 2, 4}) {
         test_conf<replicate>(gpus);
         test_conf<vm>(gpus);

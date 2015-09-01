@@ -34,10 +34,6 @@
 #include <cudarrays/dynarray.hpp>
 #include <cudarrays/launch.hpp>
 
-namespace cudarrays {
-void init_lib();
-}
-
 #include "vecadd_kernel.cuh"
 
 using namespace cudarrays;
@@ -55,7 +51,7 @@ launch_test_vecadd(compute_conf<1> gpus, mapping1D infoC,
                                          mapping1D infoA,
                                          mapping1D infoB)
 {
-    if (gpus.procs > config::MAX_GPUS) return false;
+    if (gpus.procs > system::gpu_count()) return false;
 
     static const array_size_t ELEMS = VECADD_ELEMS[INPUTSET];
 
@@ -133,8 +129,6 @@ void dead_code()
 
 int main()
 {
-    init_lib();
-
     bool ok = false;
 
     ok = launch_test_vecadd<replicate::x>({ compute::x, 1 },

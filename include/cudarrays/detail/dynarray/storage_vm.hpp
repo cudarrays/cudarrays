@@ -30,6 +30,7 @@
 #ifndef CUDARRAYS_DETAIL_DYNARRAY_STORAGE_VM_HPP_
 #define CUDARRAYS_DETAIL_DYNARRAY_STORAGE_VM_HPP_
 
+#include "../../system.hpp"
 #include "../../utils.hpp"
 
 #include "base.hpp"
@@ -299,20 +300,20 @@ public:
     void to_host(host_storage &host)
     {
         unsigned npages;
-        npages = div_ceil(host.size(), config::CUDA_VM_ALIGN);
+        npages = div_ceil(host.size(), system::CUDA_VM_ALIGN.value());
 
         T *src = dataDev_ - this->get_dim_manager().offset();
         T *dst = host.base_addr<T>();
         for (array_size_t idx  = 0; idx < npages; ++idx) {
-            array_size_t bytesChunk = config::CUDA_VM_ALIGN;
-            if ((idx + 1) * config::CUDA_VM_ALIGN > host.size())
-                bytesChunk = host.size() - idx * config::CUDA_VM_ALIGN;
+            array_size_t bytesChunk = system::CUDA_VM_ALIGN;
+            if ((idx + 1) * system::CUDA_VM_ALIGN > host.size())
+                bytesChunk = host.size() - idx * system::CUDA_VM_ALIGN;
 
-            DEBUG("COPYING TO HOST: %p -> %p (%zd)", &src[(config::CUDA_VM_ALIGN * idx)/sizeof(T)],
-                                                     &dst[(config::CUDA_VM_ALIGN * idx)/sizeof(T)],
+            DEBUG("COPYING TO HOST: %p -> %p (%zd)", &src[(system::CUDA_VM_ALIGN * idx)/sizeof(T)],
+                                                     &dst[(system::CUDA_VM_ALIGN * idx)/sizeof(T)],
                                                      size_t(bytesChunk));
-            CUDA_CALL(cudaMemcpy(&dst[(config::CUDA_VM_ALIGN * idx)/sizeof(T)],
-                                 &src[(config::CUDA_VM_ALIGN * idx)/sizeof(T)],
+            CUDA_CALL(cudaMemcpy(&dst[(system::CUDA_VM_ALIGN * idx)/sizeof(T)],
+                                 &src[(system::CUDA_VM_ALIGN * idx)/sizeof(T)],
                                  bytesChunk, cudaMemcpyDeviceToHost));
         }
     }
@@ -321,20 +322,20 @@ public:
     void to_device(host_storage &host)
     {
         unsigned npages;
-        npages = div_ceil(host.size(), config::CUDA_VM_ALIGN);
+        npages = div_ceil(host.size(), system::CUDA_VM_ALIGN.value());
 
         T *src = host.base_addr<T>();
         T *dst = dataDev_ - this->get_dim_manager().offset();
         for (array_size_t idx  = 0; idx < npages; ++idx) {
-            array_size_t bytesChunk = config::CUDA_VM_ALIGN;
-            if ((idx + 1) * config::CUDA_VM_ALIGN > host.size())
-                bytesChunk = host.size() - idx * config::CUDA_VM_ALIGN;
+            array_size_t bytesChunk = system::CUDA_VM_ALIGN;
+            if ((idx + 1) * system::CUDA_VM_ALIGN > host.size())
+                bytesChunk = host.size() - idx * system::CUDA_VM_ALIGN;
 
-            DEBUG("COPYING TO DEVICE: %p -> %p (%zd)", &src[(config::CUDA_VM_ALIGN * idx)/sizeof(T)],
-                                                       &dst[(config::CUDA_VM_ALIGN * idx)/sizeof(T)],
+            DEBUG("COPYING TO DEVICE: %p -> %p (%zd)", &src[(system::CUDA_VM_ALIGN * idx)/sizeof(T)],
+                                                       &dst[(system::CUDA_VM_ALIGN * idx)/sizeof(T)],
                                                        size_t(bytesChunk));
-            CUDA_CALL(cudaMemcpy(&dst[(config::CUDA_VM_ALIGN * idx)/sizeof(T)],
-                                 &src[(config::CUDA_VM_ALIGN * idx)/sizeof(T)],
+            CUDA_CALL(cudaMemcpy(&dst[(system::CUDA_VM_ALIGN * idx)/sizeof(T)],
+                                 &src[(system::CUDA_VM_ALIGN * idx)/sizeof(T)],
                                  bytesChunk, cudaMemcpyHostToDevice));
         }
     }
@@ -366,7 +367,7 @@ public:
 
             // Free data in GPU memory
             for (auto idx : utils::make_range(hostInfo_->npages)) {
-                CUDA_CALL(cudaFree(&data[config::CUDA_VM_ALIGN_ELEMS<T>() * idx]));
+                CUDA_CALL(cudaFree(&data[system::vm_cuda_align_elems<T>() * idx]));
             }
         }
 #endif
@@ -408,7 +409,7 @@ private:
                             elemsAlign,
                             hostInfo_->localDims,
                             hostInfo_->arrayDimToGpus,
-                            config::CUDA_VM_ALIGN_ELEMS<T>());
+                            system::vm_cuda_align_elems<T>());
 
         char *last = NULL, *curr = NULL;
 
@@ -422,10 +423,10 @@ private:
 
             CUDA_CALL(cudaSetDevice(page.gpu));
 
-            CUDA_CALL(cudaMalloc((void **) &curr, config::CUDA_VM_ALIGN));
+            CUDA_CALL(cudaMalloc((void **) &curr, system::CUDA_VM_ALIGN));
 
             DEBUG("ALLOCATING: %zd bytes in %u (%zd)",
-                  config::CUDA_VM_ALIGN, page.gpu, size_t(curr) % config::CUDA_VM_ALIGN);
+                  system::CUDA_VM_ALIGN.value(), page.gpu, size_t(curr) % system::CUDA_VM_ALIGN);
 
             DEBUG("ALLOCATE: %p in %u (final: %u total: %zd)",
                   curr, page.gpu, unsigned(ret.first), size_t(ret.second.get_total()));
@@ -434,7 +435,7 @@ private:
                 dataDev_ = (T *) curr;
             } else {
                 // Check if the driver is allocating contiguous virtual addresses
-                ASSERT(last + config::CUDA_VM_ALIGN == curr);
+                ASSERT(last + system::CUDA_VM_ALIGN == curr);
             }
             std::swap(last, curr);
             ++npages;

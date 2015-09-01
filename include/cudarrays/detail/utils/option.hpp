@@ -27,41 +27,43 @@
  * THE SOFTWARE. */
 
 #pragma once
-#ifndef CUDARRAYS_CONFIG_HPP_
-#define CUDARRAYS_CONFIG_HPP_
+#ifndef CUDARRAYS_DETAIL_UTILS_OPTION_HPP_
+#define CUDARRAYS_DETAIL_UTILS_OPTION_HPP_
 
-#include <array>
-#include <cstdint>
+#include <cstdlib>
 #include <string>
-#include <vector>
 
-namespace cudarrays {
-#ifdef LONG_INDEX
-using array_index_t = int64_t;
-using array_size_t = uint64_t;
-#else
-using array_index_t = int32_t;
-using array_size_t = uint32_t;
-#endif
+#include <algorithm>
+#include <iostream>
+#include <string>
 
-#ifndef CUDARRAYS_ROOT_DIR
-#define CUDARRAYS_ROOT_DIR "@CUDARRAYS_ROOT_DIR@"
-#endif
+#include "env.hpp"
 
-#ifndef CUDARRAYS_INSTALL_DIR
-#define CUDARRAYS_INSTALL_DIR "@CUDARRAYS_INSTALL_DIR@"
-#endif
+namespace utils {
 
-template <unsigned Dims>
-using extents = std::array<array_size_t, Dims>;
+template <typename T>
+class option {
+public:
+    option(std::string envVar, T defaultValue)
+    {
+        value_ = getenv<T>(envVar, defaultValue);
+    }
 
-template <typename... T>
-auto make_extents(T... values) -> extents<sizeof...(T)>
-{
-    return extents<sizeof...(T)>{array_size_t(values)...};
-}
+    const T &value() const
+    {
+        return value_;
+    }
 
-} // namespace cudarrays
+    operator T()
+    {
+        return value_;
+    }
+
+private:
+    T value_;
+};
+
+} // namespace utils
 
 #endif
 

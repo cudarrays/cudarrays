@@ -33,10 +33,6 @@
 
 #include "common.hpp"
 
-namespace cudarrays {
-void init_lib();
-}
-
 using namespace cudarrays;
 
 template <typename StorageImpl>
@@ -44,8 +40,6 @@ using float_array = dynarray<float ***, layout::rmo, StorageImpl>;
 
 int main()
 {
-    init_lib();
-
     static const int NONE = -1;
 
     auto *A_x_x = new float_array<automatic::none>({ 1500, 300, 600 });

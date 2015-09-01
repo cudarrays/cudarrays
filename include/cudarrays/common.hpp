@@ -60,6 +60,12 @@ static constexpr int DimInvalid = -1;
 void init_lib();
 void fini_lib();
 
+static inline void
+cudarrays_entry_point()
+{
+    init_lib();
+}
+
 }
 
 #endif

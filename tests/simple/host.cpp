@@ -34,10 +34,6 @@
 #include <cudarrays/types.hpp>
 #include <cudarrays/launch.hpp>
 
-namespace cudarrays {
-void init_lib();
-}
-
 using namespace cudarrays;
 
 unsigned INPUTSET = 0;
@@ -76,8 +72,6 @@ launch_test_vecadd()
 
 int main()
 {
-    init_lib();
-
     launch_test_vecadd();
 
     return 0;

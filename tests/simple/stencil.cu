@@ -33,10 +33,6 @@
 #include <cudarrays/dynarray.hpp>
 #include <cudarrays/launch.hpp>
 
-namespace cudarrays {
-void init_lib();
-}
-
 #include "stencil_kernel.cuh"
 
 using namespace cudarrays;
@@ -52,7 +48,7 @@ bool
 launch_test_stencil(compute_conf<2> gpus, mapping2D infoB,
                                           mapping2D infoA)
 {
-    if (gpus.procs > config::MAX_GPUS) return false;
+    if (gpus.procs > system::gpu_count()) return false;
 
     static const array_size_t ELEMS_Y = STENCIL_ELEMS[0];
     static const array_size_t ELEMS_X = STENCIL_ELEMS[1];
@@ -169,7 +165,6 @@ void test_conf(unsigned gpus)
 
 int main()
 {
-    init_lib();
     bool ok;
     ok = launch_test_stencil<replicate::none>({compute::none, 1},
                                               {NIL, NIL},

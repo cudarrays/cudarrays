@@ -27,42 +27,44 @@
  * THE SOFTWARE. */
 
 #pragma once
-#ifndef CUDARRAYS_CONFIG_HPP_
-#define CUDARRAYS_CONFIG_HPP_
+#ifndef CUDARRAYS_SYSTEM_HPP_
+#define CUDARRAYS_SYSTEM_HPP_
 
-#include <array>
-#include <cstdint>
-#include <string>
-#include <vector>
+#include "common.hpp"
+#include "utils.hpp"
 
 namespace cudarrays {
-#ifdef LONG_INDEX
-using array_index_t = int64_t;
-using array_size_t = uint64_t;
-#else
-using array_index_t = int32_t;
-using array_size_t = uint32_t;
-#endif
+namespace system {
 
-#ifndef CUDARRAYS_ROOT_DIR
-#define CUDARRAYS_ROOT_DIR "@CUDARRAYS_ROOT_DIR@"
-#endif
+extern utils::option<unsigned> MAX_GPUS;
+extern utils::option<array_size_t> CUDA_VM_ALIGN;
 
-#ifndef CUDARRAYS_INSTALL_DIR
-#define CUDARRAYS_INSTALL_DIR "@CUDARRAYS_INSTALL_DIR@"
-#endif
+extern unsigned GPUS;
+extern unsigned PEER_GPUS;
 
-template <unsigned Dims>
-using extents = std::array<array_size_t, Dims>;
-
-template <typename... T>
-auto make_extents(T... values) -> extents<sizeof...(T)>
+template <typename T>
+static inline array_size_t
+vm_cuda_align_elems()
 {
-    return extents<sizeof...(T)>{array_size_t(values)...};
+    // LIBRARY ENTRY POINT
+    cudarrays_entry_point();
+
+    return CUDA_VM_ALIGN/sizeof(T);
 }
 
+/**
+ * Obtain the number of GPUs in the system
+ * @return The number of GPUs in the system
+ */
+unsigned gpu_count();
+
+/**
+ * Obtain the number of GPUs in the system with P2P access support
+ * @return The number of GPUs in the system with P2P access support
+ */
+unsigned peer_gpu_count();
+
+} // namespace system
 } // namespace cudarrays
 
 #endif
-
-/* vim:set ft=cpp backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab: */

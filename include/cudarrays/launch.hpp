@@ -340,13 +340,14 @@ protected:
         conf_(conf),
         transposeXY_(transposeXY)
     {
-        if (gpuConf.procs > config::PEER_GPUS) {
+        if (gpuConf.procs > system::gpu_count()) {
             printf("WARNING: # requested GPUs > # installed GPUs\n");
         }
+        // TODO: use peer GPUS for those array implementations that require remote access
         if (gpuConf.procs == 0) {
-            gpus_ = config::PEER_GPUS;
+            gpus_ = system::gpu_count();
         } else {
-            gpus_ = std::min(gpuConf.procs, config::PEER_GPUS);
+            gpus_ = std::min(gpuConf.procs, system::gpu_count());
         }
 
         init_streams(gpus_);
@@ -670,6 +671,9 @@ launch_(const char *name,
         compute_conf<DimsComp> gpuConf = {compute::none, 1},
         bool transposeXY = false)
 {
+    // LIBRARY ENTRY POINT
+    cudarrays_entry_point();
+
     return launcher<DimsComp, R, Args...>(f, name, conf, gpuConf, transposeXY);
 }
 
@@ -681,6 +685,9 @@ launch_async_(const char *name,
               compute_conf<DimsComp> gpuConf = {compute::none, 1},
               bool transposeXY = false)
 {
+    // LIBRARY ENTRY POINT
+    cudarrays_entry_point();
+
     return launcher_async<DimsComp, R, Args...>(f, name, conf, gpuConf, transposeXY);
 }
 

@@ -84,6 +84,9 @@ public:
         coherencePolicy_(coherence),
         device_(permuter_type::reorder(array_traits_type::make_extents(extents)), align)
     {
+        // LIBRARY ENTRY POINT
+        cudarrays_entry_point();
+
         // Alloc host memory
         host_.alloc(device_.get_dim_manager().get_elems_align() * sizeof(value_type),
                     device_.get_dim_manager().offset());

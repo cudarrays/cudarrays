@@ -1,2 +1,3 @@
 -std=c++11
 -I.
+-I../../build/include/cudarrays

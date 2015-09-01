@@ -30,6 +30,7 @@
 #ifndef CUDARRAYS_DETAIL_DYNARRAY_STORAGE_RESHAPE_BLOCK_HPP_
 #define CUDARRAYS_DETAIL_DYNARRAY_STORAGE_RESHAPE_BLOCK_HPP_
 
+#include "../../system.hpp"
 #include "../../utils.hpp"
 
 #include "base.hpp"
@@ -75,7 +76,7 @@ class dynarray_storage<T, storage_tag::RESHAPE_BLOCK, StorageTraits> :
 
                     DEBUG("in: %u,%u,%u -> %u", pZ, pY, pX, idx);
 
-                    unsigned gpu = (idx >= config::PEER_GPUS)? 0 : idx;
+                    unsigned gpu = idx;
                     // Set the device where data is allocated
                     CUDA_CALL(cudaSetDevice(gpu));
                     // Perform memory allocation
@@ -134,7 +135,7 @@ public:
         std::array<array_size_t, dimensions - 1> localOffs = helper_distribution_get_local_offs(localDims);
         utils::copy(localOffs, localOffs_);
         // 5- Compute elements of each tile
-        array_size_t elemsLocal = helper_distribution_get_local_elems(localDims, config::CUDA_VM_ALIGN_ELEMS<T>());
+        array_size_t elemsLocal = helper_distribution_get_local_elems(localDims, system::vm_cuda_align_elems<T>());
         hostInfo_->elemsLocal = elemsLocal;
         // 6- Compute the inter-GPU array offsets for each dimension (iterate from lowest-order dimension)
         std::array<array_size_t, dimensions> gpuOffs = helper_distribution_get_intergpu_offs(elemsLocal, arrayPartitionGrid, arrayDimToCompDim);

@@ -41,8 +41,17 @@
 #include "../../common.hpp"
 
 #include "misc.hpp"
+#include "option.hpp"
 
 namespace cudarrays {
+    extern utils::option<bool> LOG_DEBUG;
+    extern utils::option<bool> LOG_TRACE;
+    extern utils::option<bool> LOG_VERBOSE;
+    extern utils::option<bool> LOG_SHOW_PATH;
+    extern utils::option<bool> LOG_SHORT_PATH;
+    extern utils::option<bool> LOG_SHOW_SYMBOL;
+    extern utils::option<bool> LOG_STRIP_NAMESPACE;
+
     struct function_name {
         std::string prefix;
         std::string func;
@@ -143,8 +152,8 @@ namespace cudarrays {
     {
         std::string ret = "[" + tag + "]";
 
-        if (config::OPTION_LOG_SHOW_PATH) {
-            if (config::OPTION_LOG_SHORT_PATH) {
+        if (LOG_SHOW_PATH) {
+            if (LOG_SHORT_PATH) {
                 static size_t dir_root_len    = std::numeric_limits<size_t>::max();
                 static size_t dir_install_len = std::numeric_limits<size_t>::max();
 
@@ -161,7 +170,7 @@ namespace cudarrays {
             }
             ret += " " + file + ":" + std::to_string(line);
         }
-        if (config::OPTION_LOG_SHOW_SYMBOL) {
+        if (LOG_SHOW_SYMBOL) {
             ret += " " + fun.func;
         }
 
@@ -177,7 +186,7 @@ namespace cudarrays {
         auto pos = nameStr.find(" [with");
         if (pos != std::string::npos)
             nameStr = nameStr.substr(0, pos);
-        if (config::OPTION_LOG_STRIP_NAMESPACE)
+        if (LOG_STRIP_NAMESPACE)
             nameStr = utils::string_replace_all(nameStr, "cudarrays::", "");
 
         ret.func = nameStr;
@@ -267,21 +276,21 @@ namespace cudarrays {
         }
     };
 
-#define TRACE_FUNCTION() \
-    cudarrays::trace_scope                                            \
-        tracer__(config::OPTION_LOG_TRACE, __FILE__, __LINE__, "TRACE", \
+#define TRACE_FUNCTION()                                               \
+    cudarrays::trace_scope                                             \
+        tracer__(LOG_TRACE, __FILE__, __LINE__, "TRACE",               \
                  cudarrays::format_function_name(__PRETTY_FUNCTION__))
 
 #define DEBUG(...)                                                                            \
     do {                                                                                      \
-        if (!config::OPTION_LOG_DEBUG) break;                                                 \
+        if (!LOG_DEBUG) break;                                                                \
         cudarrays::print(stdout, __FILE__, __LINE__, "DEBUG",                                 \
                          cudarrays::format_function_name(__PRETTY_FUNCTION__),##__VA_ARGS__); \
     } while (0)
 
 #define INFO(...)                                                                             \
     do {                                                                                      \
-        if (!config::OPTION_LOG_VERBOSE) break;                                               \
+        if (!LOG_VERBOSE) break;                                                              \
         cudarrays::print(stdout, __FILE__, __LINE__, "INFO",                                  \
                          cudarrays::format_function_name(__PRETTY_FUNCTION__),##__VA_ARGS__); \
     } while (0)
@@ -291,7 +300,6 @@ namespace cudarrays {
                          cudarrays::format_function_name(__PRETTY_FUNCTION__),##__VA_ARGS__); \
         abort();                                                                              \
     } while (0)
-
 
 #define ASSERT(c,...) do {                                                                        \
         if (!(c)) {                                                                               \
@@ -303,7 +311,8 @@ namespace cudarrays {
             abort();                                                                              \
         }                                                                                         \
     } while (0)
-}
+
+} // namespace cudarrays
 
 #endif
 

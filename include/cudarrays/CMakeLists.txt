@@ -18,6 +18,7 @@ set(CUDARRAYS_BASE_HEADERS coherence.hpp
                       memory.hpp
                       storage.hpp
                       storage_impl.hpp
+                      system.hpp
                       traits.hpp
                       trace.hpp
                       types.hpp
@@ -42,6 +43,7 @@ set(CUDARRAYS_DETAIL_UTILS_HEADERS
                       detail/utils/integral_iterator.hpp
                       detail/utils/log.hpp
                       detail/utils/misc.hpp
+                      detail/utils/option.hpp
                       detail/utils/permute.hpp
                       detail/utils/seq.hpp
                       detail/utils/stl.hpp)

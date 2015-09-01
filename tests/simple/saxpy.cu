@@ -33,10 +33,6 @@
 #include <cudarrays/types.hpp>
 #include <cudarrays/launch.hpp>
 
-namespace cudarrays {
-void init_lib();
-}
-
 #include "saxpy_kernel.cuh"
 
 using namespace cudarrays;
@@ -53,7 +49,7 @@ bool
 launch_test_saxpy(compute_conf<1> gpus, mapping1D infoB,
                                         mapping1D infoA)
 {
-    if (gpus.procs > config::MAX_GPUS) return false;
+    if (gpus.procs > system::gpu_count()) return false;
 
     static const auto ELEMS = SAXPY_ELEMS[INPUTSET];
 
@@ -119,8 +115,6 @@ launch_test_saxpy(compute_conf<1> gpus, mapping1D infoB,
 
 int main()
 {
-    init_lib();
-
     bool ok = false;
 
     ok = launch_test_saxpy<replicate::x>({ compute::x, 1 },

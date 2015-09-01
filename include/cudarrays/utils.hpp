@@ -34,6 +34,7 @@
 #include "detail/utils/integral_iterator.hpp"
 #include "detail/utils/log.hpp"
 #include "detail/utils/misc.hpp"
+#include "detail/utils/option.hpp"
 #include "detail/utils/permute.hpp"
 #include "detail/utils/seq.hpp"
 #include "detail/utils/stl.hpp"

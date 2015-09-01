@@ -30,10 +30,6 @@
 
 #include <cudarrays/dynarray.hpp>
 
-namespace cudarrays {
-void init_lib();
-}
-
 using namespace cudarrays;
 
 template <typename Layout>
@@ -41,8 +37,6 @@ using my_array = dynarray<float ***, Layout, replicate::none>;
 
 int main()
 {
-    init_lib();
-
     static const array_size_t X = 2;
     static const array_size_t Y = 3;
     static const array_size_t Z = 4;
