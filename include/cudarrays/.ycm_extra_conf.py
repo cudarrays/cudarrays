@@ -7,8 +7,8 @@ import ycm_core
 flags = [
 '-Wall',
 '-Wextra',
-'-std=c++11',
 '-Werror',
+'-std=c++11',
 '-I../cudarrays',
 '-I../../build/include/cudarrays',
 '-DCOLLECT_STATS=1',

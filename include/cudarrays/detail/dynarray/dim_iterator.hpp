@@ -451,11 +451,11 @@ class array_dim_iterator<Array, Const, Dim, false> :
            > {
     using iterator_traits_base = iterator_traits<
                                     array_dim_iterator_facade_helper<
-                                         Array,
-                                         Const,
-                                         array_dim_iterator<Array, Const, Dim, false>,
-                                         array_dim_iterator<Array, false, Dim + 1, Array::dimensions - 1 == Dim + 1>,
-                                         array_dim_iterator<Array, true,  Dim + 1, Array::dimensions - 1 == Dim + 1>
+                                        Array,
+                                        Const,
+                                        array_dim_iterator<Array, Const, Dim, false>,
+                                        array_dim_iterator<Array, false, Dim + 1, Array::dimensions - 1 == Dim + 1>,
+                                        array_dim_iterator<Array, true,  Dim + 1, Array::dimensions - 1 == Dim + 1>
                                     >,
                                     Const
                                  >;

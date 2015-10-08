@@ -8,8 +8,9 @@ flags = [
 '-Wall',
 '-Wextra',
 '-Werror',
-'-I../../include',
 '-std=c++11'
+'-I../../include',
+'-I../../build/include',
 ]
 
 

@@ -55,24 +55,24 @@ launch_test_vecadd_iterator()
     auto C = make_array<float ***>({ELEMS_Z, ELEMS_Y, ELEMS_X});
 
     {
-        for (auto &plane : A.dim_iterator()) {
-            for (auto &row : plane) {
+        for (auto plane : A.dim_iterator()) {
+            for (auto row : plane) {
                 for (auto &col : row) {
                     col = 1.f;
                 }
             }
         }
 
-        for (auto &plane : B.dim_iterator()) {
-            for (auto &row : plane) {
+        for (auto plane : B.dim_iterator()) {
+            for (auto row : plane) {
                 for (auto &col : row) {
                     col = 2.f;
                 }
             }
         }
 
-        for (auto &plane : C.dim_iterator()) {
-            for (auto &row : plane) {
+        for (auto plane : C.dim_iterator()) {
+            for (auto row : plane) {
                 for (auto &col : row) {
                     col = 0.f;
                 }
@@ -105,24 +105,24 @@ launch_test_vecadd_iterator_static()
     auto C = make_array<float [ELEMS_Z][ELEMS_Y][ELEMS_X]>();
 
     {
-        for (auto &plane : A.dim_iterator()) {
-            for (auto &row : plane) {
+        for (auto plane : A.dim_iterator()) {
+            for (auto row : plane) {
                 for (auto &col : row) {
                     col = 1.f;
                 }
             }
         }
 
-        for (auto &plane : B.dim_iterator()) {
-            for (auto &row : plane) {
+        for (auto plane : B.dim_iterator()) {
+            for (auto row : plane) {
                 for (auto &col : row) {
                     col = 2.f;
                 }
             }
         }
 
-        for (auto &plane : C.dim_iterator()) {
-            for (auto &row : plane) {
+        for (auto plane : C.dim_iterator()) {
+            for (auto row : plane) {
                 for (auto &col : row) {
                     col = 0.f;
                 }
