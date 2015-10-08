@@ -223,7 +223,8 @@ private:
         std::array<unsigned, dimensions> arrayDimToGpus;
 
         storage_host_info(unsigned _gpus) :
-            gpus(_gpus)
+            gpus{_gpus},
+            elemsLocal{0}
         {
         }
     };

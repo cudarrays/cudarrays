@@ -183,6 +183,8 @@ public:
             local  += page.local;
             remote += page.remote;
         }
+        if (local + remote == 0)
+            return 0.0;
 
         return double(remote)/double(local + remote);
     }
