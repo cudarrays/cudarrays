@@ -36,43 +36,215 @@
 
 using namespace cudarrays;
 
-unsigned INPUTSET = 0;
+const unsigned INPUTSET = 1;
 bool TEST = true;
 
-array_size_t VECADD_ELEMS[1] = { 1024L * 1024L };
+constexpr const array_size_t VOLADD_ELEMS_X[2] = { 4, 128 };
+constexpr const array_size_t VOLADD_ELEMS_Y[2] = { 5,  32 };
+constexpr const array_size_t VOLADD_ELEMS_Z[2] = { 6,  32 };
 
 bool
-launch_test_vecadd()
+launch_test_vecadd_iterator()
 {
-    static const array_size_t ELEMS = VECADD_ELEMS[INPUTSET];
+    static constexpr const array_size_t ELEMS_X = VOLADD_ELEMS_X[INPUTSET];
+    static constexpr const array_size_t ELEMS_Y = VOLADD_ELEMS_Y[INPUTSET];
+    static constexpr const array_size_t ELEMS_Z = VOLADD_ELEMS_Z[INPUTSET];
 
-    using my_array = vector<float>;
-
-    my_array A{{ELEMS}};
-    my_array B{{ELEMS}};
-    my_array C{{ELEMS}};
+    auto A = make_array<float ***>({ELEMS_Z, ELEMS_Y, ELEMS_X});
+    auto B = make_array<float ***>({ELEMS_Z, ELEMS_Y, ELEMS_X});
+    auto C = make_array<float ***>({ELEMS_Z, ELEMS_Y, ELEMS_X});
 
     {
-        for (unsigned i = 0; i < ELEMS; ++i) {
-            A(i)      = float(i);
-            B(i)      = float(i + 1.f);
+        for (auto &plane : A.dim_iterator()) {
+            for (auto &row : plane) {
+                for (auto &col : row) {
+                    col = 1.f;
+                }
+            }
+        }
 
-            C(i)      = 0.f;
+        for (auto &plane : B.dim_iterator()) {
+            for (auto &row : plane) {
+                for (auto &col : row) {
+                    col = 2.f;
+                }
+            }
+        }
+
+        for (auto &plane : C.dim_iterator()) {
+            for (auto &row : plane) {
+                for (auto &col : row) {
+                    col = 0.f;
+                }
+            }
         }
     }
 
     {
-        for (unsigned i = 0; i < ELEMS; ++i) {
-            C(i) = A(i) + B(i);
+        for (unsigned i = 0; i < ELEMS_Z; ++i) {
+            for (unsigned j = 0; j < ELEMS_Y; ++j) {
+                for (unsigned k = 0; k < ELEMS_X; ++k) {
+                    C(i, j, k) = A(i, j, k) + B(i, j, k);
+                }
+            }
         }
     }
 
     return true;
 }
 
+bool
+launch_test_vecadd_iterator_static()
+{
+    static constexpr const array_size_t ELEMS_X = VOLADD_ELEMS_X[INPUTSET];
+    static constexpr const array_size_t ELEMS_Y = VOLADD_ELEMS_Y[INPUTSET];
+    static constexpr const array_size_t ELEMS_Z = VOLADD_ELEMS_Z[INPUTSET];
+
+    auto A = make_array<float [ELEMS_Z][ELEMS_Y][ELEMS_X]>();
+    auto B = make_array<float [ELEMS_Z][ELEMS_Y][ELEMS_X]>();
+    auto C = make_array<float [ELEMS_Z][ELEMS_Y][ELEMS_X]>();
+
+    {
+        for (auto &plane : A.dim_iterator()) {
+            for (auto &row : plane) {
+                for (auto &col : row) {
+                    col = 1.f;
+                }
+            }
+        }
+
+        for (auto &plane : B.dim_iterator()) {
+            for (auto &row : plane) {
+                for (auto &col : row) {
+                    col = 2.f;
+                }
+            }
+        }
+
+        for (auto &plane : C.dim_iterator()) {
+            for (auto &row : plane) {
+                for (auto &col : row) {
+                    col = 0.f;
+                }
+            }
+        }
+    }
+
+    {
+        for (unsigned i = 0; i < ELEMS_Z; ++i) {
+            for (unsigned j = 0; j < ELEMS_Y; ++j) {
+                for (unsigned k = 0; k < ELEMS_X; ++k) {
+                    C(i, j, k) = A(i, j, k) + B(i, j, k);
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+bool
+launch_test_vecadd()
+{
+    static constexpr const array_size_t ELEMS_X = VOLADD_ELEMS_X[INPUTSET];
+    static constexpr const array_size_t ELEMS_Y = VOLADD_ELEMS_Y[INPUTSET];
+    static constexpr const array_size_t ELEMS_Z = VOLADD_ELEMS_Z[INPUTSET];
+
+    auto A = make_array<float ***>({ELEMS_Z, ELEMS_Y, ELEMS_X});
+    auto B = make_array<float ***>({ELEMS_Z, ELEMS_Y, ELEMS_X});
+    auto C = make_array<float ***>({ELEMS_Z, ELEMS_Y, ELEMS_X});
+
+    {
+        for (unsigned i = 0; i < ELEMS_Z; ++i) {
+            for (unsigned j = 0; j < ELEMS_Y; ++j) {
+                for (unsigned k = 0; k < ELEMS_X; ++k) {
+                    A(i, j, k) = 1.f;
+                }
+            }
+        }
+        for (unsigned i = 0; i < ELEMS_Z; ++i) {
+            for (unsigned j = 0; j < ELEMS_Y; ++j) {
+                for (unsigned k = 0; k < ELEMS_X; ++k) {
+                    B(i, j, k) = 2.f;
+                }
+            }
+        }
+        for (unsigned i = 0; i < ELEMS_Z; ++i) {
+            for (unsigned j = 0; j < ELEMS_Y; ++j) {
+                for (unsigned k = 0; k < ELEMS_X; ++k) {
+                    C(i, j, k) = 0.f;
+                }
+            }
+        }
+    }
+
+    {
+        for (unsigned i = 0; i < ELEMS_Z; ++i) {
+            for (unsigned j = 0; j < ELEMS_Y; ++j) {
+                for (unsigned k = 0; k < ELEMS_X; ++k) {
+                    C(i, j, k) = A(i, j, k) + B(i, j, k);
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+bool
+launch_test_vecadd_static()
+{
+    static constexpr const array_size_t ELEMS_X = VOLADD_ELEMS_X[INPUTSET];
+    static constexpr const array_size_t ELEMS_Y = VOLADD_ELEMS_Y[INPUTSET];
+    static constexpr const array_size_t ELEMS_Z = VOLADD_ELEMS_Z[INPUTSET];
+
+    auto A = make_array<float [ELEMS_Z][ELEMS_Y][ELEMS_X]>();
+    auto B = make_array<float [ELEMS_Z][ELEMS_Y][ELEMS_X]>();
+    auto C = make_array<float [ELEMS_Z][ELEMS_Y][ELEMS_X]>();
+
+    {
+        for (unsigned i = 0; i < ELEMS_Z; ++i) {
+            for (unsigned j = 0; j < ELEMS_Y; ++j) {
+                for (unsigned k = 0; k < ELEMS_X; ++k) {
+                    A(i, j, k) = 1.f;
+                }
+            }
+        }
+        for (unsigned i = 0; i < ELEMS_Z; ++i) {
+            for (unsigned j = 0; j < ELEMS_Y; ++j) {
+                for (unsigned k = 0; k < ELEMS_X; ++k) {
+                    B(i, j, k) = 2.f;
+                }
+            }
+        }
+        for (unsigned i = 0; i < ELEMS_Z; ++i) {
+            for (unsigned j = 0; j < ELEMS_Y; ++j) {
+                for (unsigned k = 0; k < ELEMS_X; ++k) {
+                    C(i, j, k) = 0.f;
+                }
+            }
+        }
+    }
+
+    {
+        for (unsigned i = 0; i < ELEMS_Z; ++i) {
+            for (unsigned j = 0; j < ELEMS_Y; ++j) {
+                for (unsigned k = 0; k < ELEMS_X; ++k) {
+                    C(i, j, k) = A(i, j, k) + B(i, j, k);
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+
 int main()
 {
     launch_test_vecadd();
+    launch_test_vecadd_static();
+    launch_test_vecadd_iterator();
 
     return 0;
 }

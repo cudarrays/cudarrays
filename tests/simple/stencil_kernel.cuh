@@ -41,8 +41,8 @@ static const int STENCIL_BLOCK_Y = 8;
 template <typename StorageB, typename StorageA>
 __global__
 void
-stencil_kernel( matrix_ref<float, layout::rmo, StorageB> B,
-               matrix_cref<float, layout::rmo, StorageA> A)
+stencil_kernel( matrix_view<float, layout::rmo, StorageB> B,
+               matrix_cview<float, layout::rmo, StorageA> A)
 {
     int tx = threadIdx.x;
     int ty = threadIdx.y;

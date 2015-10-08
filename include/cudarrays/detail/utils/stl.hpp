@@ -136,6 +136,9 @@ to_string(const T &obj)
     return str_tmp.str();
 }
 
+template <bool B, class T = void>
+using enable_if_t = typename std::enable_if<B,T>::type;
+
 }
 
 #endif

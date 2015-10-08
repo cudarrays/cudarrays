@@ -90,6 +90,27 @@ round_next(T val, U step)
     return val;
 }
 
+template <typename T, typename U>
+static inline
+constexpr bool is_greater(T val1, U val2)
+{
+    return val1 > val2;
+}
+
+template <typename T, typename U>
+static inline
+constexpr bool is_less(T val1, U val2)
+{
+    return val1 < val2;
+}
+
+template <typename T, typename U>
+static inline
+constexpr bool is_equal(T val1, U val2)
+{
+    return val1 == val2;
+}
+
 #ifdef CUDARRAYS_UNITTEST
 #define CUDARRAYS_TESTED(C,T) friend C##_##T##_Test;
 #else
@@ -139,7 +160,6 @@ string_tokenize(std::string str, const std::string& delimiter)
 
     return ret;
 }
-
 
 }
 

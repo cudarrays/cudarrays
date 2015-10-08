@@ -31,6 +31,7 @@
 #define CUDARRAYS_DETAIL_UTILS_PERMUTE_HPP_
 
 #include <array>
+#include <tuple>
 
 #include "../../compiler.hpp"
 
@@ -75,6 +76,7 @@ make_array(const T(&array)[Elems])
     return ret;
 }
 
+#if 0
 template <unsigned N, class M>
 struct permuter_detail;
 
@@ -157,27 +159,29 @@ struct permuter_detail<2, SEQ_WITH_TYPE(unsigned, Idx0, Idx1)> {
             return 1;
     }
 };
+#endif
 
-template <unsigned Idx0, unsigned Idx1, unsigned Idx2>
-struct permuter_detail<3, SEQ_WITH_TYPE(unsigned, Idx0, Idx1, Idx2)> {
+template <class M>
+struct permuter_detail;
+
+template <unsigned ...Idxs>
+struct permuter_detail<SEQ_WITH_TYPE(unsigned, Idxs...)> {
+    using idx_seq_type = SEQ(Idxs...);
+
     static inline __host__
-    std::array<unsigned, 3> as_array()
+    std::array<unsigned, SEQ_SIZE(idx_seq_type)> as_array()
     {
-        return {Idx0, Idx1, Idx2};
+        return idx_seq_type::as_array();
     }
 
-    template <unsigned IdxSelect, typename IdxType>
+    template <unsigned IdxSelect, typename... IdxType>
     static inline __hostdevice__
-    IdxType select(IdxType idx0, IdxType idx1, IdxType idx2)
+    typename std::tuple_element<0, std::tuple<IdxType...>>::type
+    select(IdxType... idxs)
     {
-        static_assert(IdxSelect < 3, "Invalid index");
+        static_assert(IdxSelect < SEQ_SIZE(idx_seq_type), "Invalid index");
 
-        if (IdxSelect == Idx0)
-            return idx0;
-        else if (IdxSelect == Idx1)
-            return idx1;
-        else // if (IdxSelect == Idx2)
-            return idx2;
+        return std::get<dim_index<IdxSelect>()>(std::make_tuple(idxs...));
     }
 
     template <typename C>
@@ -188,31 +192,29 @@ struct permuter_detail<3, SEQ_WITH_TYPE(unsigned, Idx0, Idx1, Idx2)> {
     }
 
     template <unsigned Orig>
-    static inline __host__ __device__
+    static constexpr inline __host__ __device__
     unsigned dim_index()
     {
-        if (Orig == Idx0)
-            return 0;
-        else if (Orig == Idx1)
-            return 1;
-        else // if (IdxSelect == Idx2)
-            return 2;
+        return SEQ_FIND_FIRST(idx_seq_type, Orig);
     }
 
     static inline __host__ __device__
     unsigned dim_index(unsigned orig)
     {
-        if (orig == Idx0)
-            return 0;
-        else if (orig == Idx1)
-            return 1;
-        else // if (IdxSelect == Idx2)
-            return 2;
+        constexpr unsigned idx_array[SEQ_SIZE(idx_seq_type)] = { Idxs... };
+
+        unsigned pos = 0;
+        for (auto idx : idx_array) {
+            if (orig == idx)
+                return pos;
+            ++pos;
+        }
+        return pos;
     }
 };
 
 template <typename M>
-using permuter = permuter_detail<SEQ_SIZE(M), M>;
+using permuter = permuter_detail<M>;
 
 }
 

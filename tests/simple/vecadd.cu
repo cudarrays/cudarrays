@@ -56,11 +56,10 @@ launch_test_vecadd(compute_conf<1> gpus, mapping1D infoC,
     static const array_size_t ELEMS = VECADD_ELEMS[INPUTSET];
 
     using array1D_vecadd = float [ELEMS];
-    using my_array = vector<float, Storage>;
 
-    my_array A{{ELEMS}};
-    my_array B{{ELEMS}};
-    my_array C{{ELEMS}};
+    auto A = make_vector<float, Storage>({ELEMS});
+    auto B = make_vector<float, Storage>({ELEMS});
+    auto C = make_vector<float, Storage>({ELEMS});
 
     A.template distribute<1>({gpus, infoA});
     B.template distribute<1>({gpus, infoB});

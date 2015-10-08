@@ -49,8 +49,7 @@ static handler_fn no_handler = nullptr;
 void register_range(void *addr, size_t count);
 void unregister_range(void *addr);
 
-void protect_range(void *addr, size_t count, mem_access_type access_type, const handler_fn &fn = no_handler);
-void unprotect_range(void *addr);
+void protect_range(void *addr, size_t count, mem_access_type access_type, handler_fn fn = no_handler);
 
 void handler_sigsegv_overload();
 void handler_sigsegv_restore();

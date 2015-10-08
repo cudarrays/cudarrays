@@ -39,8 +39,8 @@ struct align_t {
     array_size_t alignment;
     array_size_t position;
 
-    align_t(array_size_t alignment_ = 1,
-            array_size_t position_  = 0) :
+    align_t(array_size_t alignment_= 1,
+            array_size_t position_ = 0) :
         alignment(alignment_),
         position(position_)
     {

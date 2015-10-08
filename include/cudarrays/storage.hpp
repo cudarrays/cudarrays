@@ -201,21 +201,6 @@ struct storage_part
     }
 };
 
-template <typename T, T Val1, T Val2>
-struct is_greater {
-    static constexpr bool value = Val1 > Val2;
-};
-
-template <typename T, T Val1, T Val2>
-struct is_less {
-    static constexpr bool value = Val1 < Val2;
-};
-
-template <typename T, T Val1, T Val2>
-struct is_equal {
-    static constexpr bool value = (Val1 == Val2);
-};
-
 template <typename T, typename StorageType, typename PartConf>
 struct storage_traits {
     using         array_type = T;
@@ -236,10 +221,8 @@ struct storage_traits {
     using extents_seq =
         typename
         std::conditional<SEQ_FIND_LAST(extents_pre_seq, 0) == -1 ||
-                             is_equal<ssize_t,
-                                      SEQ_FIND_LAST(extents_pre_seq, 0) + 1,
-                                      dynamic_dimensions
-                                     >::value,
+                             utils::is_equal(SEQ_FIND_LAST(extents_pre_seq, 0) + 1,
+                                             dynamic_dimensions),
                          extents_pre_seq,
                          SEQ_GEN_FILL(array_size_t(0), dimensions)
                         >::type;

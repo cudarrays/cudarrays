@@ -169,8 +169,7 @@ public:
     {
         TRACE_FUNCTION();
 
-        if (hostInfo_ != nullptr) delete hostInfo_;
-        hostInfo_ = new storage_host_info(mapping.comp.procs);
+        hostInfo_.reset(new storage_host_info(mapping.comp.procs));
 
         compute_distribution_internal(mapping);
     }
@@ -185,7 +184,7 @@ public:
         if (!dataDev_) {
             TRACE_FUNCTION();
 
-            hostInfo_ = new storage_host_info(mapping.comp.procs);
+            hostInfo_.reset(new storage_host_info(mapping.comp.procs));
 
             compute_distribution_internal(mapping);
 
@@ -229,15 +228,14 @@ private:
         }
     };
 
-    storage_host_info *hostInfo_;
+    std::unique_ptr<storage_host_info> hostInfo_;
 
 public:
     __host__
     dynarray_storage(const extents<dimensions> &ext,
                      const align_t &align) :
         base_storage_type(ext, align),
-        dataDev_(nullptr),
-        hostInfo_(nullptr)
+        dataDev_(nullptr)
     {
     }
 
@@ -250,10 +248,6 @@ public:
                 DEBUG("- freeing %p", dataDev_ - this->get_dim_manager().offset() + hostInfo_->elemsLocal * idx);
                 CUDA_CALL(cudaFree(dataDev_ - this->get_dim_manager().offset() + hostInfo_->elemsLocal * idx));
             }
-        }
-
-        if (hostInfo_ != nullptr) {
-            delete hostInfo_;
         }
     }
 

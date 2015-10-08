@@ -35,8 +35,8 @@
 #include <cstring>
 
 #include <limits>
+#include <memory>
 #include <type_traits>
-
 #include <utility>
 
 #include "compiler.hpp"
@@ -49,9 +49,342 @@
 #include "gpu.cuh"
 
 #include "detail/dynarray/iterator.hpp"
+#include "detail/dynarray/dim_iterator.hpp"
 #include "detail/coherence/default.hpp"
 
 namespace cudarrays {
+
+namespace detail {
+template <typename T>
+struct fake_shared_ptr {
+    char bytes[sizeof(std::shared_ptr<T>)];
+
+    __host__ __device__
+    fake_shared_ptr()
+    {
+    }
+
+    __host__
+    fake_shared_ptr(T *)
+    {
+    }
+
+    T *get()
+    {
+        return nullptr;
+    }
+
+    template <typename Deleter>
+    void reset(T *ptr, Deleter deleter)
+    {
+    }
+
+    operator bool() const
+    {
+        return false;
+    }
+
+    T *operator->()
+    {
+        return nullptr;
+    }
+
+    const T *operator->() const
+    {
+        return nullptr;
+    }
+
+};
+}
+
+template <typename Array>
+class dynarray_view_common :
+    public coherent {
+protected:
+    using dynarray_type = Array;
+private:
+    // Instantiate a fake shared_ptr to avoid calling host code from the GPU
+    template <typename T>
+#ifdef __CUDA_ARCH__
+    using shared_ptr_type = detail::fake_shared_ptr<T>;
+#else
+    using shared_ptr_type = std::shared_ptr<T>;
+#endif
+
+    shared_ptr_type<dynarray_type> array_;
+    dynarray_type *array_gpu_;
+    shared_ptr_type<dynarray_type *> arrays_gpu_;
+
+public:
+    __host__ __device__
+    inline
+    dynarray_type &get_array()
+    {
+        // Select the proper pointer for host and device code
+#ifdef __CUDA_ARCH__
+        return *array_gpu_;
+#else
+        return *array_.get();
+#endif
+    }
+
+    __host__ __device__
+    inline
+    const dynarray_type &get_array() const
+    {
+        // Select the proper pointer for host and device code
+#ifdef __CUDA_ARCH__
+        return *array_gpu_;
+#else
+        return *array_.get();
+#endif
+    }
+
+    void create_gpu_handles()
+    {
+        auto ptr = new dynarray_type*[system::gpu_count()];
+        auto deleter = [](dynarray_type **obj)
+                       {
+                           for (auto gpu : utils::make_range(system::gpu_count()))
+                               CUDA_CALL(cudaFree(obj[gpu]));
+                           delete [] obj;
+                       };
+        arrays_gpu_.reset(ptr, deleter);
+        for (auto gpu : utils::make_range(system::gpu_count())) {
+            dynarray_type *tmp;
+            CUDA_CALL(cudaSetDevice(gpu));
+            CUDA_CALL(cudaMalloc((void **)&tmp, sizeof(dynarray_type)));
+
+            array_->set_current_gpu(gpu);
+
+            CUDA_CALL(cudaMemcpy(tmp, array_.get(), sizeof(dynarray_type), cudaMemcpyDefault));
+            CUDA_CALL(cudaSetDevice(gpu));
+
+            ptr[gpu] = tmp;
+        }
+    }
+
+    dynarray_view_common(dynarray_type *a) :
+        array_{a},
+        array_gpu_{nullptr}
+    {}
+
+    __host__ __device__
+    dynarray_view_common(const dynarray_view_common &a) :
+#ifdef __CUDA_ARCH__
+        array_gpu_{a.array_gpu_}
+#else
+        array_{a.array_},
+        arrays_gpu_{a.arrays_gpu_}
+#endif
+    {
+    }
+
+public:
+    using            value_type = typename dynarray_type::value_type;
+    using       difference_type = typename dynarray_type::difference_type;
+
+    using coherence_policy_type = typename dynarray_type::coherence_policy_type;
+
+    coherence_policy_type &get_coherence_policy()
+    {
+        return get_array().get_coherence_policy();
+    }
+
+    void
+    set_current_gpu(unsigned idx)
+    {
+        array_gpu_ = arrays_gpu_.get()[idx];
+        get_array().set_current_gpu(idx);
+    }
+
+    bool is_distributed() const
+    {
+        return get_array().is_distributed();
+    }
+
+    template <unsigned DimsComp>
+    bool distribute(const compute_mapping<DimsComp, dynarray_type::dimensions> &mapping)
+    {
+        auto ret = get_array().distribute(mapping);
+        // Create GPU array copies lazily
+        if (!arrays_gpu_) {
+            create_gpu_handles();
+        }
+        return ret;
+    }
+
+    bool distribute(const std::vector<unsigned> &gpus)
+    {
+        auto ret = get_array().distribute(gpus);
+        // Create GPU array copies lazily
+        if (!arrays_gpu_) {
+            create_gpu_handles();
+        }
+        return ret;
+    }
+
+    void to_device()
+    {
+        get_array().to_device();
+    }
+
+    void to_host()
+    {
+        get_array().to_host();
+    }
+
+    void *host_addr()
+    {
+        return get_array().host_addr();
+    }
+
+    const void *host_addr() const
+    {
+        return get_array().host_addr();
+    }
+
+    size_t size() const
+    {
+        return get_array().size();
+    }
+
+    //
+    // Iterator interface
+    //
+    typename dynarray_type::const_value_iterator_type value_iterator() const
+    {
+        return get_array().value_iterator();
+    }
+
+    typename dynarray_type::const_dim_iterator_type dim_iterator() const
+    {
+        return get_array().dim_iterator();
+    }
+};
+
+template <typename Array>
+class dynarray_cview;
+
+template <typename Array>
+class dynarray_view :
+    public dynarray_view_common<Array> {
+    using dynarray_view_common_type = dynarray_view_common<Array>;
+    using dynarray_type = typename dynarray_view_common_type::dynarray_type;
+
+    using dynarray_cview_type = dynarray_cview<Array>;
+
+    dynarray_view() = delete;
+public:
+    __host__
+    explicit dynarray_view(dynarray_type *a) :
+        dynarray_view_common<Array>{a}
+    {}
+
+    __host__ __device__
+    dynarray_view(const dynarray_cview_type &a) = delete;
+
+    using            value_type = typename dynarray_view_common_type::value_type;
+    using       difference_type = typename dynarray_view_common_type::difference_type;
+
+    using coherence_policy_type = typename dynarray_view_common_type::coherence_policy_type;
+
+    // Forward calls to the parent array
+    template <typename... T>
+    __array_index__
+    value_type &operator()(T &&... indices)
+    {
+        return this->get_array()(std::forward<T>(indices)...);
+    }
+
+    template <typename... T>
+    __array_index__
+    const value_type &operator()(T &&... indices) const
+    {
+        return this->get_array()(std::forward<T>(indices)...);
+    }
+
+    template <unsigned Dim>
+    __array_bounds__
+    array_size_t dim() const
+    {
+        return this->get_array().template dim<Dim>();
+    }
+
+    __array_bounds__
+    array_size_t dim(unsigned dim) const
+    {
+        return this->get_array().dim(dim);
+    }
+
+    //
+    // Iterator interface
+    //
+    typename dynarray_type::value_iterator_type value_iterator()
+    {
+        return this->get_array().value_iterator();
+    }
+
+    typename dynarray_type::dim_iterator_type dim_iterator()
+    {
+        return this->get_array().dim_iterator();
+    }
+};
+
+template <typename Array>
+class dynarray_cview :
+    public dynarray_view_common<Array> {
+    using dynarray_view_common_type = dynarray_view_common<Array>;
+    using dynarray_type = typename dynarray_view_common_type::dynarray_type;
+
+    using dynarray_view_type = dynarray_view<Array>;
+
+    dynarray_cview() = delete;
+public:
+    __host__
+    explicit dynarray_cview(dynarray_type *a) :
+        dynarray_view_common<Array>{a}
+    {}
+
+    __host__ __device__
+    dynarray_cview(const dynarray_cview &a) :
+        dynarray_view_common_type{a}
+    {
+    }
+
+    __host__ __device__
+    dynarray_cview(const dynarray_view_type &a) :
+        dynarray_view_common_type{a}
+    {
+    }
+
+    using            value_type = typename dynarray_view_common_type::value_type;
+    using       difference_type = typename dynarray_view_common_type::difference_type;
+
+    using coherence_policy_type = typename dynarray_view_common_type::coherence_policy_type;
+
+    // Forward calls to the parent array
+    template <typename... T>
+    __array_index__
+    const value_type &operator()(T &&... indices) const
+    {
+        return this->get_array()(std::forward<T>(indices)...);
+    }
+
+    template <unsigned Dim>
+    __array_bounds__
+    array_size_t dim() const
+    {
+        return this->get_array().template dim<Dim>();
+    }
+
+    __array_bounds__
+    array_size_t dim(unsigned dim) const
+    {
+        return this->get_array().dim(dim);
+    }
+
+};
 
 template <typename T,
           typename StorageType = layout::rmo,
@@ -59,6 +392,10 @@ template <typename T,
           typename CoherencePolicy = default_coherence>
 class dynarray :
     public coherent {
+    friend dynarray_view_common<dynarray>;
+    friend dynarray_view<dynarray>;
+    friend dynarray_cview<dynarray>;
+
 public:
     using            array_type = T;
     using     array_traits_type = array_traits<array_type>;
@@ -77,11 +414,25 @@ public:
 
     static constexpr auto dimensions = array_traits_type::dimensions;
 
+    using       value_iterator_type = array_iterator_facade<dynarray, false>;
+    using const_value_iterator_type = array_iterator_facade<dynarray, true>;
+
+    using       dim_iterator_type = array_dim_iterator_facade<dynarray, false>;
+    using const_dim_iterator_type = array_dim_iterator_facade<dynarray, true>;
+
+    static dynarray *make(const extents<array_traits_type::dynamic_dimensions> &ext,
+                          const align_t &align,
+                          coherence_policy_type coherence)
+    {
+        return new dynarray(ext, align, coherence);
+    }
+
+private:
     __host__
     explicit dynarray(const extents<array_traits_type::dynamic_dimensions> &extents,
-                      const align_t &align = align_t{},
-                      coherence_policy_type coherence = coherence_policy_type()) :
-        coherencePolicy_(coherence),
+                      const align_t &align,
+                      coherence_policy_type coherence) :
+        coherencePolicy_{coherence},
         device_(permuter_type::reorder(array_traits_type::make_extents(extents)), align)
     {
         // LIBRARY ENTRY POINT
@@ -101,17 +452,7 @@ public:
     {
     }
 
-    __host__
-    dynarray &operator=(const dynarray &a)
-    {
-        if (&a != this) {
-            device_          = a.device_;
-            coherencePolicy_ = a.coherencePolicy_;
-        }
-
-        return *this;
-    }
-
+public:
     __host__
     virtual ~dynarray()
     {
@@ -120,7 +461,7 @@ public:
 
     template <unsigned DimsComp>
     __host__ bool
-    distribute(compute_mapping<DimsComp, dimensions> mapping)
+    distribute(const compute_mapping<DimsComp, dimensions> &mapping)
     {
         auto mapping2 = mapping;
         mapping2.info = permuter_type::reorder(mapping2.info);
@@ -161,7 +502,7 @@ public:
         device_.set_current_gpu(idx);
     }
 
-    coherence_policy &get_coherence_policy()
+    coherence_policy_type &get_coherence_policy()
     {
         return coherencePolicy_;
     }
@@ -196,111 +537,63 @@ public:
     //
     template <typename ...Idxs>
     __array_index__
-    value_type &operator()(Idxs ...idxs)
+    value_type &at(Idxs &&...idxs)
     {
         static_assert(sizeof...(Idxs) == dimensions, "Wrong number of indexes");
 
-        return access_element_helper<SEQ_GEN_INC(dimensions)>::at(device_, host_, array_index_t(idxs)...);
+        return access_element_helper<SEQ_GEN_INC(dimensions)>::at(device_, host_, array_index_t(std::forward<Idxs>(idxs))...);
     }
 
     template <typename ...Idxs>
     __array_index__
-    const value_type &operator()(Idxs ...idxs) const
+    const value_type &at(Idxs &&...idxs) const
     {
         static_assert(sizeof...(Idxs) == dimensions, "Wrong number of indexes");
 
-        return access_element_helper<SEQ_GEN_INC(dimensions)>::at_const(device_, host_, array_index_t(idxs)...);
+        return access_element_helper<SEQ_GEN_INC(dimensions)>::at_const(device_, host_, array_index_t(std::forward<Idxs>(idxs))...);
+    }
+
+    template <typename ...Idxs>
+    __array_index__
+    value_type &operator()(Idxs &&...idxs)
+    {
+        return at(std::forward<Idxs>(idxs)...);
+    }
+
+    template <typename ...Idxs>
+    __array_index__
+    const value_type &operator()(Idxs &&...idxs) const
+    {
+        return at(std::forward<Idxs>(idxs)...);
     }
 
     //
     // Iterator interface
     //
-    using       iterator = array_iterator<dynarray, false>;
-    using const_iterator = array_iterator<dynarray, true>;
-
-    using       reverse_iterator = std::reverse_iterator<iterator>;
-    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-
-    iterator begin()
+    value_iterator_type value_iterator()
     {
-        array_index_t dims[dimensions];
-        std::fill(dims, dims + dimensions, 0);
-        return iterator(*this, dims);
+        return value_iterator_type{*this};
     }
 
-    const_iterator begin() const
+    const_value_iterator_type value_iterator() const
     {
-        return cbegin();
+        return const_value_iterator_type{*this};
     }
 
-    const_iterator cbegin() const
+    dim_iterator_type dim_iterator()
     {
-        array_index_t dims[dimensions];
-        std::fill(dims, dims + dimensions, 0);
-        return const_iterator(*this, dims);
+        return dim_iterator_type{*this};
     }
 
-    reverse_iterator rbegin()
+    const_dim_iterator_type dim_iterator() const
     {
-        array_index_t dims[dimensions];
-        for (unsigned i = 0; i < dimensions; ++i) {
-            dims[i] = this->dim(i) - 1;
-        }
-        return reverse_iterator(iterator(*this, dims));
+        return const_dim_iterator_type{*this};
     }
 
-    iterator end()
-    {
-        array_index_t dims[dimensions];
-        dims[0] = this->dim(0);
-        if (dimensions > 1) {
-            std::fill(dims + 1, dims + dimensions, 0);
-        }
-        return iterator(*this, dims);
-    }
-
-    const_iterator end() const
-    {
-        return cend();
-    }
-
-    const_iterator cend() const
-    {
-        array_index_t dims[dimensions];
-        dims[0] = this->dim(0);
-        if (dimensions > 1) {
-            std::fill(dims + 1, dims + dimensions, 0);
-        }
-        return const_iterator(*this, dims);
-    }
-
-    reverse_iterator rend()
-    {
-        array_index_t dims[dimensions];
-        dims[0] = -1;
-        for (unsigned i = 0; i < dimensions; ++i) {
-            dims[i] = this->dim(i) - 1;
-        }
-        return reverse_iterator(iterator(*this, dims));
-    }
-
-    const_reverse_iterator rend() const
-    {
-        return crend();
-    }
-
-    const_reverse_iterator crend() const
-    {
-        array_index_t dims[dimensions];
-        dims[0] = -1;
-        for (unsigned i = 0; i < dimensions; ++i) {
-            dims[i] = this->dim(i) - 1;
-        }
-        return const_reverse_iterator(const_iterator(*this, dims));
-    }
-
-    friend iterator;
-    friend const_iterator;
+    friend value_iterator_type;
+    friend const_value_iterator_type;
+    friend dim_iterator_type;
+    friend const_dim_iterator_type;
 
 private:
     template <typename Selector>
@@ -313,7 +606,7 @@ private:
         static
         value_type &at(device_storage_type &device,
                        host_storage &host,
-                       Idxs ...idxs)
+                       Idxs &&...idxs)
         {
             static_assert(sizeof...(Idxs) == sizeof...(Vals), "Wrong number of indexes");
 #ifdef __CUDA_ARCH__
@@ -330,7 +623,7 @@ private:
         static
         const value_type &at_const(const device_storage_type &device,
                                    const host_storage &host,
-                                   Idxs ...idxs)
+                                   Idxs &&...idxs)
         {
             static_assert(sizeof...(Idxs) == sizeof...(Vals), "Wrong number of indexes");
 #ifdef __CUDA_ARCH__
@@ -349,162 +642,94 @@ private:
     host_storage host_;
 };
 
-template <typename Array>
-class dynarray_ref {
-    using dynarray_type = Array;
-    dynarray_ref() = delete;
-private:
-#ifdef __CUDA_ARCH__
-    // Use the whole object to avoid extra indirection on the GPU. Kernel launch performs the conversion
-    // TODO: check if extra indirection introduces overhead
-    dynarray_type array_;
-#else
-    dynarray_type &array_;
-#endif
-public:
-    __host__
-    dynarray_ref(dynarray_type &a) :
-        array_(a)
-    {}
-
-    using            value_type = typename dynarray_type::value_type;
-    using       difference_type = typename dynarray_type::difference_type;
-
-    using coherence_policy_type = typename dynarray_type::coherence_policy_type;
-
-    // Forward calls to the parent array
-    template <typename... T>
-    __array_index__
-    value_type &operator()(T &&... indices)
-    {
-        return array_(std::forward<T>(indices)...);
-    }
-
-    template <typename... T>
-    __array_index__
-    const value_type &operator()(T &&... indices) const
-    {
-        return array_(std::forward<T>(indices)...);
-    }
-
-    template <unsigned Dim>
-    __array_bounds__
-    array_size_t dim() const
-    {
-        return array_.template dim<Dim>();
-    }
-
-    __array_bounds__
-    array_size_t dim(unsigned dim) const
-    {
-        return array_.dim(dim);
-    }
-
-    void
-    set_current_gpu(unsigned idx)
-    {
-        array_.set_current_gpu(idx);
-    }
-
-    coherence_policy_type &get_coherence_policy()
-    {
-        return array_.get_coherence_policy();
-    }
-};
-
-template <typename Array>
-class dynarray_cref {
-    using dynarray_type = Array;
-    dynarray_cref() = delete;
-private:
-#ifdef __CUDA_ARCH__
-    // Use the whole object to avoid extra indirection on the GPU. Kernel launch performs the conversion
-    // TODO: check if extra indirection introduces overhead
-    const dynarray_type array_;
-#else
-    const dynarray_type &array_;
-#endif
-public:
-    __host__
-    dynarray_cref(const dynarray_type &a) :
-        array_(a)
-    {}
-
-    using      value_type = typename dynarray_type::value_type;
-    using difference_type = typename dynarray_type::difference_type;
-
-    using coherence_policy_type = typename dynarray_type::coherence_policy_type;
-
-    // Forward calls to constant methods only
-    template <typename... T>
-    __array_index__
-    const value_type &operator()(T &&... indices) const
-    {
-        return array_(std::forward<T>(indices)...);
-    }
-
-    template <unsigned Dim>
-    __array_bounds__
-    array_size_t dim() const
-    {
-        return array_.template dim<Dim>();
-    }
-
-    __array_bounds__
-    array_size_t dim(unsigned dim) const
-    {
-        return array_.dim(dim);
-    }
-};
-
-template <typename Array>
-__host__
-dynarray_ref<Array> make_ref(Array &a)
+template <typename T,
+          typename StorageType = layout::rmo,
+          typename PartConf = automatic::none,
+          typename CoherencePolicy = default_coherence,
+          unsigned Dims = array_traits<T>::dimensions,
+          unsigned DynDims = array_traits<T>::dynamic_dimensions>
+inline
+utils::enable_if_t<
+    utils::is_greater(Dims, 1u) &&
+    utils::is_greater(DynDims, 0u),
+    dynarray_view<dynarray<T, StorageType, PartConf, CoherencePolicy>>
+>
+make_array(const extents<DynDims> &ext,
+           const align_t &align = align_t{},
+           const CoherencePolicy &coherence = CoherencePolicy{})
 {
-    return dynarray_ref<Array>(a);
+    using dynarray_type = dynarray<T, StorageType, PartConf, CoherencePolicy>;
+    auto *ret = dynarray_type::make(ext, align, coherence);
+    return dynarray_view<dynarray_type>{ret};
 }
 
-template <typename Array>
-__host__
-dynarray_cref<Array> make_cref(const Array &a)
+template <typename T,
+          typename StorageType = layout::rmo,
+          typename PartConf = automatic::none,
+          typename CoherencePolicy = default_coherence,
+          unsigned Dims = array_traits<T>::dimensions,
+          unsigned DynDims = array_traits<T>::dynamic_dimensions>
+inline
+utils::enable_if_t<
+    utils::is_greater(Dims, 1u) &&
+    utils::is_equal(DynDims, 0u),
+    dynarray_view<dynarray<T, StorageType, PartConf, CoherencePolicy>>
+>
+make_array(const CoherencePolicy &coherence = CoherencePolicy{})
 {
-    return dynarray_cref<Array>(a);
+    using dynarray_type = dynarray<T, StorageType, PartConf, CoherencePolicy>;
+    extents<0> ext;
+    auto *ret = dynarray_type::make(ext, align_t{0}, coherence);
+    return dynarray_view<dynarray_type>{ret};
 }
+
+template <typename T,
+          typename PartConf = automatic::none,
+          typename CoherencePolicy = default_coherence,
+          unsigned Dims = array_traits<T>::dimensions,
+          unsigned DynDims = array_traits<T>::dynamic_dimensions>
+inline
+utils::enable_if_t<
+    utils::is_equal(Dims, 1u) &&
+    utils::is_greater(DynDims, 0u),
+    dynarray_view<dynarray<T, layout::rmo, PartConf, CoherencePolicy>>
+>
+make_array(const extents<DynDims> &ext,
+           const align_t &align = align_t{},
+           const CoherencePolicy &coherence = CoherencePolicy{})
+{
+    using dynarray_type = dynarray<T, layout::rmo, PartConf, CoherencePolicy>;
+    auto *ret = dynarray_type::make(ext, align, coherence);
+    return dynarray_view<dynarray_type>{ret};
+}
+
+template <typename T,
+          typename PartConf = automatic::none,
+          typename CoherencePolicy = default_coherence,
+          unsigned Dims = array_traits<T>::dimensions,
+          unsigned DynDims = array_traits<T>::dynamic_dimensions>
+inline
+utils::enable_if_t<
+    utils::is_equal(Dims, 1u) &&
+    utils::is_equal(DynDims, 0u),
+    dynarray_view<dynarray<T, layout::rmo, PartConf, CoherencePolicy>>
+>
+make_array(const CoherencePolicy &coherence = CoherencePolicy{})
+{
+    using dynarray_type = dynarray<T, layout::rmo, PartConf, CoherencePolicy>;
+    extents<0> ext;
+    auto *ret = dynarray_type::make(ext, align_t{0}, coherence);
+    return dynarray_view<dynarray_type>{ret};
+}
+
 
 }
 
 namespace std {
-template <typename T, typename StorageType, class PartConf, typename CoherencePolicy>
-struct is_convertible<cudarrays::dynarray<T, StorageType, PartConf, CoherencePolicy>,
-                      cudarrays::dynarray_ref<cudarrays::dynarray<T, StorageType, PartConf, CoherencePolicy>>> {
-    static constexpr bool value = true;
-
-    using value_type = bool;
-    using       type = std::integral_constant<bool, value>;
-
-    operator bool()
-    {
-        return value;
-    }
-};
-
-template <typename T, typename StorageType, class PartConf, typename CoherencePolicy>
-struct is_convertible<cudarrays::dynarray<T, StorageType, PartConf, CoherencePolicy>,
-                      cudarrays::dynarray_cref<cudarrays::dynarray<T, StorageType, PartConf, CoherencePolicy>>> {
-    static constexpr bool value = true;
-
-    using value_type = bool;
-    using       type = std::integral_constant<bool, value>;
-
-    operator bool()
-    {
-        return value;
-    }
-};
 
 template <typename Array>
 struct
-is_const<cudarrays::dynarray_ref<Array>> {
+is_const<cudarrays::dynarray_view<Array>> {
     static constexpr bool value = false;
 
     using value_type = bool;
@@ -518,7 +743,7 @@ is_const<cudarrays::dynarray_ref<Array>> {
 
 template <typename Array>
 struct
-is_const<cudarrays::dynarray_cref<Array>> {
+is_const<cudarrays::dynarray_cview<Array>> {
     static constexpr bool value = true;
 
     using value_type = bool;

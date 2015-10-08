@@ -54,6 +54,8 @@ void init_lib()
         return;
     }
 
+    system::init();
+
     DEBUG("Inizializing CUDArrays");
 
     // TODO: add checks for valid alignment alues
@@ -62,48 +64,6 @@ void init_lib()
         DEBUG("- Max GPUS: %zd", system::MAX_GPUS.value());
     else
         DEBUG("- Max GPUS: autodetect");
-
-    cudaError_t err;
-
-    int devices;
-    err = cudaGetDeviceCount(&devices);
-    ASSERT(err == cudaSuccess);
-
-    if (system::MAX_GPUS.value() == 0)
-        system::GPUS = devices;
-
-    for (int d1 = 0; d1 < devices; ++d1) {
-        err = cudaSetDevice(d1);
-        ASSERT(err == cudaSuccess);
-        unsigned peers = 1;
-        for (int d2 = 0; d2 < devices; ++d2) {
-            if (d1 != d2) {
-                int access;
-                err = cudaDeviceCanAccessPeer(&access, d1, d2);
-                ASSERT(err == cudaSuccess);
-
-                if (access) {
-                    err = cudaDeviceEnablePeerAccess(d2, 0);
-                    ASSERT(err == cudaSuccess);
-
-                    ++peers;
-                }
-            }
-        }
-#if CUDARRAYS_DEBUG_CUDA == 1
-        err = cudaSetDevice(d1);
-        ASSERT(err == cudaSuccess);
-        size_t value;
-        err = cudaDeviceGetLimit(&value, cudaLimitStackSize);
-        ASSERT(err == cudaSuccess);
-        err = cudaDeviceSetLimit(cudaLimitStackSize, value * 4);
-        ASSERT(err == cudaSuccess);
-
-        printf("GPU %u: Increasing stack size to %zd\n", d1, value * 2);
-#endif
-
-        system::PEER_GPUS = std::max(system::PEER_GPUS, peers);
-    }
 
     handler_sigsegv_overload();
 

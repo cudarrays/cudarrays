@@ -29,12 +29,20 @@
 #include <cstdlib>
 #include <cstddef>
 #include <unistd.h>
+#include <vector>
+
+#include <cuda_runtime_api.h>
 
 #include "cudarrays/common.hpp"
 #include "cudarrays/memory.hpp"
 #include "cudarrays/storage.hpp"
 
 namespace cudarrays {
+
+std::vector<cudaStream_t> StreamsIn;
+std::vector<cudaStream_t> StreamsOut;
+std::vector<cudaEvent_t> EventsBegin;
+std::vector<cudaEvent_t> EventsEnd;
 
 utils::option<bool> LOG_DEBUG{"CUDARRAYS_LOG_DEBUG", false};
 utils::option<bool> LOG_TRACE{"CUDARRAYS_LOG_TRACE", false};

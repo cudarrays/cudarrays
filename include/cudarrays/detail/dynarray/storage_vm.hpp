@@ -36,23 +36,21 @@
 #include "base.hpp"
 #include "helpers.hpp"
 
-using namespace utils;
-
 namespace cudarrays {
 
 template <unsigned Dims>
 class page_allocator {
 public:
     struct page_stats {
-        unsigned gpu;
+        unsigned gpu = 0;
 
         array_size_t local;
         array_size_t remote;
 
         page_stats() :
-            gpu(0),
-            local(0),
-            remote(0)
+            gpu{0},
+            local{0},
+            remote{0}
         {}
 
         array_size_t get_total() const
@@ -72,16 +70,16 @@ public:
                    const std::array<array_size_t, Dims> &elems_local,
                    const std::array<unsigned, Dims> &arrayDimToGpus,
                    array_size_t granularity) :
-        gpus_(gpus),
+        gpus_{gpus},
         dims_(elems),
         dimsAlign_(elems_align),
         dimsLocal_(elems_local),
         arrayDimToGpus_(arrayDimToGpus),
-        granularity_(granularity)
+        granularity_{granularity}
     {
-        fill(idx_, array_index_t(0));
+        utils::fill(idx_, array_index_t(0));
 
-        nelems_ = accumulate(elems, 1, std::multiplies<array_size_t>());
+        nelems_ = utils::accumulate(elems, 1, std::multiplies<array_size_t>());
 
         for (unsigned dim = 0; dim < Dims; ++dim) {
             mayOverflow_[dim] = elems_align[dim] % elems_local[dim] != 0;
@@ -231,8 +229,8 @@ class dynarray_storage<T, storage_tag::VM, StorageTraits> :
         unsigned npages;
 
         storage_host_info(unsigned _gpus) :
-            gpus(_gpus),
-            npages(0)
+            gpus{_gpus},
+            npages{0}
         {
         }
     };
@@ -243,11 +241,11 @@ public:
     distribute(const cudarrays::compute_mapping<DimsComp, dimensions> &mapping)
     {
         if (!dataDev_) {
-            hostInfo_.reset(new storage_host_info(mapping.comp.procs));
+            hostInfo_.reset(new storage_host_info{mapping.comp.procs});
 
             if (mapping.comp.procs == 1) {
                 hostInfo_->localDims = this->get_dim_manager().dims();
-                fill(hostInfo_->arrayDimToGpus, 0);
+                utils::fill(hostInfo_->arrayDimToGpus, 0);
                 alloc(mapping.comp.procs);
             } else {
                 compute_distribution_internal(mapping);
@@ -265,7 +263,7 @@ public:
     {
 #if 0
         if (!dataDev_) {
-            hostInfo_ = new storage_host_info(mapping.comp.procs);
+            hostInfo_.reset(new storage_host_info(mapping.comp.procs));
 
             if (mapping.comp.procs == 1) {
                 hostInfo_->localDims = make_array(this->get_dim_manager().dims());
@@ -300,7 +298,7 @@ public:
     void to_host(host_storage &host)
     {
         unsigned npages;
-        npages = div_ceil(host.size(), system::CUDA_VM_ALIGN.value());
+        npages = utils::div_ceil(host.size(), system::CUDA_VM_ALIGN.value());
 
         T *src = dataDev_ - this->get_dim_manager().offset();
         T *dst = host.base_addr<T>();
@@ -322,7 +320,7 @@ public:
     void to_device(host_storage &host)
     {
         unsigned npages;
-        npages = div_ceil(host.size(), system::CUDA_VM_ALIGN.value());
+        npages = utils::div_ceil(host.size(), system::CUDA_VM_ALIGN.value());
 
         T *src = host.base_addr<T>();
         T *dst = dataDev_ - this->get_dim_manager().offset();
@@ -343,17 +341,17 @@ public:
     __host__
     dynarray_storage(const extents<dimensions> &ext,
                      const align_t &align) :
-        base_storage_type(ext, align),
-        dataDev_(nullptr),
-        hostInfo_(nullptr)
+        base_storage_type{ext, align},
+        dataDev_{nullptr},
+        hostInfo_{nullptr}
     {
     }
 
     __host__
     dynarray_storage(const dynarray_storage &other) :
         base_storage_type(other),
-        dataDev_(other.dataDev_),
-        hostInfo_(other.hostInfo_)
+        dataDev_{other.dataDev_},
+        hostInfo_{other.hostInfo_}
     {
     }
 
@@ -362,10 +360,10 @@ public:
     {
 #ifndef __CUDA_ARCH__
         if (dataDev_ != NULL) {
-            // Update offset
+            // Get base address
             T *data = dataDev_ - this->get_dim_manager().offset();
 
-            // Free data in GPU memory
+            // Free each page in GPU memory
             for (auto idx : utils::make_range(hostInfo_->npages)) {
                 CUDA_CALL(cudaFree(&data[system::vm_cuda_align_elems<T>() * idx]));
             }
@@ -375,17 +373,17 @@ public:
 
     template <typename... Idxs>
     __device__ inline
-    T &access_pos(Idxs... idxs)
+    T &access_pos(Idxs&&... idxs)
     {
-        auto idx = indexer_type::access_pos(this->get_dim_manager().get_strides(), idxs...);
+        auto idx = indexer_type::access_pos(this->get_dim_manager().get_strides(), std::forward<Idxs>(idxs)...);
         return dataDev_[idx];
     }
 
     template <typename... Idxs>
     __device__ inline
-    const T &access_pos(Idxs... idxs) const
+    const T &access_pos(Idxs&&... idxs) const
     {
-        auto idx = indexer_type::access_pos(this->get_dim_manager().get_strides(), idxs...);
+        auto idx = indexer_type::access_pos(this->get_dim_manager().get_strides(), std::forward<Idxs>(idxs)...);
         return dataDev_[idx];
     }
 

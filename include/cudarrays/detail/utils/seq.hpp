@@ -51,9 +51,11 @@ struct sequence {
 
 template <typename ...T>
 auto deduce(T...) -> typename std::tuple_element<0, std::tuple<T...>>::type
-{ }
+{
+    return std::get<0, std::tuple<T...>>();
+}
 
-#define SEQ(...)           utils::mpl::sequence<decltype(utils::mpl::deduce(__VA_ARGS__)),##__VA_ARGS__>
+#define SEQ(...)             utils::mpl::sequence<decltype(utils::mpl::deduce(__VA_ARGS__)),##__VA_ARGS__>
 #define SEQ_WITH_TYPE(t,...) utils::mpl::sequence<t,##__VA_ARGS__>
 
 #define SEQ_T_OP(o,...) typename utils::mpl::seq_##o<__VA_ARGS__>::type
@@ -65,7 +67,7 @@ namespace detail {
     struct seq_size;
 
     template <typename T, T... Vals>
-    struct seq_size<T, sequence<T, Vals...>> {
+    struct seq_size<T, SEQ_WITH_TYPE(T, Vals...)> {
         static constexpr size_t value = sizeof...(Vals);
     };
 
@@ -93,7 +95,7 @@ struct seq_wrap;
 
 template <typename T, T... Values, template <T...> class O>
 struct seq_wrap<T, O<Values...>> {
-    using type = sequence<T, Values...>;
+    using type = SEQ_WITH_TYPE(T, Values...);
 };
 
 #define SEQ_WRAP(...) SEQ_T_OP(wrap,##__VA_ARGS__)
@@ -104,7 +106,7 @@ namespace detail {
     struct seq_unwrap;
 
     template <typename T, T... Values, template <T...> class O>
-    struct seq_unwrap<T, sequence<T, Values...>, O<>> {
+    struct seq_unwrap<T, SEQ_WITH_TYPE(T, Values...), O<>> {
         using type = O<Values...>;
     };
 
@@ -124,8 +126,8 @@ namespace detail {
     struct seq_merge;
 
     template <typename T, T... Values1, T... Values2>
-    struct seq_merge<T, sequence<T, Values1...>, sequence<T, Values2...>> {
-        using type = sequence<T, Values1..., Values2...>;
+    struct seq_merge<T, SEQ_WITH_TYPE(T, Values1...), SEQ_WITH_TYPE(T, Values2...)> {
+        using type = SEQ_WITH_TYPE(T, Values1..., Values2...);
     };
 
 }
@@ -148,7 +150,7 @@ namespace detail {
 
     template <typename T, T FillValue, T... Generated>
     struct seq_gen_fill<T, 0, FillValue, Generated...> {
-        using type = sequence<T, Generated...>;
+        using type = SEQ_WITH_TYPE(T, Generated...);
     };
 
 }
@@ -163,16 +165,16 @@ struct seq_gen_fill {
 
 template <typename S, SEQ_TYPE(S)... FillValues>
 struct seq_prepend {
-    using type = typename seq_merge<sequence<SEQ_TYPE(S), FillValues...>,
-                                    S>::type;
+    using s_type = SEQ_TYPE(S);
+    using type = typename seq_merge<SEQ_WITH_TYPE(s_type, FillValues...), S>::type;
 };
 
 #define SEQ_PREPEND(...) SEQ_T_OP(prepend,##__VA_ARGS__)
 
 template <typename S, SEQ_TYPE(S)... FillValues>
 struct seq_append {
-    using type = typename seq_merge<S,
-                                    sequence<SEQ_TYPE(S), FillValues...>>::type;
+    using s_type = SEQ_TYPE(S);
+    using type = typename seq_merge<S, SEQ_WITH_TYPE(s_type, FillValues...)>::type;
 };
 
 #define SEQ_APPEND(...) SEQ_T_OP(append,##__VA_ARGS__)
@@ -183,7 +185,7 @@ template <typename T, typename S>
 struct seq_pop;
 
 template <typename T, T Value, T... Values>
-struct seq_pop<T, sequence<T, Value, Values...>> {
+struct seq_pop<T, SEQ_WITH_TYPE(T, Value, Values...)> {
     using type = SEQ_WITH_TYPE(T, Values...);
 };
 
@@ -202,13 +204,13 @@ namespace detail {
     struct seq_reverse;
 
     template <typename T, T Current, T... Vals, T... Generated>
-    struct seq_reverse<T, sequence<T, Current, Vals...>, Generated...> {
-        using type = typename seq_reverse<T, sequence<T, Vals...>, Current, Generated...>::type;
+    struct seq_reverse<T, SEQ_WITH_TYPE(T, Current, Vals...), Generated...> {
+        using type = typename seq_reverse<T, SEQ_WITH_TYPE(T, Vals...), Current, Generated...>::type;
     };
 
     template <typename T, T... Generated>
-    struct seq_reverse<T, sequence<T>, Generated...> {
-        using type = sequence<T, Generated...>;
+    struct seq_reverse<T, SEQ_WITH_TYPE(T), Generated...> {
+        using type = SEQ_WITH_TYPE(T, Generated...);
     };
 
 }
@@ -229,7 +231,7 @@ namespace detail {
 
     template <typename T, T Current, T... Generated>
     struct seq_gen_inc<T, 0, Current, Generated...> {
-        using type = sequence<T, Generated...>;
+        using type = SEQ_WITH_TYPE(T, Generated...);
     };
 
 }
@@ -251,7 +253,7 @@ namespace detail {
 
     template <typename T, T Current, T... Generated>
     struct seq_gen_dec<T, 1, Current, Generated...> {
-        using type = sequence<T, Generated...>;
+        using type = SEQ_WITH_TYPE(T, Generated...);
     };
 
 }
@@ -269,12 +271,12 @@ namespace detail {
     struct seq_at;
 
     template <size_t N, typename T, T Current, T... Values>
-    struct seq_at<N, T, sequence<T, Current, Values...>> {
-        static constexpr T value = seq_at<N - 1, T, sequence<T, Values...>>::value;
+    struct seq_at<N, T, SEQ_WITH_TYPE(T, Current, Values...)> {
+        static constexpr T value = seq_at<N - 1, T, SEQ_WITH_TYPE(T, Values...)>::value;
     };
 
     template <typename T, T Current, T... Values>
-    struct seq_at<0, T, sequence<T, Current, Values...>> {
+    struct seq_at<0, T, SEQ_WITH_TYPE(T, Current, Values...)> {
         static constexpr T value = Current;
     };
 
@@ -297,23 +299,21 @@ namespace detail {
     struct seq_set;
 
     template <size_t N, typename T, T Value, T Current, T... Values, T... Values2>
-    struct seq_set<N, T,
-                   Value,
-                   sequence<T, Current, Values...>,
-                   sequence<T, Values2...>> {
+    struct seq_set<N, T, Value,
+                   SEQ_WITH_TYPE(T, Current, Values...),
+                   SEQ_WITH_TYPE(T, Values2...)> {
         static constexpr T value = seq_set<N - 1, T, Value,
-                                           sequence<T, Values...>,
-                                           sequence<T, Values2..., Current>
+                                           SEQ_WITH_TYPE(T, Values...),
+                                           SEQ_WITH_TYPE(T, Values2..., Current)
                                            >::value;
     };
 
     template <typename T, T Value, T Current, T... Values, T... Values2>
-    struct seq_set<0, T,
-                   Value,
-                   sequence<T, Current, Values...>,
-                   sequence<T, Values2...>> {
+    struct seq_set<0, T, Value,
+                   SEQ_WITH_TYPE(T, Current, Values...),
+                   SEQ_WITH_TYPE(T, Values2...)> {
         static constexpr T value = Current;
-        using type = sequence<T, Values2..., Value, Values...>;
+        using type = SEQ_WITH_TYPE(T, Values2..., Value, Values...);
     };
 
 }
@@ -321,7 +321,7 @@ namespace detail {
 template <typename S, size_t N, SEQ_TYPE(S) Value>
 struct seq_set {
     static_assert(N < seq_size<S>::value, "Out of bounds");
-    using type = typename detail::seq_set<N, SEQ_TYPE(S), Value, S, sequence<SEQ_TYPE(S)>>::type;
+    using type = typename detail::seq_set<N, SEQ_TYPE(S), Value, S, SEQ_WITH_TYPE(SEQ_TYPE(S))>::type;
 };
 
 #define SEQ_AT(...) (SEQ_V_OP(at,##__VA_ARGS__))
@@ -359,17 +359,17 @@ namespace detail {
     struct seq_count;
 
     template <typename T, T Value, T Current, T... Values>
-    struct seq_count<T, Value, sequence<T, Current, Values...>> {
-        static constexpr T value = seq_count<T, Value, sequence<T, Values...>>::value;
+    struct seq_count<T, Value, SEQ_WITH_TYPE(T, Current, Values...)> {
+        static constexpr T value = seq_count<T, Value, SEQ_WITH_TYPE(T, Values...)>::value;
     };
 
     template <typename T, T Value, T... Values>
-    struct seq_count<T, Value, sequence<T, Value, Values...>> {
-        static constexpr T value = seq_count<T, Value, sequence<T, Values...>>::value + 1;
+    struct seq_count<T, Value, SEQ_WITH_TYPE(T, Value, Values...)> {
+        static constexpr T value = seq_count<T, Value, SEQ_WITH_TYPE(T, Values...)>::value + 1;
     };
 
     template <typename T, T Value>
-    struct seq_count<T, Value, sequence<T>> {
+    struct seq_count<T, Value, SEQ_WITH_TYPE(T)> {
         static constexpr T value = 0;
     };
 
@@ -392,17 +392,17 @@ namespace detail {
     struct seq_find_first;
 
     template <typename T, size_t Idx, T Value, T Current, T... Values>
-    struct seq_find_first<T, Idx, Value, sequence<T, Current, Values...>> {
-        static constexpr ssize_t value = seq_find_first<T, Idx + 1, Value, sequence<T, Values...>>::value;
+    struct seq_find_first<T, Idx, Value, SEQ_WITH_TYPE(T, Current, Values...)> {
+        static constexpr ssize_t value = seq_find_first<T, Idx + 1, Value, SEQ_WITH_TYPE(T, Values...)>::value;
     };
 
     template <typename T, size_t Idx, T Value, T... Values>
-    struct seq_find_first<T, Idx, Value, sequence<T, Value, Values...>> {
+    struct seq_find_first<T, Idx, Value, SEQ_WITH_TYPE(T, Value, Values...)> {
         static constexpr ssize_t value = Idx;
     };
 
     template <typename T, size_t Idx, T Value>
-    struct seq_find_first<T, Idx, Value, sequence<T>> {
+    struct seq_find_first<T, Idx, Value, SEQ_WITH_TYPE(T)> {
         static constexpr ssize_t value = -1;
     };
 
@@ -435,8 +435,9 @@ namespace detail {
     struct seq_reorder_gather;
 
     template <typename T, typename T2, T... Vals, T2... Idxs>
-    struct seq_reorder_gather<T, T2, mpl::sequence<T, Vals...>, mpl::sequence<T2, Idxs...>> {
-        using type = sequence<T, SEQ_AT(sequence<T, Vals...>, Idxs)...>;
+    struct seq_reorder_gather<T, T2, SEQ_WITH_TYPE(T, Vals...),
+                                     SEQ_WITH_TYPE(T2, Idxs...)> {
+        using type = SEQ(SEQ_AT(SEQ_WITH_TYPE(T, Vals...), Idxs)...);
     };
 
 }

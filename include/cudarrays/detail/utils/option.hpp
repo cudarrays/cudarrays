@@ -30,11 +30,6 @@
 #ifndef CUDARRAYS_DETAIL_UTILS_OPTION_HPP_
 #define CUDARRAYS_DETAIL_UTILS_OPTION_HPP_
 
-#include <cstdlib>
-#include <string>
-
-#include <algorithm>
-#include <iostream>
 #include <string>
 
 #include "env.hpp"
@@ -54,7 +49,7 @@ public:
         return value_;
     }
 
-    operator T()
+    operator T() const
     {
         return value_;
     }

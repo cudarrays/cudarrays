@@ -303,8 +303,7 @@ public:
     __host__ void
     compute_distribution(const cudarrays::compute_mapping<DimsComp, dimensions> &mapping)
     {
-        if (hostInfo_ != NULL) delete hostInfo_;
-        hostInfo_ = new storage_host_info(mapping.comp.info);
+        hostInfo_.reset(new storage_host_info(mapping.comp.info));
 
         compute_distribution_internal(mapping);
     }
@@ -314,7 +313,7 @@ public:
     distribute(const cudarrays::compute_mapping<DimsComp, dimensions> &mapping)
     {
         if (!dataDev_) {
-            hostInfo_ = new storage_host_info(mapping.comp.info);
+            hostInfo_.reset(new storage_host_info(mapping.comp.info));
 
             if (mapping.comp.procs == 1)
                 compute_distribution_internal_single(mapping);
@@ -359,33 +358,26 @@ private:
         unsigned arrayDimToGpus[dimensions];
         int mapping[dimensions];
 
-        unsigned *gpuGrid;
+        std::unique_ptr<unsigned[]> gpuGrid;
         unsigned compDims;
-        T **dataDevPtrs_;
 
         template <size_t DimsComp>
         __host__
-        storage_host_info(const std::array<bool, DimsComp> &info)
+        storage_host_info(const std::array<bool, DimsComp> &info) :
+            gpuGrid(new unsigned[DimsComp])
         {
-            gpuGrid = new unsigned[DimsComp];
             compDims = DimsComp;
-        }
-
-        ~storage_host_info()
-        {
-            delete []gpuGrid;
         }
     };
 
-    storage_host_info *hostInfo_;
+    std::unique_ptr<storage_host_info> hostInfo_;
 
 public:
     __host__
     dynarray_storage(const extents<dimensions> &ext,
                      const align_t &align) :
         base_storage_type(ext, align),
-        dataDev_(nullptr),
-        hostInfo_(nullptr)
+        dataDev_(nullptr)
     {
     }
 
@@ -398,10 +390,6 @@ public:
                 DEBUG("- freeing %p", dataDev_ - this->get_dim_manager().offset() + hostInfo_->elemsLocal * idx);
                 CUDA_CALL(cudaFree(dataDev_ - this->get_dim_manager().offset() + hostInfo_->elemsLocal * idx));
             }
-        }
-
-        if (hostInfo_ != nullptr) {
-            delete hostInfo_;
         }
     }
 

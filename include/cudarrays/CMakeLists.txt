@@ -31,6 +31,7 @@ set(CUDARRAYS_DETAIL_DYNARRAY_HEADERS
                       detail/dynarray/base.hpp
                       detail/dynarray/helpers.hpp
                       detail/dynarray/indexing.hpp
+                      detail/dynarray/dim_iterator.hpp
                       detail/dynarray/iterator.hpp
                       detail/dynarray/storage_reshape-block.hpp
                       detail/dynarray/storage_reshape-cyclic.hpp
@@ -39,6 +40,7 @@ set(CUDARRAYS_DETAIL_DYNARRAY_HEADERS
                       detail/dynarray/storage_vm.hpp)
 
 set(CUDARRAYS_DETAIL_UTILS_HEADERS
+                      detail/utils/base.hpp
                       detail/utils/env.hpp
                       detail/utils/integral_iterator.hpp
                       detail/utils/log.hpp

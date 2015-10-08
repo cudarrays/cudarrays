@@ -53,13 +53,10 @@ launch_test_matrixmul(compute_conf<2> gpus, std::array<int, 2> infoC,
     static const array_size_t ELEMS = matrixmul_ELEMS[INPUTSET];
 
     using array2D_matrixmul = float [ELEMS][ELEMS];
-    using my_arrayA = matrix<float, layout::cmo, StorageA>;
-    using my_arrayB = matrix<float, layout::rmo, StorageB>;
-    using my_arrayC = matrix<float, layout::cmo, StorageC>;
 
-    my_arrayA A{{ELEMS, ELEMS}};
-    my_arrayB B{{ELEMS, ELEMS}};
-    my_arrayC C{{ELEMS, ELEMS}};
+    auto A = make_matrix<float, layout::cmo, StorageA>({ELEMS, ELEMS});
+    auto B = make_matrix<float, layout::rmo, StorageB>({ELEMS, ELEMS});
+    auto C = make_matrix<float, layout::cmo, StorageC>({ELEMS, ELEMS});
 
     A.template distribute<2>({gpus, infoA});
     B.template distribute<2>({gpus, infoB});

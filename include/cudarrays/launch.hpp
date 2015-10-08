@@ -157,9 +157,17 @@ struct argument_manager {
         // Not coherent. Do nothing
     }
 
-    template <typename T, typename StorageType, typename PartConf, typename CoherencePolicy>
+    template <typename Array>
     static void
-    set_coherent_arg(dynarray<T, StorageType, PartConf, CoherencePolicy> &arg, bool Const)
+    set_coherent_arg(dynarray_view<Array> &arg, bool Const)
+    {
+        // Store dynarray arguments in the vector of coherent objects
+        CoherentParams.push_back(coherence_info{&arg, Const});
+    }
+
+    template <typename Array>
+    static void
+    set_coherent_arg(dynarray_cview<Array> &arg, bool Const)
     {
         // Store dynarray arguments in the vector of coherent objects
         CoherentParams.push_back(coherence_info{&arg, Const});
@@ -258,29 +266,18 @@ template <typename... Args>
 thread_local
 std::vector<coherence_info> argument_manager<Args...>::CoherentParams;
 
-static std::vector<cudaStream_t> Streams;
-static std::vector<cudaEvent_t> EventsBegin;
-static std::vector<cudaEvent_t> EventsEnd;
-
 static void init_streams(unsigned gpus)
 {
-    if (Streams.size() < gpus) {
+    if (EventsBegin.size() < gpus) {
         // Only create the streams/events for the GPUs not yet allocated
-        for (unsigned i = Streams.size(); i < gpus; ++i) {
+        for (unsigned i = EventsBegin.size(); i < gpus; ++i) {
+            // Preallocate events for kernel execution
+            cudaEvent_t begin, end;
             cudaError_t err;
 
             err = cudaSetDevice(i);
             ASSERT(err == cudaSuccess);
 
-            // Preallocate streams for kernel execution
-            cudaStream_t stream;
-            err = cudaStreamCreate(&stream);
-            ASSERT(err == cudaSuccess);
-
-            Streams.push_back(stream);
-
-            // Preallocate events for kernel execution
-            cudaEvent_t begin, end;
             err = cudaEventCreate(&begin);
             ASSERT(err == cudaSuccess);
             err = cudaEventCreate(&end);
@@ -294,6 +291,10 @@ static void init_streams(unsigned gpus)
 
 template <unsigned Dims, typename R, typename... Args>
 class launcher_common {
+    static constexpr unsigned DimIdxX = 2 - (3 - Dims);
+    static constexpr unsigned DimIdxY = 1 - (3 - Dims);
+    static constexpr unsigned DimIdxZ = 0 - (3 - Dims);
+
     R(&f_)(Args...);
     const char *funName_;
     cuda_conf conf_;
@@ -307,7 +308,7 @@ protected:
 
 private:
     static void
-    set_args(const std::vector<coherence_info> &objects, unsigned gpu)
+    set_args_current_gpu(const std::vector<coherence_info> &objects, unsigned gpu)
     {
         // Set current GPU in all coherent objects
         for (auto object : objects) {
@@ -354,7 +355,7 @@ protected:
 
         unsigned partDims = utils::count(gpuConf.info, true);
 
-        auto factorsGPUs = get_factors(gpus_);
+        auto factorsGPUs = utils::get_factors(gpus_);
         if (gpus_ == 1) {
             factorsGPUs.push_back(1);
         }
@@ -383,27 +384,21 @@ protected:
         dim3 total_grid = conf_.grid;
 
         if (Dims > 2) {
-            grid.z = div_ceil(total_grid.z, gpuGrid_[0 - (3 - Dims)]);
-            if (gpuGrid_[0 - (3 - Dims)] > 1) {
+            grid.z = utils::div_ceil(total_grid.z, gpuGrid_[DimIdxZ]);
+            if (gpuGrid_[DimIdxZ] > 1) {
                 step.z = grid.z;
-            } else {
-                step.z = 0;
             }
         }
         if (Dims > 1) {
-            grid.y = div_ceil(total_grid.y, gpuGrid_[1 - (3 - Dims)]);
-            if (gpuGrid_[1 - (3 - Dims)] > 1) {
+            grid.y = utils::div_ceil(total_grid.y, gpuGrid_[DimIdxY]);
+            if (gpuGrid_[DimIdxY] > 1) {
                 step.y = grid.y;
-            } else {
-                step.y = 0;
             }
         }
 
-        grid.x = div_ceil(total_grid.x, gpuGrid_[2 - (3 - Dims)]);
-        if (gpuGrid_[2 - (3 - Dims)] > 1) {
+        grid.x = utils::div_ceil(total_grid.x, gpuGrid_[DimIdxX]);
+        if (gpuGrid_[DimIdxX] > 1) {
             step.x = grid.x;
-        } else {
-            step.x = 0;
         }
 
         return std::make_tuple(step, grid);
@@ -416,7 +411,6 @@ protected:
         static_assert(sizeof...(Args) == sizeof...(ArgsPassed),
                       "Wrong number of passed arguments to the kernel");
         dim3 total_grid = conf_.grid;
-        dim3 block = conf_.block;
 
         DEBUG("GPUS: %u", gpus_);
         DEBUG("orig: %zd %zd %zd", total_grid.z, total_grid.y, total_grid.x);
@@ -449,11 +443,11 @@ protected:
 
         unsigned gpu = 0;
         dim3 off{0, 0, 0};
-        for (unsigned i : utils::make_range(Dims > 2? gpuGrid_[0 - (3 - Dims)]: 1)) {
+        for (unsigned i : utils::make_range(Dims > 2? gpuGrid_[DimIdxZ]: 1)) {
             off.y = 0;
-            for (unsigned j : utils::make_range(Dims > 1? gpuGrid_[1 - (3 - Dims)]: 1)) {
+            for (unsigned j : utils::make_range(Dims > 1? gpuGrid_[DimIdxY]: 1)) {
                 off.x = 0;
-                for (unsigned k : utils::make_range(gpuGrid_[2 - (3 - Dims)])) {
+                for (unsigned k : utils::make_range(gpuGrid_[DimIdxX])) {
                     dim3 local = grid;
                     DEBUG("local: %zd %zd %zd", local.z, local.y, local.x);
                     DEBUG("off: %zd %zd %zd", off.z, off.y, off.x);
@@ -500,11 +494,11 @@ protected:
 
         gpu = 0;
         off.z = 0;
-        for (unsigned i : utils::make_range(Dims > 2? gpuGrid_[0 - (3 - Dims)]: 1)) {
+        for (unsigned i : utils::make_range(Dims > 2? gpuGrid_[DimIdxZ]: 1)) {
             off.y = 0;
-            for (unsigned j : utils::make_range(Dims > 1? gpuGrid_[1 - (3 - Dims)]: 1)) {
+            for (unsigned j : utils::make_range(Dims > 1? gpuGrid_[DimIdxY]: 1)) {
                 off.x = 0;
-                for (unsigned k : utils::make_range(gpuGrid_[2 - (3 - Dims)])) {
+                for (unsigned k : utils::make_range(gpuGrid_[DimIdxX])) {
                     dim3 local = grid;
                     DEBUG("local: %zd %zd %zd", local.z, local.y, local.x);
                     DEBUG("off: %zd %zd %zd", off.z, off.y, off.x);
@@ -537,9 +531,9 @@ protected:
                         }
 
                         // Set arguments
-                        set_args(coherentParams_, gpu);
+                        set_args_current_gpu(coherentParams_, gpu);
 
-                        err = cudaEventRecord(EventsBegin[gpu], Streams[gpu]);
+                        err = cudaEventRecord(EventsBegin[gpu], StreamsIn[gpu]);
                         ASSERT(err == cudaSuccess);
 
 #if 0
@@ -558,23 +552,15 @@ protected:
                         TRACER_DRIVER driver(local, block);
 #endif
                         err = cudaLaunchKernel((const char *)(const void *) f_,
-                                               local, block,
+                                               local, conf_.block,
                                                my_arguments::Params,
-                                               0,
-                                               Streams[gpu]);
-                        ASSERT(err == cudaSuccess);
-#if 0
-// #ifdef CUDARRAYS_TRACE
-                        err = cudaStreamSynchronize(Streams[gpu]);
+                                               conf_.shared,
+                                               StreamsIn[gpu]);
                         ASSERT(err == cudaSuccess);
 
-                        out << driver;
-                        out.close();
-#endif
-                        err = cudaEventRecord(EventsEnd[gpu], Streams[gpu]);
+                        err = cudaEventRecord(EventsEnd[gpu], StreamsIn[gpu]);
                         ASSERT(err == cudaSuccess);
                     }
-
                     off.x += step.x;
                     ++gpu;
                 }
@@ -590,18 +576,8 @@ public:
     static bool wait(const std::vector<unsigned> &activeGPUs, const std::vector<coherence_info> &coherentParams)
     {
         for (unsigned i : activeGPUs) {
-            // TODO: switch to events
             cudaError_t err = cudaEventSynchronize(EventsEnd[i]);
             ASSERT(err == cudaSuccess);
-
-            #if 0
-            float milis;
-            err = cudaEventElapsedTime(&milis, EventsBegin[i], EventsEnd[i]);
-            ASSERT(err == cudaSuccess);
-
-            err = cudaStreamSynchronize(Streams[i]);
-            ASSERT(err == cudaSuccess);
-            #endif
         }
 
         acquire_args(coherentParams);
@@ -629,7 +605,7 @@ public:
         if (ret) {
             auto gpus = this->activeGPUs_;
             auto params = this->coherentParams_;
-            ret = this->wait(gpus, params);
+            ret = common_parent::wait(gpus, params);
         }
 
         return ret;

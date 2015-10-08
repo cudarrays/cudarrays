@@ -32,7 +32,7 @@
 
 #include <vector>
 
-#include "detail/utils/log.hpp"
+#include "detail/utils/base.hpp"
 
 namespace cudarrays {
 
@@ -47,7 +47,8 @@ public:
     virtual void unbind() = 0;
 };
 
-class coherent {
+class coherent :
+    public base<coherent> {
 public:
     virtual coherence_policy &get_coherence_policy() = 0;
     virtual void set_current_gpu(unsigned /*idx*/) = 0;

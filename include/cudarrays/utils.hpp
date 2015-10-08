@@ -30,6 +30,7 @@
 #ifndef CUDARRAYS_UTIL_HPP_
 #define CUDARRAYS_UTIL_HPP_
 
+#include "detail/utils/base.hpp"
 #include "detail/utils/env.hpp"
 #include "detail/utils/integral_iterator.hpp"
 #include "detail/utils/log.hpp"

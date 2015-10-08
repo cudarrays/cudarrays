@@ -33,8 +33,8 @@ using namespace cudarrays;
 
 template <typename StorageOut, typename StorageIn>
 __global__ void
-saxpy_kernel( vector_ref<float, StorageOut> B,
-             vector_cref<float, StorageIn> A,
+saxpy_kernel( vector_view<float, StorageOut> B,
+             vector_cview<float, StorageIn> A,
              float c)
 {
     int tx = threadIdx.x;

@@ -27,6 +27,7 @@
  * THE SOFTWARE. */
 
 #include <map>
+#include <memory>
 
 #include <csignal>
 #include <cstring>
@@ -37,11 +38,26 @@
 #include "cudarrays/common.hpp"
 #include "cudarrays/memory.hpp"
 
+#include "cudarrays/detail/utils/option.hpp"
 #include "cudarrays/detail/utils/log.hpp"
 
 namespace cudarrays {
 
-std::string to_string(mem_access_type access_type)
+static inline int
+mem_access_to_prot(mem_access_type access)
+{
+    switch (access) {
+    case MEM_NONE:       return PROT_NONE;
+    case MEM_READ:       return PROT_READ;
+    case MEM_WRITE:      return PROT_WRITE;
+    case MEM_READ_WRITE: return PROT_READ | PROT_WRITE;
+    };
+    FATAL("Invalid access type value");
+    return 0;
+}
+
+std::string
+to_string(mem_access_type access_type)
 {
     switch (access_type) {
     case MEM_NONE:       return "NONE";
@@ -58,7 +74,7 @@ class handler_sigsegv {
     myptr begin_;
     size_t count_;
     mem_access_type prot_;
-    handler_fn fn_;
+    std::shared_ptr<handler_fn> fn_;
     bool set_;
 
 public:
@@ -74,7 +90,8 @@ public:
     bool operator()(bool b)
     {
         ASSERT(set_, "memory> Function handler not set");
-        return fn_(b);
+        std::shared_ptr<handler_fn> fn = fn_;
+        return (*fn)(b);
     }
 
     myptr start()
@@ -106,16 +123,9 @@ public:
     {
         if (set_)
             DEBUG("memory> Overwriting handler");
-        fn_ = fn;
+        auto ptr = std::make_shared<handler_fn>(fn);
+        fn_.swap(ptr);
         set_ = true;
-    }
-
-    void reset_handler()
-    {
-        if (fn_ != NULL) {
-            fn_ = no_handler;
-        }
-        set_ = false;
     }
 };
 
@@ -129,6 +139,8 @@ static const int Signum_{SIGSEGV};
 
 void handler_sigsegv_main(int s, siginfo_t *info, void *ctx)
 {
+    TRACE_FUNCTION();
+
     mcontext_t *mCtx = &((ucontext_t *)ctx)->uc_mcontext;
 
     unsigned long isWrite = mCtx->gregs[REG_ERR] & 0x2;
@@ -141,10 +153,14 @@ void handler_sigsegv_main(int s, siginfo_t *info, void *ctx)
     bool resolved = false;
 
     map_handler::iterator it = handlers.upper_bound(addr);
-    if (it != handlers.end() &&
-        (addr >= it->second.start() &&
-         addr <  it->second.end())) {
-        resolved = it->second(isWrite);
+    if (it == handlers.end())
+        FATAL("memory> Mapping %p NOT FOUND", addr);
+
+    handler_sigsegv &handler = it->second;
+
+    if (addr >= handler.start() &&
+        addr <  handler.end()) {
+        resolved = handler(isWrite);
     }
 
     if (resolved == false) {
@@ -158,8 +174,10 @@ void handler_sigsegv_main(int s, siginfo_t *info, void *ctx)
 }
 
 void
-protect_range(void *_addr, size_t count, mem_access_type access_type, const handler_fn &fn)
+protect_range(void *_addr, size_t count, mem_access_type access_type, handler_fn fn)
 {
+    TRACE_FUNCTION();
+
     uint64_t page = (uint64_t(_addr) >> 12);
     myptr align_addr = myptr(page << 12);
     myptr addr = myptr(_addr);
@@ -172,49 +190,30 @@ protect_range(void *_addr, size_t count, mem_access_type access_type, const hand
     handler_sigsegv &handler = it->second;
 
     // Check for overlaps
-    ASSERT(addr >= handler.start() && addr <  handler.end(),
+    ASSERT(addr >= handler.start() && addr < handler.end(),
            "memory> Invalid mapping for %p", addr);
+
+    handler.set_handler(fn);
 
     if (access_type == handler.protection())
         return;
 
     handler.set_protection(access_type);
-    handler.set_handler(fn);
 
-    DEBUG("memory> %p-%p -> %s", addr, addr + count, to_string(access_type).c_str());
-    int err = mprotect(align_addr, count, PROT_NONE);
+    int err = mprotect(align_addr, count, mem_access_to_prot(access_type));
+    DEBUG("memory> %p-%p -> %s", addr, addr + count,
+          to_string(access_type));
     assert(err == 0);
-}
-
-void
-unprotect_range(void *_addr)
-{
-    uint64_t page = (uint64_t(_addr) >> 12);
-    myptr align_addr = myptr(page << 12);
-    myptr addr = myptr(_addr);
-
-    map_handler::iterator it = handlers.upper_bound(addr);
-
-    if (it != handlers.end() &&
-        (addr >= it->second.start() &&
-         addr <  it->second.end())) {
-        int err = mprotect(align_addr, it->second.size(), PROT_READ | PROT_WRITE);
-        DEBUG("memory> %p-%p -> %s", it->second.start(),
-                                     it->second.end(),
-                                     to_string(mem_access_type::MEM_READ_WRITE));
-        assert(err == 0);
-    } else {
-        FATAL("memory> Mapping %p NOT FOUND", addr);
-    }
 }
 
 void
 register_range(void *_addr, size_t count)
 {
+    TRACE_FUNCTION();
+
     myptr addr = myptr(_addr);
 
     map_handler::iterator it = handlers.upper_bound(addr);
-
     if (it != handlers.end() &&
         (addr >= it->second.start() &&
          addr <  it->second.end())) {
@@ -222,22 +221,26 @@ register_range(void *_addr, size_t count)
     } else {
         DEBUG("memory> REGISTERING mapping %p-%p", addr, addr + count);
         handlers.insert(map_handler::value_type(addr + count,
-                                                handler_sigsegv(addr, count, MEM_READ_WRITE)));
+                                                handler_sigsegv{addr, count, MEM_READ_WRITE}));
     }
 }
 
 void
 unregister_range(void *_addr)
 {
+    TRACE_FUNCTION();
+
     myptr addr = myptr(_addr);
 
     map_handler::iterator it = handlers.upper_bound(addr);
+    if (it == handlers.end())
+        FATAL("memory> Mapping %p NOT FOUND", addr);
 
-    if (it != handlers.end() &&
-        (addr >= it->second.start() &&
-         addr <  it->second.end())) {
-        unprotect_range(addr);
-        DEBUG("memory> Removing mapping %p-%p", it->second.start(), it->second.end());
+    handler_sigsegv &handler = it->second;
+    if (addr >= handler.start() && addr < handler.end()) {
+        protect_range(handler.start(), handler.size(), mem_access_type::MEM_READ_WRITE);
+        DEBUG("memory> Removing mapping %p-%p", handler.start(), handler.end());
+
         handlers.erase(it);
     } else {
         // Not found!
@@ -249,6 +252,8 @@ unregister_range(void *_addr)
 void
 handler_sigsegv_overload()
 {
+    TRACE_FUNCTION();
+
     struct sigaction segvAction;
     ::memset(&segvAction, 0, sizeof(segvAction));
     segvAction.sa_sigaction = handler_sigsegv_main;
@@ -265,6 +270,8 @@ handler_sigsegv_overload()
 void
 handler_sigsegv_restore()
 {
+    TRACE_FUNCTION();
+
     if (sigaction(Signum_, &defaultAction, NULL) < 0) {
         FATAL("memory> Error restoring SIGSEGV handler: %s", strerror(errno));
     } else {

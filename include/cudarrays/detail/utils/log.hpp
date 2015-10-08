@@ -32,6 +32,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <functional>
 #include <limits>
 #include <string>
 #include <utility>
@@ -39,7 +40,9 @@
 #include <sstream>
 
 #include "../../common.hpp"
+#include "../../coherence.hpp"
 
+#include "base.hpp"
 #include "misc.hpp"
 #include "option.hpp"
 
@@ -73,6 +76,19 @@ namespace cudarrays {
 
     static constexpr size_t TmpBufferSize_ = 4096;
     thread_local static char TmpBuffer_[TmpBufferSize_];
+
+    template <typename T>
+    static inline
+    const T &replace_id(const T &arg)
+    {
+        return arg;
+    }
+
+    static inline
+    std::string replace_id(const coherent &arg)
+    {
+        return std::to_string(arg.get_id());
+    }
 
     template <typename T>
     static inline
@@ -133,7 +149,8 @@ namespace cudarrays {
     static std::string
     format_str(const std::string &msg, const Args &...args)
     {
-        snprintf(TmpBuffer_, TmpBufferSize_, msg.c_str(), replace_string(replace_array(args))...);
+        snprintf(TmpBuffer_, TmpBufferSize_, msg.c_str(),
+                 replace_string(replace_array(replace_id(args)))...);
 
         return std::string{TmpBuffer_};
     }
@@ -247,12 +264,7 @@ namespace cudarrays {
         {
             if (!enable) return;
 
-            static const std::string StringBegin = "BEGIN";
-
-            std::string uline(msg_.size() + StringBegin.size() + 1, '=');
-
-            print(stdout, file_, line_, tag_, fun_, uline);
-            print(stdout, file_, line_, tag_, fun_, msg_ + " " + StringBegin);
+            print(stdout, file_, line_, tag_, fun_, msg_);
         }
 
         trace_scope(bool enable,
@@ -262,24 +274,12 @@ namespace cudarrays {
                     const function_name &fun) :
             trace_scope(enable, file, line, tag, fun, "")
         {}
-
-
-        ~trace_scope()
-        {
-            if (!enable_) return;
-            static const std::string StringEnd = "END";
-
-            std::string uline(msg_.size() + StringEnd.size() + 1, '=');
-
-            print(stdout, file_, line_, tag_, fun_, msg_ + " " + StringEnd);
-            print(stdout, file_, line_, tag_, fun_, uline);
-        }
     };
 
 #define TRACE_FUNCTION()                                               \
     cudarrays::trace_scope                                             \
-        tracer__(LOG_TRACE, __FILE__, __LINE__, "TRACE",               \
-                 cudarrays::format_function_name(__PRETTY_FUNCTION__))
+        tracer__{LOG_TRACE, __FILE__, __LINE__, "TRACE",               \
+                 cudarrays::format_function_name(__PRETTY_FUNCTION__)}
 
 #define DEBUG(...)                                                                            \
     do {                                                                                      \

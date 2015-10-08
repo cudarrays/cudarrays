@@ -34,6 +34,12 @@
 #include "utils.hpp"
 
 namespace cudarrays {
+
+extern std::vector<cudaStream_t> StreamsIn;
+extern std::vector<cudaStream_t> StreamsOut;
+extern std::vector<cudaEvent_t> EventsBegin;
+extern std::vector<cudaEvent_t> EventsEnd;
+
 namespace system {
 
 extern utils::option<unsigned> MAX_GPUS;
@@ -63,6 +69,8 @@ unsigned gpu_count();
  * @return The number of GPUs in the system with P2P access support
  */
 unsigned peer_gpu_count();
+
+void init();
 
 } // namespace system
 } // namespace cudarrays

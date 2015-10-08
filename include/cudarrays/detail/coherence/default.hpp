@@ -30,7 +30,10 @@
 #ifndef CUDARRAYS_DETAIL_COHERENCE_DEFAULT_HPP_
 #define CUDARRAYS_DETAIL_COHERENCE_DEFAULT_HPP_
 
+#include <cuda_runtime_api.h>
+
 #include "../../coherence.hpp"
+#include "../../utils.hpp"
 
 namespace cudarrays {
 
@@ -85,10 +88,10 @@ public:
 
     void release(const std::vector<unsigned> &gpus, bool Const)
     {
-        DEBUG("Release: %p", obj_->host_addr());
+        DEBUG("%s Release", *obj_);
 
         if (owner_ != ownership::GPU) {
-            DEBUG("Ownership -> GPU");
+            DEBUG("%s ownership -> GPU", *obj_);
             owner_ = ownership::GPU;
         }
 
@@ -97,46 +100,54 @@ public:
             ASSERT(ok, "Error while distributing array");
         }
 
-        mem_access_type prot = mem_access_type::MEM_NONE;
-
+        mem_access_type prot;
         if (location_ == location::CPU) {
-            DEBUG("obj TO DEVICE: %p", obj_->host_addr());
+            DEBUG("%s obj TO DEVICE", *obj_);
             obj_->to_device();
 
             if (!Const) {
                 location_ = location::GPU;
-                DEBUG("CPU -> GPU");
+                DEBUG("%s transition: CPU -> GPU", *obj_);
             } else {
                 location_ = location::SHARED;
-                DEBUG("CPU -> SHARED");
+                DEBUG("%s transition: CPU -> SHARED", *obj_);
             }
         } else if (location_ == location::GPU) {
+            DEBUG("%s transition: GPU -> GPU", *obj_);
         } else { // location_ == SHARED
             if (!Const) {
                 location_ = location::GPU;
-                DEBUG("SHARED -> GPU");
+                DEBUG("%s transition: SHARED -> GPU", *obj_);
+            } else {
+                DEBUG("%s transition: SHARED -> SHARED", *obj_);
             }
+        }
+
+        if (Const) {
+            prot = mem_access_type::MEM_READ;
+        } else {
+            prot = mem_access_type::MEM_NONE;
         }
 
         // Protect memory so that it is not accessible during GPU execution
         protect_range(obj_->host_addr(),
-                      obj_->size(),
-                      prot,
+                      obj_->size(), prot,
                       [this](bool write) -> bool
                       {
-                          void *ptr = this->obj_->host_addr();
+                          protect_range(this->obj_->host_addr(),
+                                        this->obj_->size(), mem_access_type::MEM_READ_WRITE);
 
-                          unprotect_range(ptr);
+                          if (location::GPU) {
+                              this->obj_->to_host();
+                              DEBUG("%s obj TO HOST", *this->obj_);
 
-                          DEBUG("obj TO HOST: %p", ptr);
-                          this->obj_->to_host();
-
-                          if (write) {
-                            location_ = location::CPU;
-                            DEBUG("GPU -> CPU");
-                          } else {
-                            location_ = location::SHARED;
-                            DEBUG("GPU -> SHARED");
+                              if (write) {
+                                location_ = location::CPU;
+                                DEBUG("%s transition: GPU -> CPU", *this->obj_);
+                              } else {
+                                location_ = location::SHARED;
+                                DEBUG("%s transition: GPU -> SHARED", *this->obj_);
+                              }
                           }
 
                           return true;
@@ -145,11 +156,11 @@ public:
 
     void acquire()
     {
-        DEBUG("Acquire: %p", obj_->host_addr());
+        DEBUG("%s Acquire", *obj_);
 
         ASSERT(owner_ == ownership::GPU);
 
-        DEBUG("Ownership -> CPU");
+        DEBUG("%s ownership -> CPU", *obj_);
         owner_ = ownership::CPU;
     }
 

@@ -23,6 +23,8 @@ endif(CUDA_DEBUG)
 
 cuda_add_executable(default default.cu ${LIB_INCLUDE})
 target_link_libraries(default ${CMAKE_IMPORT_LIBRARY_PREFIX}cudarrays${CMAKE_IMPORT_LIBRARY_SUFFIX} ${CUDA_LIBRARIES})
+cuda_add_executable(inc inc.cu inc_kernel.cuh ${LIB_INCLUDE})
+target_link_libraries(inc ${CMAKE_IMPORT_LIBRARY_PREFIX}cudarrays${CMAKE_IMPORT_LIBRARY_SUFFIX} ${CUDA_LIBRARIES})
 cuda_add_executable(matrixadd matrixadd.cu matrixadd_kernel.cuh ${LIB_INCLUDE})
 target_link_libraries(matrixadd ${CMAKE_IMPORT_LIBRARY_PREFIX}cudarrays${CMAKE_IMPORT_LIBRARY_SUFFIX} ${CUDA_LIBRARIES})
 cuda_add_executable(matrixmul matrixmul.cu matrixmul_kernel.cuh ${LIB_INCLUDE})

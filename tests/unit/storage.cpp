@@ -46,9 +46,9 @@ TEST_F(storage_test, permute_indices1)
     using conf_reverse  = SEQ_WRAP(unsigned, cudarrays::layout::custom<2u, 1u, 0u>);
     using conf_mix      = SEQ_WRAP(unsigned, cudarrays::layout::custom<1u, 2u, 0u>);
 
-    using permuter_identity = permuter<conf_identity>;
-    using permuter_reverse  = permuter<conf_reverse>;
-    using permuter_mix      = permuter<conf_mix>;
+    using permuter_identity = utils::permuter<conf_identity>;
+    using permuter_reverse  = utils::permuter<conf_reverse>;
+    using permuter_mix      = utils::permuter<conf_mix>;
 
     ASSERT_EQ(permuter_identity::template select<0>(0, 1, 2), 0);
     ASSERT_EQ(permuter_identity::template select<1>(0, 1, 2), 1);
@@ -68,8 +68,8 @@ TEST_F(storage_test, permute_indices2)
     using conf_rmo = typename cudarrays::make_dim_order<3, cudarrays::layout::rmo>::seq_type;
     using conf_cmo = typename cudarrays::make_dim_order<3, cudarrays::layout::cmo>::seq_type;
 
-    using permuter_rmo = permuter<conf_rmo>;
-    using permuter_cmo = permuter<conf_cmo>;
+    using permuter_rmo = utils::permuter<conf_rmo>;
+    using permuter_cmo = utils::permuter<conf_cmo>;
 
     ASSERT_EQ(permuter_rmo::template select<0>(0, 1, 2), 0);
     ASSERT_EQ(permuter_rmo::template select<1>(0, 1, 2), 1);
@@ -86,9 +86,9 @@ TEST_F(storage_test, reorder)
     using conf_reverse  = SEQ_WRAP(unsigned, cudarrays::layout::custom<2u, 1u, 0u>);
     using conf_mix      = SEQ_WRAP(unsigned, cudarrays::layout::custom<1u, 2u, 0u>);
 
-    using permuter_identity = permuter<conf_identity>;
-    using permuter_reverse  = permuter<conf_reverse>;
-    using permuter_mix      = permuter<conf_mix>;
+    using permuter_identity = utils::permuter<conf_identity>;
+    using permuter_reverse  = utils::permuter<conf_reverse>;
+    using permuter_mix      = utils::permuter<conf_mix>;
 
     auto identity = permuter_identity::reorder(std::array<unsigned, 3>{0, 1, 2});
     auto reverse  = permuter_reverse::reorder(std::array<unsigned, 3>{0, 1, 2});

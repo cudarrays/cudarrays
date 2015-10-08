@@ -34,9 +34,9 @@
 using namespace cudarrays;
 
 __global__ void
-vecadd_kernel( vector_ref<float> C,
-              vector_cref<float> A,
-              vector_cref<float> B)
+vecadd_kernel( vector_view<float> C,
+              vector_cview<float> A,
+              vector_cview<float> B)
 {
     unsigned idx = blockIdx.x * blockDim.x + threadIdx.x;
     C(idx) = A(idx) + B(idx);
@@ -46,9 +46,9 @@ int main()
 {
     static const array_size_t ELEMS = 1024;
     // Declare vectors
-    vector<float> A{{ELEMS}};
-    vector<float> B{{ELEMS}};
-    vector<float> C{{ELEMS}};
+    auto A = make_vector<float>({ELEMS});
+    auto B = make_vector<float>({ELEMS});
+    auto C = make_vector<float>({ELEMS});
     // Initialize input vectors
     for (unsigned i = 0; i < ELEMS; ++i) {
         A(i)      = float(i);

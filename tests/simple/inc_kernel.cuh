@@ -26,46 +26,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. */
 
-#include <iostream>
-
-#include <cudarrays/dynarray.hpp>
+#include <cudarrays/types.hpp>
+#include <cudarrays/gpu.cuh>
 
 using namespace cudarrays;
 
-template <typename Layout>
-using my_array = dynarray<float ***, Layout, replicate::none>;
-
-int main()
+template <typename StorageOut, typename StorageIn>
+__global__ void
+inc_kernel( vector_view<float, StorageOut> B,
+           vector_cview<float, StorageIn> A,
+           float c)
 {
-    static const array_size_t X = 2;
-    static const array_size_t Y = 3;
-    static const array_size_t Z = 4;
+    int tx = threadIdx.x;
+    int bx = blockIdx.x;
 
-    static const array_size_t elems = X * Y * Z;
+    unsigned idx = tx + bx * blockDim.x;
 
-    auto A_rmo = make_array<float ***, layout::rmo>({ Z, Y, X });
-    auto A_cmo = make_array<float ***, layout::cmo>({ Z, Y, X });
-
-    float c = 0.f;
-    for (unsigned i = 0; i < Z; ++i) {
-        for (unsigned j = 0; j < Y; ++j) {
-            for (unsigned k = 0; k < X; ++k) {
-                A_rmo(i, j, k) = c;
-                A_cmo(i, j, k) = c;
-
-                c += 1.f;
-            }
-        }
-    }
-
-    const float *P_rmo = (const float *)A_rmo.host_addr();
-    const float *P_cmo = (const float *)A_cmo.host_addr();
-
-    for (unsigned i = 0; i < elems; ++i) {
-        printf("%f vs %f\n", P_rmo[i], P_cmo[i]);
-    }
-
-    return 0;
+    B(idx) = A(idx) + c;
 }
 
-/* vim:set backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab: */
+/* vim:set ft=cpp backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab: */

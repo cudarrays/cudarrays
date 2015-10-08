@@ -26,6 +26,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE. */
 
+#include <cmath>
 #include <iostream>
 
 #include <cudarrays/common.hpp>
@@ -39,7 +40,7 @@ using namespace cudarrays;
 
 bool TEST = true;
 
-array_size_t STENCIL_ELEMS[2] = { 1024, 1024};
+array_size_t STENCIL_ELEMS[2] = { 8, 8};
 
 using mapping2D = std::array<int, 2>;
 
@@ -57,11 +58,9 @@ launch_test_stencil(compute_conf<2> gpus, mapping2D infoB,
     static const array_size_t TOTAL_ELEMS_X = ELEMS_X + 2 * STENCIL;
 
     using array2D_stencil = float [TOTAL_ELEMS_Y][TOTAL_ELEMS_X];
-    using my_arrayA = matrix<float, layout::rmo, StorageA>;
-    using my_arrayB = matrix<float, layout::rmo, StorageB>;
 
-    my_arrayA A{{TOTAL_ELEMS_Y, TOTAL_ELEMS_X}};
-    my_arrayB B{{TOTAL_ELEMS_Y, TOTAL_ELEMS_X}};
+    auto A = make_matrix<float, layout::rmo, StorageA>({TOTAL_ELEMS_Y, TOTAL_ELEMS_X});
+    auto B = make_matrix<float, layout::rmo, StorageB>({TOTAL_ELEMS_Y, TOTAL_ELEMS_X});
 
     A.template distribute<2>({gpus, infoA});
     B.template distribute<2>({gpus, infoB});
@@ -70,10 +69,24 @@ launch_test_stencil(compute_conf<2> gpus, mapping2D infoB,
     array2D_stencil &B_host = *(array2D_stencil *) new float[TOTAL_ELEMS_Y * TOTAL_ELEMS_X];
 
     {
-        std::fill(A.begin(), A.end(), 0.f);
-        std::fill(B.begin(), B.end(), 0.f);
+#if 0
+        auto valuesA = A.value_iterator();
+        auto valuesB = B.value_iterator();
+        std::fill(valuesA.begin(), valuesA.end(), -1.f);
+        std::fill(valuesB.begin(), valuesB.end(), 0.f);
+#else
+        auto dimsA = A.dim_iterator();
+        auto dimsB = B.dim_iterator();
+        for (auto & row : dimsA)
+            for (auto & col : row)
+                col = -1.f;
 
-        std::fill(&A_host[0][0], &A_host[0][0] + TOTAL_ELEMS_Y * TOTAL_ELEMS_X, 0.f);
+        for (auto & row : dimsB)
+            for (auto & col : row)
+                col = 0;
+#endif
+
+        std::fill(&A_host[0][0], &A_host[0][0] + TOTAL_ELEMS_Y * TOTAL_ELEMS_X, -1.f);
         std::fill(&B_host[0][0], &B_host[0][0] + TOTAL_ELEMS_Y * TOTAL_ELEMS_X, 0.f);
 
         for (unsigned i = STENCIL; i < ELEMS_Y + STENCIL; ++i) {
@@ -118,12 +131,14 @@ launch_test_stencil(compute_conf<2> gpus, mapping2D infoB,
         for (unsigned i = STENCIL; i < ELEMS_Y + STENCIL; ++i) {
             for (unsigned j = STENCIL; j < ELEMS_X + STENCIL; ++j) {
                 if (B_host[i][j] != B(i, j)) {
-                    std::cout << "C: Position {" << i << ", " << j << "} "
+                    std::cout << "B: Position {" << i << ", " << j << "} "
                                                  << B_host[i][j]
                                                  << " vs "
-                                                 << B(i, j) << std::endl;
+                                                 << B(i, j)
+                                                 << " : " << fabsf(B_host[i][j] - B(i, j))
+                                                 << std::endl;
                     ok = false;
-                    abort();
+                    //abort();
                 }
             }
         }
@@ -172,9 +187,9 @@ int main()
     printf("%s %u: %d\n", replicate::name().c_str(), 1, ok);
 
     for (auto gpus : {1, 2, 4}) {
+#if 0
         test_conf<vm>(gpus);
         test_conf<reshape>(gpus);
-#if 0
         test_conf<reshape_cyclic<2>>(gpus);
         test_conf<reshape_block_cyclic<2>>(gpus);
 #endif
