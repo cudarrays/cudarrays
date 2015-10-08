@@ -16,7 +16,7 @@ addons:
       name: "cudarrays/cudarrays"
       description: "CUDArrays build submitted via Travis CI"
     notification_email: javier.cabezas@gmail.com
-    build_command_prepend: "mkdir build_coverity && cd build_coverity && ../configure --with-gcc=/usr/bin/g++-4.9 && make clean"
+    build_command_prepend: "mkdir build_coverity && cd build_coverity && ../configure --with-gcc=/usr/bin/g++-4.9 --with-cuda=$HOME/cuda && make clean"
     build_command:   "make -j 4"
     branch_pattern: coverity_scan
 
