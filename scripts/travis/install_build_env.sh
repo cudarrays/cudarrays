@@ -3,27 +3,17 @@
 
 set -e
 
-MAKE="make --jobs=$NUM_THREADS"
-
-# Install apt packages where the Ubuntu 12.04 default and ppa works for Caffe
-
-# This ppa is for gcc-4.9
-add-apt-repository -y ppa:ubuntu-toolchain-r/test
-apt-get -y update
-apt-get install \
-    gcc-4.9 g++-4.9
-
 # Install CUDA
-CUDA_URL=http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1404/x86_64/cuda-repo-ubuntu1404_7.5-18_amd64.deb
-CUDA_FILE=/tmp/cuda_install.deb
+CUDA_URL=http://developer.download.nvidia.com/compute/cuda/7.5/Prod/local_installers/cuda_7.5.18_linux.run
+CUDA_FILE=/tmp/cuda_install.run
 curl $CUDA_URL -o $CUDA_FILE
-dpkg -i $CUDA_FILE
+chmod a+x $CUDA_FILE
+$CUDA_FILE --toolkit --toolkitpath=$HOME/cuda -silent
 rm -f $CUDA_FILE
-apt-get -y update
-# Install the minimal CUDA subpackages required to test Caffe build.
-# For a full CUDA installation, add 'cuda' to the list of packages.
-apt-get -y install cuda-core-7-5 cuda-cudart-7-5 cuda-cudart-dev-7-5
-# Create CUDA symlink at /usr/local/cuda
-# (This would normally be created by the CUDA installer, but we create it
-# manually since we did a partial installation.)
-ln -s /usr/local/cuda-7.5 /usr/local/cuda
+
+# Install CMake
+CMAKE_URL=http://www.cmake.org/files/v3.1/cmake-3.1.3-Linux-x86_64.tar.gz
+CMAKE_FILE=/tmp/cmake.tar.gz
+curl $CMAKE_URL -o $CMAKE_FILE
+tar -xvf $CMAKE_FILE -C $HOME
+rm -f $CMAKE_FILE
