@@ -7,7 +7,7 @@ set -e
 set -x
 MAKE="make --jobs=$NUM_THREADS --keep-going"
 
-CONFIGURE="../configure --with-gcc=/usr/bin/g++-4.9"
+CONFIGURE="../configure --with-gcc=/usr/bin/g++-4.9 --with-cuda=$CUDA_HOME"
 
 if $BUILD_DEBUG
 then
