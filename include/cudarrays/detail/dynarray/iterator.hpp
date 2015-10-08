@@ -150,10 +150,6 @@ protected:
                 break;
             }
         }
-        for (auto dim : utils::make_range(Array::dimensions)) {
-            printf("%u ", idx_[dim]);
-        }
-        printf("\n");
     }
 
     template <bool Unit>
