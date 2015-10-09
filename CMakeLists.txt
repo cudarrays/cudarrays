@@ -31,12 +31,14 @@ if((CUDA_VERSION_MAJOR LESS "7") OR
 endif((CUDA_VERSION_MAJOR LESS "7") OR 
       (CUDA_VERSION_MAJOR EQUAL "7" AND CUDA_VERSION_MINOR LESS "5"))
 
-set(COMMON_CXX_FLAGS "-Wall -Wextra -Wformat -Wformat-security -std=c++11 -I${CMAKE_BINARY_DIR}/include -fdiagnostics-color=auto")
+set(COMMON_CXX_FLAGS "-Wall -Wextra -Wformat -Wformat-security -std=c++11 -I${CMAKE_BINARY_DIR}/include")
 
 if(OPENMP_FOUND)
     set(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} -fopenmp")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fopenmp")
 endif(OPENMP_FOUND)
+
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
 
 if(CUDA_DEBUG)
     set(CUDA_NVCC_FLAGS_DEBUG "-DCUDARRAYS_DEBUG_CUDA=1")

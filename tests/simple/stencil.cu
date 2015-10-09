@@ -187,9 +187,9 @@ int main()
     printf("%s %u: %d\n", replicate::name().c_str(), 1, ok);
 
     for (auto gpus : {1, 2, 4}) {
-#if 0
         test_conf<vm>(gpus);
         test_conf<reshape>(gpus);
+#if 0
         test_conf<reshape_cyclic<2>>(gpus);
         test_conf<reshape_block_cyclic<2>>(gpus);
 #endif

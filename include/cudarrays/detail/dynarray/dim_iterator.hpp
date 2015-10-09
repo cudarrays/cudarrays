@@ -213,7 +213,7 @@ public:
 
     iterator end()
     {
-        array_index_t current = this->get_parent().dim(current_dim);
+        array_index_t current = this->get_parent().template dim<current_dim>();
         if (is_first_dim)
             return iterator{this->get_parent(), current};
         else
@@ -227,7 +227,7 @@ public:
 
     const_iterator cend() const
     {
-        array_index_t current = this->get_parent().dim(current_dim);
+        array_index_t current = this->get_parent().template dim<current_dim>();
         if (is_first_dim)
             return const_iterator{this->get_parent(), current};
         else
@@ -237,9 +237,9 @@ public:
     reverse_iterator rbegin()
     {
         if (is_first_dim)
-            return reverse_iterator{iterator{this->get_parent(), this->get_parent().dim(current_dim) - 1}};
+            return reverse_iterator{iterator{this->get_parent(), this->get_parent().template dim<current_dim>() - 1}};
         else
-            return reverse_iterator{iterator{this->get_parent(), this->prev_->get_idx(), this->get_parent().dim(current_dim) - 1}};
+            return reverse_iterator{iterator{this->get_parent(), this->prev_->get_idx(), this->get_parent().template dim<current_dim>() - 1}};
     }
 
     const_reverse_iterator rbegin() const
@@ -250,9 +250,9 @@ public:
     const_reverse_iterator crbegin() const
     {
         if (is_first_dim)
-            return const_reverse_iterator{const_iterator{this->get_parent(), this->get_parent().dim(current_dim) - 1}};
+            return const_reverse_iterator{const_iterator{this->get_parent(), this->get_parent().template dim<current_dim>() - 1}};
         else
-            return const_reverse_iterator{const_iterator{this->get_parent(), this->prev_->get_idx(), this->get_parent().dim(current_dim) - 1}};
+            return const_reverse_iterator{const_iterator{this->get_parent(), this->prev_->get_idx(), this->get_parent().template dim<current_dim>() - 1}};
     }
 
     reverse_iterator rend()
