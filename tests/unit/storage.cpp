@@ -184,70 +184,71 @@ TEST_F(storage_test, part_helper_single)
 template <unsigned Dims>
 using extents = std::array<cudarrays::array_size_t, Dims>;
 
+template <typename Align>
+using my_2d_manager = cudarrays::dim_manager<float, Align, 2>;
+
 TEST_F(storage_test, dim_manager)
 {
-    using my_dim_manager = cudarrays::dim_manager<float, 2>;
-
     // Small extents
     extents<2> extents_small{3, 5};
-    my_dim_manager mgr1{extents_small, cudarrays::align_t{0}};
+    my_2d_manager<cudarrays::noalign> mgr1{extents_small};
 
     ASSERT_EQ(mgr1.dims()[0], extents_small[0]);
     ASSERT_EQ(mgr1.dims()[1], extents_small[1]);
     ASSERT_EQ(mgr1.dims_align()[0], extents_small[0]);
     ASSERT_EQ(mgr1.dims_align()[1], extents_small[1]);
 
-    cudarrays::align_t alignment{16};
-    my_dim_manager mgr2{extents_small, alignment};
+    using align_16 = cudarrays::align<16>;
+
+    my_2d_manager<align_16> mgr2{extents_small};
 
     ASSERT_EQ(mgr2.dims()[0], extents_small[0]);
     ASSERT_EQ(mgr2.dims()[1], extents_small[1]);
     ASSERT_EQ(mgr2.dims_align()[0], extents_small[0]);
-    ASSERT_EQ(mgr2.dims_align()[1], alignment.alignment);
+    ASSERT_EQ(mgr2.dims_align()[1], align_16::alignment);
 
     // Big extents
     extents<2> extents_big{247, 251};
-    my_dim_manager mgr3{extents_big, alignment};
+    my_2d_manager<align_16> mgr3{extents_big};
 
     ASSERT_EQ(mgr3.dims()[0], extents_big[0]);
     ASSERT_EQ(mgr3.dims()[1], extents_big[1]);
     ASSERT_EQ(mgr3.dims_align()[0], extents_big[0]);
     ASSERT_GT(mgr3.dims_align()[1], extents_big[1]);
-    ASSERT_EQ(mgr3.dims_align()[1] % alignment.alignment, 0u);
+    ASSERT_EQ(mgr3.dims_align()[1] % align_16::alignment, 0u);
 }
 
 TEST_F(storage_test, dim_manager_offset)
 {
-    using my_dim_manager = cudarrays::dim_manager<float, 2>;
-
     // Small extents
     extents<2> extents{3, 7};
 
-    cudarrays::align_t alignment1{4};
-    my_dim_manager mgr1{extents, alignment1};
+    using align_4 = cudarrays::align<4>;
+    my_2d_manager<align_4> mgr1{extents};
 
     ASSERT_EQ(mgr1.offset(), 0u);
 
-    cudarrays::align_t alignment2{4, 2};
-    my_dim_manager mgr2{extents, alignment2};
+    using align_4_2 = cudarrays::align<4, 2>;
+    my_2d_manager<align_4_2> mgr2{extents};
 
     ASSERT_EQ(mgr2.offset(), 2u);
 
-    cudarrays::align_t alignment3{4, 5};
-    my_dim_manager mgr3{extents, alignment3};
+    using align_4_5 = cudarrays::align<4, 5>;
+    my_2d_manager<align_4_5> mgr3{extents};
 
     ASSERT_EQ(mgr3.offset(), 3u);
 }
 
+template <typename Align>
+using my_3d_manager = cudarrays::dim_manager<float, Align, 3>;
+
 TEST_F(storage_test, dim_manager_impl_offset)
 {
-    using my_dim_manager = cudarrays::dim_manager<float, 3>;
-
     // Small extents
     extents<3> extents{5, 3, 7};
 
-    cudarrays::align_t alignment{4};
-    my_dim_manager mgr1{extents, alignment};
+    using align_4 = cudarrays::align<4>;
+    my_3d_manager<align_4> mgr1{extents};
 
     ASSERT_EQ(mgr1.dims()[2],       7u);
     ASSERT_EQ(mgr1.dims_align()[2], 8u);
@@ -261,10 +262,8 @@ TEST_F(storage_test, dim_manager_impl_offset)
 
 TEST_F(storage_test, dim_manager_get_dim)
 {
-    using my_dim_manager = cudarrays::dim_manager<float, 2>;
-
     extents<2> extents{3, 5};
-    my_dim_manager mgr1{extents, cudarrays::align_t{0}};
+    my_2d_manager<cudarrays::noalign> mgr1{extents};
 
     ASSERT_EQ(mgr1.dims()[0], mgr1.dim(0));
     ASSERT_EQ(mgr1.dims()[1], mgr1.dim(1));

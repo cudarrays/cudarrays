@@ -42,28 +42,28 @@ int main()
 {
     static const int NONE = -1;
 
-    auto A_x_x = make_array<float ***, layout::rmo, automatic::none>({ 1500, 300, 600 });
-    auto A_x_y = make_array<float ***, layout::rmo, automatic::none>({ 1500, 300, 600 });
+    auto A_x_x = make_array<float ***, layout::rmo, noalign, automatic::none>({ 1500, 300, 600 });
+    auto A_x_y = make_array<float ***, layout::rmo, noalign, automatic::none>({ 1500, 300, 600 });
     A_x_x.distribute<3>({{compute::x, 6}, {NONE, NONE, 0}});
     A_x_y.distribute<3>({{compute::y, 6}, {NONE, NONE, 1}});
 
-    auto A_y_x = make_array<float ***, layout::rmo, reshape::y>({ 1500, 300, 600 });
-    auto A_y_y = make_array<float ***, layout::rmo, reshape::y>({ 1500, 300, 600 });
+    auto A_y_x = make_array<float ***, layout::rmo, noalign, reshape::y>({ 1500, 300, 600 });
+    auto A_y_y = make_array<float ***, layout::rmo, noalign, reshape::y>({ 1500, 300, 600 });
     A_y_x.distribute<3>({{compute::x, 6}, {NONE, 0, NONE}});
     A_y_y.distribute<3>({{compute::y, 6}, {NONE, 1, NONE}});
 
-    auto A_xy1 = make_array<float ***, layout::rmo, reshape::xy>({ 1500, 300, 600 });
-    auto A_xy2 = make_array<float ***, layout::rmo, reshape::xy>({ 1500, 300, 600 });
+    auto A_xy1 = make_array<float ***, layout::rmo, noalign, reshape::xy>({ 1500, 300, 600 });
+    auto A_xy2 = make_array<float ***, layout::rmo, noalign, reshape::xy>({ 1500, 300, 600 });
     A_xy1.distribute<3>({{compute::xy, 6}, {NONE, 1, 0}});
     A_xy2.distribute<3>({{compute::xy, 6}, {NONE, 0, 1}});
 
-    auto A_xz1 = make_array<float ***, layout::rmo, reshape::xz>({ 1500, 300, 600 });
-    auto A_xz2 = make_array<float ***, layout::rmo, reshape::xz>({ 1500, 300, 600 });
+    auto A_xz1 = make_array<float ***, layout::rmo, noalign, reshape::xz>({ 1500, 300, 600 });
+    auto A_xz2 = make_array<float ***, layout::rmo, noalign, reshape::xz>({ 1500, 300, 600 });
     A_xz1.distribute<3>({{compute::xz, 6}, {2, NONE, 0}});
     A_xz2.distribute<3>({{compute::xz, 6}, {0, NONE, 2}});
 
-    auto A_yz1 = make_array<float ***, layout::rmo, reshape::yz>({ 1500, 300, 600 });
-    auto A_yz2 = make_array<float ***, layout::rmo, reshape::yz>({ 1500, 300, 600 });
+    auto A_yz1 = make_array<float ***, layout::rmo, noalign, reshape::yz>({ 1500, 300, 600 });
+    auto A_yz2 = make_array<float ***, layout::rmo, noalign, reshape::yz>({ 1500, 300, 600 });
     A_yz1.distribute<3>({{compute::yz, 6}, {2, 1, NONE}});
     A_yz2.distribute<3>({{compute::yz, 6}, {1, 2, NONE}});
 

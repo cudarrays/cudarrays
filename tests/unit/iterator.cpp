@@ -44,6 +44,8 @@ protected:
 template <typename T, unsigned Dims>
 class array_test {
 public:
+    static constexpr bool has_alignment = 0;
+
     static constexpr auto dimensions = Dims;
 
     using value_type      = T;
@@ -84,9 +86,7 @@ public:
 
     iterator begin()
     {
-        cudarrays::array_index_t dims[Dims];
-        std::fill(dims, dims + Dims, 0);
-        return iterator{*this, dims};
+        return iterator{*this, 0};
     }
 
     const_iterator begin() const
@@ -96,18 +96,12 @@ public:
 
     const_iterator cbegin() const
     {
-        cudarrays::array_index_t dims[Dims];
-        std::fill(dims, dims + Dims, 0);
-        return const_iterator{*this, dims};
+        return const_iterator{*this, 0};
     }
 
     reverse_iterator rbegin()
     {
-        cudarrays::array_index_t dims[Dims];
-        for (unsigned i = 0; i < Dims; ++i) {
-            dims[i] = dims_[i] - 1;
-        }
-        return reverse_iterator{iterator{*this, dims}};
+        return reverse_iterator{iterator{*this, cudarrays::array_index_t(get_nelems())}};
     }
 
     const_reverse_iterator rbegin() const
@@ -117,22 +111,12 @@ public:
 
     const_reverse_iterator crbegin() const
     {
-        cudarrays::array_index_t dims[Dims];
-        for (unsigned i = 0; i < Dims; ++i) {
-            dims[i] = dims_[i] - 1;
-        }
-        const_iterator it{*this, dims};
-        return const_reverse_iterator{it};
+        return const_reverse_iterator{const_iterator{*this, cudarrays::array_index_t(get_nelems())}};
     }
 
     iterator end()
     {
-        cudarrays::array_index_t dims[Dims];
-        dims[0] = dims_[0];
-        if (Dims > 1) {
-            std::fill(dims + 1, dims + Dims, 0);
-        }
-        return iterator{*this, dims};
+        return iterator{*this, cudarrays::array_index_t(get_nelems())};
     }
 
     const_iterator end() const
@@ -142,22 +126,12 @@ public:
 
     const_iterator cend() const
     {
-        cudarrays::array_index_t dims[Dims];
-        dims[0] = dims_[0];
-        if (Dims > 1) {
-            std::fill(dims + 1, dims + Dims, 0);
-        }
-        return const_iterator{*this, dims};
+        return const_iterator{*this, cudarrays::array_index_t(get_nelems())};
     }
 
     reverse_iterator rend()
     {
-        cudarrays::array_index_t dims[Dims];
-        dims[0] = -1;
-        for (unsigned i = 0; i < Dims; ++i) {
-            dims[i] = dims_[i] - 1;
-        }
-        return reverse_iterator{iterator{*this, dims}};
+        return reverse_iterator{iterator{*this, 0}};
     }
 
     const_reverse_iterator rend() const
@@ -167,12 +141,7 @@ public:
 
     const_reverse_iterator crend() const
     {
-        cudarrays::array_index_t dims[Dims];
-        dims[0] = -1;
-        for (unsigned i = 0; i < Dims; ++i) {
-            dims[i] = dims_[i] - 1;
-        }
-        return const_reverse_iterator{const_iterator{*this, dims}};
+        return const_reverse_iterator{const_iterator{*this, 0}};
     }
 
     cudarrays::array_size_t dim(unsigned dim) const
@@ -220,8 +189,12 @@ public:
         return data_[i * dims_[1] * dims_[2] + j * dims_[2] + k];
     }
 
+    T *host_addr()
+    {
+        return data_;
+    }
 
-    T *get_base()
+    const T *host_addr() const
     {
         return data_;
     }
@@ -244,7 +217,7 @@ TEST_F(iterator_test, iterator1d)
     array1d<float> a{{100}};;
 
     float val = 0;
-    std::generate(a.get_base(), a.get_base() + a.get_nelems(),
+    std::generate(a.host_addr(), a.host_addr() + a.get_nelems(),
                   [&val]() -> float
                   {
                       return val++;
@@ -257,6 +230,7 @@ TEST_F(iterator_test, iterator1d)
 
     val = a.get_nelems();
     for (auto it = a.rbegin(); it != a.rend(); ++it) {
+        printf("MIERDA\n");
         ASSERT_EQ(*it, --val);
     }
 
@@ -284,7 +258,7 @@ TEST_F(iterator_test, iterator2d)
     array2d<float> a{{100, 50}};
 
     float val = 0;
-    std::generate(a.get_base(), a.get_base() + a.get_nelems(),
+    std::generate(a.host_addr(), a.host_addr() + a.get_nelems(),
                   [&val]() -> float
                   {
                       return val++;

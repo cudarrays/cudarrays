@@ -40,9 +40,9 @@ using namespace cudarrays;
 template <typename StorageC, typename StorageA, typename StorageB>
 __global__
 void
-matrixmul_kernel( matrix_view<float, layout::cmo, StorageC> C,
-                 matrix_cview<float, layout::cmo, StorageA> A,
-                 matrix_cview<float, layout::rmo, StorageB> B)
+matrixmul_kernel( matrix_view<float, layout::cmo, noalign, StorageC> C,
+                 matrix_cview<float, layout::cmo, noalign, StorageA> A,
+                 matrix_cview<float, layout::rmo, noalign, StorageB> B)
 {
     int tx = threadIdx.x;
     int ty = threadIdx.y;

@@ -80,14 +80,13 @@ T div_ceil(T a, U b)
 }
 
 template <class T, class U>
-typename std::common_type<T, U>::type
-round_next(T val, U step)
+constexpr typename std::common_type<T, U>::type
+round_next(const T &val, const U &step)
 {
     static_assert(std::is_integral<T>::value &&
                   std::is_integral<U>::value, "round_next works on integral types only");
-    if (val % step != 0)
-        val = ((val / step) + 1) * step;
-    return val;
+    return (val % step != 0)? ((val / step) + 1) * step:
+                              val;
 }
 
 template <typename T, typename U>

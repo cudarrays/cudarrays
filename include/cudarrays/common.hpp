@@ -44,6 +44,9 @@
 
 namespace cudarrays {
 
+//
+// Basic types
+//
 enum partition : unsigned {
     NONE = 0b000,
     X    = 0b001,
@@ -57,6 +60,9 @@ enum partition : unsigned {
 
 static constexpr int DimInvalid = -1;
 
+//
+// Library initialization
+//
 void init_lib();
 void fini_lib();
 

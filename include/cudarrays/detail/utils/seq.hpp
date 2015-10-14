@@ -45,7 +45,7 @@ struct sequence {
 
     static constexpr std::array<T, sizeof...(Values)> as_array()
     {
-        return {Values...};
+        return {{Values...}};
     }
 };
 
@@ -61,7 +61,7 @@ auto deduce(T...) -> typename std::tuple_element<0, std::tuple<T...>>::type
 #define SEQ_T_OP(o,...) typename utils::mpl::seq_##o<__VA_ARGS__>::type
 #define SEQ_V_OP(o,...) (utils::mpl::seq_##o<__VA_ARGS__>::value)
 
-namespace detail {
+namespace detail __attribute__ ((visibility ("hidden"))) {
 
     template <typename T, class S>
     struct seq_size;
@@ -100,7 +100,7 @@ struct seq_wrap<T, O<Values...>> {
 
 #define SEQ_WRAP(...) SEQ_T_OP(wrap,##__VA_ARGS__)
 
-namespace detail {
+namespace detail __attribute__ ((visibility ("hidden"))) {
 
     template <typename T, typename S, typename O>
     struct seq_unwrap;
@@ -120,7 +120,7 @@ struct seq_unwrap {
 
 #define SEQ_UNWRAP(...) SEQ_T_OP(unwrap,##__VA_ARGS__)
 
-namespace detail {
+namespace detail __attribute__ ((visibility ("hidden"))) {
 
     template <typename T, typename S1, typename S2>
     struct seq_merge;
@@ -141,7 +141,7 @@ struct seq_merge {
 
 #define SEQ_MERGE(...) SEQ_T_OP(merge,##__VA_ARGS__)
 
-namespace detail {
+namespace detail __attribute__ ((visibility ("hidden"))) {
 
     template <typename T, unsigned Size, T FillValue, T... Generated>
     struct seq_gen_fill {
@@ -179,7 +179,7 @@ struct seq_append {
 
 #define SEQ_APPEND(...) SEQ_T_OP(append,##__VA_ARGS__)
 
-namespace detail {
+namespace detail __attribute__ ((visibility ("hidden"))) {
 
 template <typename T, typename S>
 struct seq_pop;
@@ -198,7 +198,7 @@ struct seq_pop {
 
 #define SEQ_POP(s) SEQ_T_OP(pop,s)
 
-namespace detail {
+namespace detail __attribute__ ((visibility ("hidden"))) {
 
     template <typename T, typename S, T... Generated>
     struct seq_reverse;
@@ -222,7 +222,7 @@ struct seq_reverse {
 
 #define SEQ_REVERSE(...) SEQ_T_OP(reverse,##__VA_ARGS__)
 
-namespace detail {
+namespace detail __attribute__ ((visibility ("hidden"))) {
 
     template <typename T, unsigned Size, T Current, T... Generated>
     struct seq_gen_inc {
@@ -244,7 +244,7 @@ struct seq_gen_inc {
 #define SEQ_GEN_INC(v)             SEQ_T_OP(gen_inc,decltype(utils::mpl::deduce(v)),v)
 #define SEQ_GEN_INC_WITH_TYPE(t,v) SEQ_T_OP(gen_inc,t,v)
 
-namespace detail {
+namespace detail __attribute__ ((visibility ("hidden"))) {
 
     template <typename T, unsigned Size, T Current, T... Generated>
     struct seq_gen_dec {
@@ -265,7 +265,7 @@ struct seq_gen_dec {
 
 #define SEQ_GEN_DEC(...) SEQ_T_OP(gen_dec,##__VA_ARGS__)
 
-namespace detail {
+namespace detail __attribute__ ((visibility ("hidden"))) {
 
     template <size_t N, typename T, typename S>
     struct seq_at;
@@ -293,7 +293,7 @@ constexpr SEQ_TYPE(S) seq_at<S, N>::value;
 
 #define SEQ_AT(...) (SEQ_V_OP(at,##__VA_ARGS__))
 
-namespace detail {
+namespace detail __attribute__ ((visibility ("hidden"))) {
 
     template <size_t N, typename T, T Value, typename P, typename R>
     struct seq_set;
@@ -302,17 +302,16 @@ namespace detail {
     struct seq_set<N, T, Value,
                    SEQ_WITH_TYPE(T, Current, Values...),
                    SEQ_WITH_TYPE(T, Values2...)> {
-        static constexpr T value = seq_set<N - 1, T, Value,
-                                           SEQ_WITH_TYPE(T, Values...),
-                                           SEQ_WITH_TYPE(T, Values2..., Current)
-                                           >::value;
+        using type = typename seq_set<N - 1, T, Value,
+                                      SEQ_WITH_TYPE(T, Values...),
+                                      SEQ_WITH_TYPE(T, Values2..., Current)
+                                      >::type;
     };
 
     template <typename T, T Value, T Current, T... Values, T... Values2>
     struct seq_set<0, T, Value,
                    SEQ_WITH_TYPE(T, Current, Values...),
                    SEQ_WITH_TYPE(T, Values2...)> {
-        static constexpr T value = Current;
         using type = SEQ_WITH_TYPE(T, Values2..., Value, Values...);
     };
 
@@ -324,10 +323,9 @@ struct seq_set {
     using type = typename detail::seq_set<N, SEQ_TYPE(S), Value, S, SEQ_WITH_TYPE(SEQ_TYPE(S))>::type;
 };
 
-#define SEQ_AT(...) (SEQ_V_OP(at,##__VA_ARGS__))
+#define SEQ_SET(...) SEQ_T_OP(set,##__VA_ARGS__)
 
-
-namespace detail {
+namespace detail __attribute__ ((visibility ("hidden"))) {
 
 template <bool ValidIndex, size_t N, typename T, typename S, T Value>
 struct seq_at_or {
@@ -353,7 +351,7 @@ constexpr SEQ_TYPE(S) seq_at_or<S, N, Value>::value;
 
 #define SEQ_AT_OR(...) (SEQ_V_OP(at_or,##__VA_ARGS__))
 
-namespace detail {
+namespace detail __attribute__ ((visibility ("hidden"))) {
 
     template <typename T, T Value, typename S>
     struct seq_count;
@@ -386,7 +384,7 @@ constexpr SEQ_TYPE(S) seq_count<S, Value>::value;
 #define SEQ_COUNT(...) (SEQ_V_OP(count,##__VA_ARGS__))
 #define SEQ_HAS(...)   (SEQ_V_OP(count,##__VA_ARGS__) > 0)
 
-namespace detail {
+namespace detail __attribute__ ((visibility ("hidden"))) {
 
     template <typename T, size_t Idx, T Value, typename S>
     struct seq_find_first;
@@ -429,7 +427,7 @@ struct seq_find_last {
 
 #define SEQ_FIND_LAST(...)  (SEQ_V_OP(find_last,##__VA_ARGS__))
 
-namespace detail {
+namespace detail __attribute__ ((visibility ("hidden"))) {
 
     template <typename T, typename T2, class U, class M>
     struct seq_reorder_gather;

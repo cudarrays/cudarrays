@@ -32,6 +32,7 @@
 
 #include <algorithm>
 #include <array>
+#include <numeric>
 #include <sstream>
 #include <utility>
 

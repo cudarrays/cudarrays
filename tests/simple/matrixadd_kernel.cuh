@@ -37,9 +37,9 @@ using namespace cudarrays;
 template <typename StorageC, typename StorageA, typename StorageB>
 __global__
 void
-matrixadd_kernel( volume_view<float, layout::rmo, StorageC> C,
-                 volume_cview<float, layout::rmo, StorageA> A,
-                 volume_cview<float, layout::rmo, StorageB> B)
+matrixadd_kernel( volume_view<float, layout::rmo, noalign, StorageC> C,
+                 volume_cview<float, layout::rmo, noalign, StorageA> A,
+                 volume_cview<float, layout::rmo, noalign, StorageB> B)
 {
     int tx = threadIdx.x;
     int ty = threadIdx.y;

@@ -39,13 +39,18 @@
 
 namespace cudarrays {
 
-template <typename T, unsigned Dims>
+template <typename StorageTraits>
 class dynarray_base {
+protected:
+    using     value_type = typename StorageTraits::array_traits_type::value_type;
+    using alignment_type = typename StorageTraits::alignment_type;
+
+    static constexpr auto dimensions = StorageTraits::dimensions;
+
 public:
-    using  dim_manager_type = dim_manager<T, Dims>;
-    dynarray_base(const extents<Dims> &extents,
-                  const align_t &align) :
-        dimManager_(extents, align)
+    using  dim_manager_type = dim_manager<value_type, alignment_type, dimensions>;
+    dynarray_base(const extents<dimensions> &extents) :
+        dimManager_(extents)
     {
     }
 
@@ -68,7 +73,7 @@ private:
     dim_manager_type dimManager_;
 };
 
-template <typename T, storage_tag StorageImpl, typename StorageTraits>
+template <storage_tag StorageImpl, typename StorageTraits>
 class dynarray_storage;
 
 }

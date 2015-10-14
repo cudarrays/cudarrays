@@ -60,7 +60,7 @@ enum class storage_tag {
     REPLICATED,
 };
 
-static std::string
+static inline std::string
 enum_to_string(storage_tag tag)
 {
     switch (tag) {
@@ -201,9 +201,36 @@ struct storage_part
     }
 };
 
-template <typename T, typename StorageType, typename PartConf>
+template <array_size_t Alignment, array_index_t Offset = 0>
+struct align {
+    static constexpr array_size_t  alignment = Alignment;
+    static constexpr array_index_t offset    = Offset;
+
+    static inline
+    constexpr array_size_t get_aligned(const array_size_t &value)
+    {
+        return alignment <= 1?
+            value:
+            utils::round_next(
+                    value + (offset > alignment?
+                        utils::round_next(offset, alignment) - offset :
+                        offset > 0? alignment - offset: 0
+                        ),
+                    alignment);
+    }
+};
+
+template <array_size_t Alignment, array_index_t Offset>
+constexpr array_size_t align<Alignment, Offset>::alignment;
+template <array_size_t Alignment, array_index_t Offset>
+constexpr array_index_t align<Alignment, Offset>::offset;
+
+using noalign = align<0>;
+
+template <typename T, typename StorageType, typename Align, typename PartConf>
 struct storage_traits {
     using         array_type = T;
+    using     alignment_type = Align;
     using  array_traits_type = array_traits<array_type>;
 
     static constexpr unsigned         dimensions = array_traits_type::dimensions;
@@ -212,18 +239,22 @@ struct storage_traits {
 
     // User-provided dimension ordering
     using dim_order_seq = typename make_dim_order<array_traits_type::dimensions, StorageType>::seq_type;
-    // Order array extents
+    // Ordered array extents
     using extents_pre_seq =
-        SEQ_REORDER(
-            typename array_traits_type::extents_seq,
-            dim_order_seq);
+        SEQ_REORDER(typename array_traits_type::extents_seq,
+                    dim_order_seq);
+    // Ordered and aligned array extents
+    using extents_pre2_seq =
+        SEQ_SET(extents_pre_seq,
+                dimensions - 1,
+                alignment_type::get_aligned(SEQ_AT(extents_pre_seq, dimensions - 1)));
     // Nullify static extents if the last physical dimensions are not static
     using extents_seq =
         typename
-        std::conditional<SEQ_FIND_LAST(extents_pre_seq, 0) == -1 ||
-                             utils::is_equal(SEQ_FIND_LAST(extents_pre_seq, 0) + 1,
+        std::conditional<SEQ_FIND_LAST(extents_pre2_seq, 0) == -1 ||
+                             utils::is_equal(SEQ_FIND_LAST(extents_pre2_seq, 0) + 1,
                                              dynamic_dimensions),
-                         extents_pre_seq,
+                         extents_pre2_seq,
                          SEQ_GEN_FILL(array_size_t(0), dimensions)
                         >::type;
 
@@ -242,14 +273,14 @@ struct storage_traits {
     using permuter_type = utils::permuter<dim_order_seq>;
 };
 
-template <typename T, typename StorageType, typename PartConf>
-constexpr unsigned storage_traits<T, StorageType, PartConf>::dimensions;
-template <typename T, typename StorageType, typename PartConf>
-constexpr unsigned storage_traits<T, StorageType, PartConf>::static_dimensions;
-template <typename T, typename StorageType, typename PartConf>
-constexpr unsigned storage_traits<T, StorageType, PartConf>::dynamic_dimensions;
-template <typename T, typename StorageType, typename PartConf>
-constexpr partition storage_traits<T, StorageType, PartConf>::partition_value;
+template <typename T, typename StorageType, typename Align, typename PartConf>
+constexpr unsigned storage_traits<T, StorageType, Align, PartConf>::dimensions;
+template <typename T, typename StorageType, typename Align, typename PartConf>
+constexpr unsigned storage_traits<T, StorageType, Align, PartConf>::static_dimensions;
+template <typename T, typename StorageType, typename Align, typename PartConf>
+constexpr unsigned storage_traits<T, StorageType, Align, PartConf>::dynamic_dimensions;
+template <typename T, typename StorageType, typename Align, typename PartConf>
+constexpr partition storage_traits<T, StorageType, Align, PartConf>::partition_value;
 
 using automatic            = storage_part<storage_tag::AUTO>;
 using reshape_block        = storage_part<storage_tag::RESHAPE_BLOCK>;

@@ -240,7 +240,6 @@ namespace cudarrays {
     }
 
     class trace_scope {
-        bool enable_;
         std::string file_;
         unsigned line_;
         std::string tag_;
@@ -255,7 +254,6 @@ namespace cudarrays {
                     const std::string &tag,
                     const function_name &fun,
                     const std::string &msg, const Args &...args) :
-            enable_(enable),
             file_(file),
             line_(line),
             tag_(tag),

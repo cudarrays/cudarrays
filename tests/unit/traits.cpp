@@ -42,29 +42,29 @@ protected:
 
 TEST_F(traits_test, dimensions)
 {
-    ASSERT_EQ(cudarrays::array_traits<int[1]>::dimensions, 1u);
-    ASSERT_EQ(cudarrays::array_traits<int[1]>::static_dimensions, 1u);
-    ASSERT_EQ(cudarrays::array_traits<int[1]>::dynamic_dimensions, 0u);
-    ASSERT_EQ(cudarrays::array_traits<int[1][2]>::dimensions, 2u);
-    ASSERT_EQ(cudarrays::array_traits<int[1][2]>::static_dimensions, 2u);
-    ASSERT_EQ(cudarrays::array_traits<int[1][2]>::dynamic_dimensions, 0u);
-    ASSERT_EQ(cudarrays::array_traits<int[1][2][3]>::dimensions, 3u);
-    ASSERT_EQ(cudarrays::array_traits<int[1][2][3]>::static_dimensions, 3u);
-    ASSERT_EQ(cudarrays::array_traits<int[1][2][3]>::dynamic_dimensions, 0u);
+    static_assert(cudarrays::array_traits<int[1]>::dimensions         == 1u, "Unexpected value");
+    static_assert(cudarrays::array_traits<int[1]>::static_dimensions  == 1u, "Unexpected value");
+    static_assert(cudarrays::array_traits<int[1]>::dynamic_dimensions == 0u, "Unexpected value");
+    static_assert(cudarrays::array_traits<int[1][2]>::dimensions         == 2u, "Unexpected value");
+    static_assert(cudarrays::array_traits<int[1][2]>::static_dimensions  == 2u, "Unexpected value");
+    static_assert(cudarrays::array_traits<int[1][2]>::dynamic_dimensions == 0u, "Unexpected value");
+    static_assert(cudarrays::array_traits<int[1][2][3]>::dimensions         == 3u, "Unexpected value");
+    static_assert(cudarrays::array_traits<int[1][2][3]>::static_dimensions  == 3u, "Unexpected value");
+    static_assert(cudarrays::array_traits<int[1][2][3]>::dynamic_dimensions == 0u, "Unexpected value");
 
-    ASSERT_EQ(cudarrays::array_traits<int*>::dimensions, 1u);
-    ASSERT_EQ(cudarrays::array_traits<int*>::static_dimensions, 0u);
-    ASSERT_EQ(cudarrays::array_traits<int*>::dynamic_dimensions, 1u);
-    ASSERT_EQ(cudarrays::array_traits<int**>::dimensions, 2u);
-    ASSERT_EQ(cudarrays::array_traits<int**>::static_dimensions, 0u);
-    ASSERT_EQ(cudarrays::array_traits<int**>::dynamic_dimensions, 2u);
-    ASSERT_EQ(cudarrays::array_traits<int***>::dimensions, 3u);
-    ASSERT_EQ(cudarrays::array_traits<int***>::static_dimensions, 0u);
-    ASSERT_EQ(cudarrays::array_traits<int***>::dynamic_dimensions, 3u);
+    static_assert(cudarrays::array_traits<int*>::dimensions         == 1u, "Unexpected value");
+    static_assert(cudarrays::array_traits<int*>::static_dimensions  == 0u, "Unexpected value");
+    static_assert(cudarrays::array_traits<int*>::dynamic_dimensions == 1u, "Unexpected value");
+    static_assert(cudarrays::array_traits<int**>::dimensions         == 2u, "Unexpected value");
+    static_assert(cudarrays::array_traits<int**>::static_dimensions  == 0u, "Unexpected value");
+    static_assert(cudarrays::array_traits<int**>::dynamic_dimensions == 2u, "Unexpected value");
+    static_assert(cudarrays::array_traits<int***>::dimensions         == 3u, "Unexpected value");
+    static_assert(cudarrays::array_traits<int***>::static_dimensions  == 0u, "Unexpected value");
+    static_assert(cudarrays::array_traits<int***>::dynamic_dimensions == 3u, "Unexpected value");
 
-    ASSERT_EQ(cudarrays::array_traits<int**[3]>::dimensions, 3u);
-    ASSERT_EQ(cudarrays::array_traits<int**[3]>::static_dimensions, 1u);
-    ASSERT_EQ(cudarrays::array_traits<int**[3]>::dynamic_dimensions, 2u);
+    static_assert(cudarrays::array_traits<int**[3]>::dimensions         == 3u, "Unexpected value");
+    static_assert(cudarrays::array_traits<int**[3]>::static_dimensions  == 1u, "Unexpected value");
+    static_assert(cudarrays::array_traits<int**[3]>::dynamic_dimensions == 2u, "Unexpected value");
 }
 
 TEST_F(traits_test, array_extents_helper)
@@ -94,18 +94,22 @@ TEST_F(traits_test, array_extents_helper)
 
 TEST_F(traits_test, array_extents_helper2)
 {
-    ASSERT_EQ(cudarrays::array_traits<int*>::make_extents({1})[0], 1u);
+    using array1d = cudarrays::array_traits<int *>;
+    ASSERT_EQ(array1d::make_extents({1})[0], 1u);
 
-    ASSERT_EQ(cudarrays::array_traits<int**>::make_extents({1, 2})[0], 1u);
-    ASSERT_EQ(cudarrays::array_traits<int**>::make_extents({1, 2})[1], 2u);
+    using array2d = cudarrays::array_traits<int **>;
+    ASSERT_EQ(array2d::make_extents({1, 2})[0], 1u);
+    ASSERT_EQ(array2d::make_extents({1, 2})[1], 2u);
 
-    ASSERT_EQ(cudarrays::array_traits<int***>::make_extents({1, 2, 3})[0], 1u);
-    ASSERT_EQ(cudarrays::array_traits<int***>::make_extents({1, 2, 3})[1], 2u);
-    ASSERT_EQ(cudarrays::array_traits<int***>::make_extents({1, 2, 3})[2], 3u);
+    using array3d = cudarrays::array_traits<int ***>;
+    ASSERT_EQ(array3d::make_extents({1, 2, 3})[0], 1u);
+    ASSERT_EQ(array3d::make_extents({1, 2, 3})[1], 2u);
+    ASSERT_EQ(array3d::make_extents({1, 2, 3})[2], 3u);
 
-    ASSERT_EQ(cudarrays::array_traits<int**[3]>::make_extents({1, 2})[0], 1u);
-    ASSERT_EQ(cudarrays::array_traits<int**[3]>::make_extents({1, 2})[1], 2u);
-    ASSERT_EQ(cudarrays::array_traits<int**[3]>::make_extents({1, 2})[2], 3u);
+    using array3d_hyb = cudarrays::array_traits<int **[3]>;
+    ASSERT_EQ(array3d_hyb::make_extents({1, 2})[0], 1u);
+    ASSERT_EQ(array3d_hyb::make_extents({1, 2})[1], 2u);
+    ASSERT_EQ(array3d_hyb::make_extents({1, 2})[2], 3u);
 }
 
 TEST_F(traits_test, array_offsets_helper)
@@ -174,14 +178,17 @@ TEST_F(traits_test, array_dim_reorder_helper)
 TEST_F(traits_test, storage_traits_extents)
 {
     using rmo_traits = cudarrays::storage_traits<int[1][2][3],
-                                            cudarrays::layout::rmo,
-                                            cudarrays::replicate::none>;
+                                                 cudarrays::layout::rmo,
+                                                 cudarrays::noalign,
+                                                 cudarrays::replicate::none>;
     using cmo_traits = cudarrays::storage_traits<int[1][2][3],
-                                            cudarrays::layout::cmo,
-                                            cudarrays::replicate::none>;
+                                                 cudarrays::layout::cmo,
+                                                 cudarrays::noalign,
+                                                 cudarrays::replicate::none>;
     using custom_traits = cudarrays::storage_traits<int[1][2][3],
-                                               cudarrays::layout::custom<1u, 2u, 0u>,
-                                               cudarrays::replicate::none>;
+                                                    cudarrays::layout::custom<1u, 2u, 0u>,
+                                                    cudarrays::noalign,
+                                                    cudarrays::replicate::none>;
 
     ASSERT_EQ(rmo_traits::extents_seq::as_array()[0], 1u);
     ASSERT_EQ(rmo_traits::extents_seq::as_array()[1], 2u);
@@ -199,14 +206,17 @@ TEST_F(traits_test, storage_traits_extents)
 TEST_F(traits_test, storage_traits_extents2)
 {
     using rmo_traits = cudarrays::storage_traits<int**[3],
-                                            cudarrays::layout::rmo,
-                                            cudarrays::replicate::none>;
+                                                 cudarrays::layout::rmo,
+                                                 cudarrays::noalign,
+                                                 cudarrays::replicate::none>;
     using cmo_traits = cudarrays::storage_traits<int**[3],
-                                            cudarrays::layout::cmo,
-                                            cudarrays::replicate::none>;
+                                                 cudarrays::layout::cmo,
+                                                 cudarrays::noalign,
+                                                 cudarrays::replicate::none>;
     using custom_traits = cudarrays::storage_traits<int**[3],
-                                               cudarrays::layout::custom<1u, 2u, 0u>,
-                                               cudarrays::replicate::none>;
+                                                    cudarrays::layout::custom<1u, 2u, 0u>,
+                                                    cudarrays::noalign,
+                                                    cudarrays::replicate::none>;
 
     ASSERT_EQ(rmo_traits::extents_seq::as_array()[0], 0u);
     ASSERT_EQ(rmo_traits::extents_seq::as_array()[1], 0u);
@@ -221,18 +231,77 @@ TEST_F(traits_test, storage_traits_extents2)
     ASSERT_EQ(custom_traits::extents_seq::as_array()[2], 0u);
 }
 
+TEST_F(traits_test, storage_traits_extents_aligned)
+{
+    using rmo_traits = cudarrays::storage_traits<int[1][2][3],
+                                                 cudarrays::layout::rmo,
+                                                 cudarrays::align<4, 0>,
+                                                 cudarrays::replicate::none>;
+    using cmo_traits = cudarrays::storage_traits<int[1][2][3],
+                                                 cudarrays::layout::cmo,
+                                                 cudarrays::align<4, 0>,
+                                                 cudarrays::replicate::none>;
+    using custom_traits = cudarrays::storage_traits<int[1][2][3],
+                                                    cudarrays::layout::custom<1u, 2u, 0u>,
+                                                    cudarrays::align<4, 0>,
+                                                    cudarrays::replicate::none>;
+
+    ASSERT_EQ(rmo_traits::extents_seq::as_array()[0], 1u);
+    ASSERT_EQ(rmo_traits::extents_seq::as_array()[1], 2u);
+    ASSERT_EQ(rmo_traits::extents_seq::as_array()[2], 4u);
+
+    ASSERT_EQ(cmo_traits::extents_seq::as_array()[0], 3u);
+    ASSERT_EQ(cmo_traits::extents_seq::as_array()[1], 2u);
+    ASSERT_EQ(cmo_traits::extents_seq::as_array()[2], 4u);
+
+    ASSERT_EQ(custom_traits::extents_seq::as_array()[0], 2u);
+    ASSERT_EQ(custom_traits::extents_seq::as_array()[1], 3u);
+    ASSERT_EQ(custom_traits::extents_seq::as_array()[2], 4u);
+}
+
+TEST_F(traits_test, storage_traits_extents2_aligned)
+{
+    using rmo_traits = cudarrays::storage_traits<int**[3],
+                                                 cudarrays::layout::rmo,
+                                                 cudarrays::align<4, 0>,
+                                                 cudarrays::replicate::none>;
+    using cmo_traits = cudarrays::storage_traits<int**[3],
+                                                 cudarrays::layout::cmo,
+                                                 cudarrays::align<4, 0>,
+                                                 cudarrays::replicate::none>;
+    using custom_traits = cudarrays::storage_traits<int**[3],
+                                                    cudarrays::layout::custom<1u, 2u, 0u>,
+                                                    cudarrays::align<4, 0>,
+                                                    cudarrays::replicate::none>;
+
+    ASSERT_EQ(rmo_traits::extents_seq::as_array()[0], 0u);
+    ASSERT_EQ(rmo_traits::extents_seq::as_array()[1], 0u);
+    ASSERT_EQ(rmo_traits::extents_seq::as_array()[2], 4u);
+
+    ASSERT_EQ(cmo_traits::extents_seq::as_array()[0], 0u);
+    ASSERT_EQ(cmo_traits::extents_seq::as_array()[1], 0u);
+    ASSERT_EQ(cmo_traits::extents_seq::as_array()[2], 0u);
+
+    ASSERT_EQ(custom_traits::extents_seq::as_array()[0], 0u);
+    ASSERT_EQ(custom_traits::extents_seq::as_array()[1], 0u);
+    ASSERT_EQ(custom_traits::extents_seq::as_array()[2], 0u);
+}
+
 
 TEST_F(traits_test, storage_traits_offset)
 {
     using rmo_traits = cudarrays::storage_traits<int[1][2][3],
-                                            cudarrays::layout::rmo,
-                                            cudarrays::replicate::none>;
+                                                 cudarrays::layout::rmo,
+                                                 cudarrays::noalign,
+                                                 cudarrays::replicate::none>;
     using cmo_traits = cudarrays::storage_traits<int[1][2][3],
-                                            cudarrays::layout::cmo,
-                                            cudarrays::replicate::none>;
+                                                 cudarrays::layout::cmo,
+                                                 cudarrays::noalign,
+                                                 cudarrays::replicate::none>;
     using custom_traits = cudarrays::storage_traits<int[1][2][3],
-                                               cudarrays::layout::custom<1u, 2u, 0u>,
-                                               cudarrays::replicate::none>;
+                                                    cudarrays::layout::custom<1u, 2u, 0u>,
+                                                    cudarrays::noalign,
+                                                    cudarrays::replicate::none>;
 
     ASSERT_EQ(rmo_traits::offsets_seq::as_array()[0], 6u);
     ASSERT_EQ(rmo_traits::offsets_seq::as_array()[1], 3u);
@@ -247,14 +316,17 @@ TEST_F(traits_test, storage_traits_offset)
 TEST_F(traits_test, storage_traits_offset2)
 {
     using rmo_traits = cudarrays::storage_traits<int**[3],
-                                            cudarrays::layout::rmo,
-                                            cudarrays::replicate::none>;
+                                                 cudarrays::layout::rmo,
+                                                 cudarrays::noalign,
+                                                 cudarrays::replicate::none>;
     using cmo_traits = cudarrays::storage_traits<int**[3],
-                                            cudarrays::layout::cmo,
-                                            cudarrays::replicate::none>;
+                                                 cudarrays::layout::cmo,
+                                                 cudarrays::noalign,
+                                                 cudarrays::replicate::none>;
     using custom_traits = cudarrays::storage_traits<int**[3],
-                                               cudarrays::layout::custom<1u, 2u, 0u>,
-                                               cudarrays::replicate::none>;
+                                                    cudarrays::layout::custom<1u, 2u, 0u>,
+                                                    cudarrays::noalign,
+                                                    cudarrays::replicate::none>;
 
     ASSERT_EQ(rmo_traits::offsets_seq::as_array()[0], 0u);
     ASSERT_EQ(rmo_traits::offsets_seq::as_array()[1], 3u);
@@ -269,22 +341,26 @@ TEST_F(traits_test, storage_traits_offset2)
 TEST_F(traits_test, storage_traits_partition)
 {
     using rmo_traits1 = cudarrays::storage_traits<int[1][2][3],
-                                             cudarrays::layout::rmo,
-                                             cudarrays::storage_conf<cudarrays::storage_tag::VM,
-                                                                cudarrays::partition(0b100)>>;
+                                                  cudarrays::layout::rmo,
+                                                  cudarrays::noalign,
+                                                  cudarrays::storage_conf<cudarrays::storage_tag::VM,
+                                                                          cudarrays::partition(0b100)>>;
     using rmo_traits2 = cudarrays::storage_traits<int[1][2][3],
-                                             cudarrays::layout::rmo,
-                                             cudarrays::storage_conf<cudarrays::storage_tag::VM,
-                                                                cudarrays::partition(0b001)>>;
+                                                  cudarrays::layout::rmo,
+                                                  cudarrays::noalign,
+                                                  cudarrays::storage_conf<cudarrays::storage_tag::VM,
+                                                                          cudarrays::partition(0b001)>>;
 
     using cmo_traits1 = cudarrays::storage_traits<int[1][2][3],
-                                             cudarrays::layout::cmo,
-                                             cudarrays::storage_conf<cudarrays::storage_tag::VM,
-                                                                cudarrays::partition(0b100)>>;
+                                                  cudarrays::layout::cmo,
+                                                  cudarrays::noalign,
+                                                  cudarrays::storage_conf<cudarrays::storage_tag::VM,
+                                                                          cudarrays::partition(0b100)>>;
     using cmo_traits2 = cudarrays::storage_traits<int[1][2][3],
-                                             cudarrays::layout::cmo,
-                                             cudarrays::storage_conf<cudarrays::storage_tag::VM,
-                                                                cudarrays::partition(0b001)>>;
+                                                  cudarrays::layout::cmo,
+                                                  cudarrays::noalign,
+                                                  cudarrays::storage_conf<cudarrays::storage_tag::VM,
+                                                                          cudarrays::partition(0b001)>>;
 
     ASSERT_EQ(rmo_traits1::partition_value, cudarrays::partition(0b100));
     ASSERT_EQ(rmo_traits2::partition_value, cudarrays::partition(0b001));

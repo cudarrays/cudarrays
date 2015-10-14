@@ -81,8 +81,11 @@ struct array_iterator_dereference<Array, Const, 0> {
     }
 };
 
+template <typename Array, bool Const, bool IsAligned = Array::has_alignment>
+class array_iterator_access_detail;
+
 template <typename Array, bool Const>
-class array_iterator_access_detail {
+class array_iterator_access_detail<Array, Const, true> {
     using     traits_base = array_iterator_traits<Array, Const>;
 
 public:
@@ -114,13 +117,6 @@ protected:
         parent_(NULL)
     {
         fill(idx_, -1);
-    }
-
-    inline
-    array_iterator_access_detail(array_reference parent) :
-        parent_(&parent)
-    {
-        fill(idx_, 0);
     }
 
     inline
@@ -172,6 +168,12 @@ protected:
                 break;
             }
         }
+    }
+
+    inline
+    bool equal(const array_iterator_access_detail &it) const
+    {
+        return utils::equal(idx_, it.idx_);
     }
 
     inline
@@ -230,7 +232,6 @@ private:
     }
 
     template <bool Equal>
-    inline
     bool greater(const array_iterator_access_detail &it) const
     {
         for (auto dim : utils::make_range(Array::dimensions)) {
@@ -249,8 +250,125 @@ private:
 };
 
 template <typename Array, bool Const>
+class array_iterator_access_detail<Array, Const, false> {
+    using     traits_base = array_iterator_traits<Array, Const>;
+
+public:
+    using difference_type = typename traits_base::difference_type;
+    using      value_type = typename traits_base::value_type;
+    using       reference = typename traits_base::reference;
+    using         pointer = typename traits_base::pointer;
+
+    using array_reference = typename std::conditional<Const, const Array &, Array &>::type;
+    using   array_pointer = typename std::conditional<Const, const Array *, Array *>::type;
+
+    inline
+    reference operator*() const
+    {
+        return ((pointer) parent_->host_addr())[idx_];
+    }
+
+    inline
+    pointer operator->() const
+    {
+        return &(operator*());
+    }
+
+protected:
+    inline
+    array_iterator_access_detail() :
+        parent_(NULL),
+        idx_{-1}
+    {
+    }
+
+    inline
+    array_iterator_access_detail(array_reference parent, array_index_t off) :
+        parent_(&parent),
+        idx_(off)
+    {
+    }
+
+    template <bool Unit>
+    inline
+    void inc(array_index_t off)
+    {
+        idx_ += off;
+    }
+
+    template <bool Unit>
+    inline
+    void dec(array_index_t off)
+    {
+        idx_ -= off;
+    }
+
+    inline
+    bool equal(const array_iterator_access_detail &it) const
+    {
+        return idx_ == it.idx_;
+    }
+
+    inline
+    bool less_than(const array_iterator_access_detail &it) const
+    {
+        return less<false>(it);
+    }
+
+    inline
+    bool less_eq_than(const array_iterator_access_detail &it) const
+    {
+        return less<true>(it);
+    }
+
+    inline
+    bool greater_than(const array_iterator_access_detail &it) const
+    {
+        return greater<false>(it);
+    }
+
+    inline
+    bool greater_eq_than(const array_iterator_access_detail &it) const
+    {
+        return greater<true>(it);
+    }
+
+    inline
+    difference_type subtract(const array_iterator_access_detail &it) const
+    {
+        return idx_ - it.idx_;
+    }
+
+    array_pointer parent_;
+    array_index_t idx_;
+
+private:
+    template <bool Equal>
+    inline
+    bool less(const array_iterator_access_detail &it) const
+    {
+        if (Equal)
+            return idx_ <= it.idx_;
+        else
+            return idx_ < it.idx_;
+    }
+
+    template <bool Equal>
+    inline
+    bool greater(const array_iterator_access_detail &it) const
+    {
+        if (Equal)
+            return idx_ >= it.idx_;
+        else
+            return idx_ > it.idx_;
+    }
+};
+
+
+template <typename Array, bool Const>
 class array_iterator :
     public array_iterator_access_detail<Array, Const> {
+    using  array_type = Array;
     using parent_type = array_iterator_access_detail<Array, Const>;
 
 public:
@@ -267,20 +385,28 @@ public:
     static constexpr bool is_const = Const;
 
     inline
-    array_iterator(array_reference parent) :
-        parent_type(parent)
+    array_iterator() :
+        parent_type()
     {
     }
 
+    template <typename U = array_iterator>
     inline
-    array_iterator(array_reference parent, array_index_t off[Array::dimensions]) :
+    array_iterator(utils::enable_if_t<U::array_type::has_alignment, array_reference> parent, array_index_t off[Array::dimensions]) :
+        parent_type(parent, off)
+    {
+    }
+
+    template <typename U = array_iterator>
+    inline
+    array_iterator(utils::enable_if_t<!U::array_type::has_alignment, array_reference> parent, array_index_t off) :
         parent_type(parent, off)
     {
     }
 
     inline bool operator==(array_iterator it) const
     {
-        return parent_type::parent_ == it.parent_ && utils::equal(parent_type::idx_, it.idx_);
+        return parent_type::parent_ == it.parent_ && parent_type::equal(it);
     }
 
     inline bool operator!=(array_iterator it) const
@@ -371,8 +497,12 @@ public:
     }
 };
 
+template <typename T, bool Const, bool IsAligned = T::has_alignment>
+class array_iterator_facade;
+
 template <typename T, bool Const>
-class array_iterator_facade {
+class array_iterator_facade<T, Const, true>
+{
 public:
     static constexpr bool is_const = Const;
     using   iterator_type = array_iterator<T, Const>;
@@ -388,6 +518,7 @@ public:
     using       reverse_iterator = std::reverse_iterator<iterator>;
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
+    inline
     array_iterator_facade(array_reference a) :
         parent_{a}
     {
@@ -400,6 +531,7 @@ public:
         return iterator{parent_, dims};
     }
 
+    inline
     const_iterator begin() const
     {
         return cbegin();
@@ -412,13 +544,22 @@ public:
         return const_iterator{parent_, dims};
     }
 
+    inline
     reverse_iterator rbegin()
     {
-        array_index_t dims[array_type::dimensions];
-        for (unsigned i = 0; i < array_type::dimensions; ++i) {
-            dims[i] = parent_.dim(i) - 1;
-        }
-        return reverse_iterator(iterator(parent_, dims));
+        return reverse_iterator(end());
+    }
+
+    inline
+    const_reverse_iterator rbegin() const
+    {
+        return crbegin();
+    }
+
+    inline
+    const_reverse_iterator crbegin() const
+    {
+        return const_reverse_iterator(cend());
     }
 
     iterator end()
@@ -431,6 +572,7 @@ public:
         return iterator(parent_, dims);
     }
 
+    inline
     const_iterator end() const
     {
         return cend();
@@ -446,29 +588,122 @@ public:
         return const_iterator(parent_, dims);
     }
 
+    inline
     reverse_iterator rend()
     {
-        array_index_t dims[array_type::dimensions];
-        dims[0] = -1;
-        for (unsigned i = 0; i < array_type::dimensions; ++i) {
-            dims[i] = parent_.dim(i) - 1;
-        }
-        return reverse_iterator(iterator(parent_, dims));
+        return reverse_iterator(begin());
     }
 
+    inline
     const_reverse_iterator rend() const
     {
         return crend();
     }
 
+    inline
     const_reverse_iterator crend() const
     {
-        array_index_t dims[array_type::dimensions];
-        dims[0] = -1;
-        for (unsigned i = 0; i < array_type::dimensions; ++i) {
-            dims[i] = parent_.dim(i) - 1;
-        }
-        return const_reverse_iterator(const_iterator(parent_, dims));
+        return const_reverse_iterator(cbegin());
+    }
+
+private:
+    array_reference parent_;
+};
+
+template <typename T, bool Const>
+class array_iterator_facade<T, Const, false>
+{
+public:
+    static constexpr bool is_const = Const;
+    using   iterator_type = array_iterator<T, Const>;
+    using array_reference = typename iterator_type::array_reference;
+
+    using array_type = T;
+    //
+    // Iterator interface
+    //
+    using       iterator = array_iterator<array_type, false>;
+    using const_iterator = array_iterator<array_type, true>;
+
+    using       reverse_iterator = std::reverse_iterator<iterator>;
+    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
+    inline
+    array_iterator_facade(array_reference a) :
+        parent_{a}
+    {
+    }
+
+    inline
+    iterator begin()
+    {
+        return iterator{parent_, 0};
+    }
+
+    inline
+    const_iterator begin() const
+    {
+        return cbegin();
+    }
+
+    inline
+    const_iterator cbegin() const
+    {
+        return const_iterator{parent_, 0};
+    }
+
+    inline
+    reverse_iterator rbegin()
+    {
+        return reverse_iterator(end());
+    }
+
+    inline
+    const_reverse_iterator rbegin() const
+    {
+        return crbegin();
+    }
+
+    inline
+    const_reverse_iterator crbegin() const
+    {
+        return const_reverse_iterator(cend());
+    }
+
+    inline
+    iterator end()
+    {
+        return iterator(parent_, parent_.get_dim_manager().get_elems_align());
+    }
+
+    inline
+    const_iterator end() const
+    {
+        return cend();
+    }
+
+    inline
+    const_iterator cend() const
+    {
+        return const_iterator(parent_, parent_.get_dim_manager().get_elems_align());
+    }
+
+    inline
+    reverse_iterator rend()
+    {
+        return reverse_iterator(begin());
+    }
+
+    inline
+    const_reverse_iterator rend() const
+    {
+        return crend();
+    }
+
+    inline
+    const_reverse_iterator crend() const
+    {
+        return const_reverse_iterator(cbegin());
     }
 
 private:

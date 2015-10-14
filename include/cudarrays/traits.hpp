@@ -84,30 +84,26 @@ struct array_extents_helper {
     static constexpr unsigned  static_dimensions = dimensions - dynamic_dimensions;
 };
 
-template <typename T, T A, T B>
-struct multiply_static {
-    static constexpr T value = A * B;
-};
-
+// Compile-time array offset generation. It generates N - 1 offsets
 namespace detail {
 
-template <unsigned Dim, typename S, array_size_t... Offset>
+template <typename S, unsigned Dim, array_size_t... Offset>
 struct array_offsets_helper;
 
 template <typename S, array_size_t Offset>
-struct array_offsets_helper<0u, S, Offset> {
+struct array_offsets_helper<S, 0u, Offset> {
     using seq = SEQ_WITH_TYPE(array_size_t);
 };
 
 template <typename S, array_size_t Offset, array_size_t... Offsets>
-struct array_offsets_helper<0u, S, Offset, Offsets...> {
+struct array_offsets_helper<S, 0u, Offset, Offsets...> {
     using seq = SEQ(Offsets...);
 };
 
 template <typename S, unsigned Dim, array_size_t Offset, array_size_t... Offsets>
-struct array_offsets_helper<Dim, S, Offset, Offsets...> {
-    using seq = typename array_offsets_helper<Dim - 1,
-                                              S,
+struct array_offsets_helper<S, Dim, Offset, Offsets...> {
+    using seq = typename array_offsets_helper<S,
+                                              Dim - 1,
                                               Offset * SEQ_AT(S, Dim - 1),
                                               Offset,
                                               Offsets...>::seq;
@@ -116,7 +112,7 @@ struct array_offsets_helper<Dim, S, Offset, Offsets...> {
 }
 
 template <typename S>
-using array_offsets_helper = detail::array_offsets_helper<SEQ_SIZE(S) - 1, S, SEQ_AT(S, SEQ_SIZE(S) - 1)>;
+using array_offsets_helper = detail::array_offsets_helper<S, SEQ_SIZE(S) - 1, SEQ_AT(S, SEQ_SIZE(S) - 1)>;
 
 template <typename T>
 struct array_traits {

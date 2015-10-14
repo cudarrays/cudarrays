@@ -56,7 +56,7 @@ public:
     inline T *
     addr()
     {
-        return reinterpret_cast<T *>(reinterpret_cast<T *>(state_->data_));
+        return reinterpret_cast<T *>(state_->data_);
     }
 
     template <typename T = void>

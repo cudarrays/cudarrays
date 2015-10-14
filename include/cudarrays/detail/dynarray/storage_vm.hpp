@@ -211,14 +211,15 @@ private:
     CUDARRAYS_TESTED(storage_test, vm_page_allocator2)
 };
 
-template <typename T, typename StorageTraits>
-class dynarray_storage<T, storage_tag::VM, StorageTraits> :
-    public dynarray_base<T, StorageTraits::dimensions>
+template <typename StorageTraits>
+class dynarray_storage<storage_tag::VM, StorageTraits> :
+    public dynarray_base<StorageTraits>
 {
-    static constexpr unsigned dimensions = StorageTraits::dimensions;
-
-    using base_storage_type = dynarray_base<T, dimensions>;
+    using base_storage_type = dynarray_base<StorageTraits>;
+    using        value_type = typename base_storage_type::value_type;
     using  dim_manager_type = typename base_storage_type::dim_manager_type;
+
+    static constexpr auto dimensions = base_storage_type::dimensions;
 
     using indexer_type = linearizer_hybrid<typename StorageTraits::offsets_seq>;
 
@@ -302,18 +303,18 @@ public:
         unsigned npages;
         npages = utils::div_ceil(host.size(), system::CUDA_VM_ALIGN.value());
 
-        T *src = dataDev_ - this->get_dim_manager().offset();
-        T *dst = host.base_addr<T>();
+        value_type *src = dataDev_ - this->get_dim_manager().offset();
+        value_type *dst = host.base_addr<value_type>();
         for (array_size_t idx  = 0; idx < npages; ++idx) {
             array_size_t bytesChunk = system::CUDA_VM_ALIGN;
             if ((idx + 1) * system::CUDA_VM_ALIGN > host.size())
                 bytesChunk = host.size() - idx * system::CUDA_VM_ALIGN;
 
-            DEBUG("COPYING TO HOST: %p -> %p (%zd)", &src[(system::CUDA_VM_ALIGN * idx)/sizeof(T)],
-                                                     &dst[(system::CUDA_VM_ALIGN * idx)/sizeof(T)],
+            DEBUG("COPYING TO HOST: %p -> %p (%zd)", &src[(system::CUDA_VM_ALIGN * idx)/sizeof(value_type)],
+                                                     &dst[(system::CUDA_VM_ALIGN * idx)/sizeof(value_type)],
                                                      size_t(bytesChunk));
-            CUDA_CALL(cudaMemcpy(&dst[(system::CUDA_VM_ALIGN * idx)/sizeof(T)],
-                                 &src[(system::CUDA_VM_ALIGN * idx)/sizeof(T)],
+            CUDA_CALL(cudaMemcpy(&dst[(system::CUDA_VM_ALIGN * idx)/sizeof(value_type)],
+                                 &src[(system::CUDA_VM_ALIGN * idx)/sizeof(value_type)],
                                  bytesChunk, cudaMemcpyDeviceToHost));
         }
     }
@@ -324,26 +325,25 @@ public:
         unsigned npages;
         npages = utils::div_ceil(host.size(), system::CUDA_VM_ALIGN.value());
 
-        T *src = host.base_addr<T>();
-        T *dst = dataDev_ - this->get_dim_manager().offset();
+        value_type *src = host.base_addr<value_type>();
+        value_type *dst = dataDev_ - this->get_dim_manager().offset();
         for (array_size_t idx  = 0; idx < npages; ++idx) {
             array_size_t bytesChunk = system::CUDA_VM_ALIGN;
             if ((idx + 1) * system::CUDA_VM_ALIGN > host.size())
                 bytesChunk = host.size() - idx * system::CUDA_VM_ALIGN;
 
-            DEBUG("COPYING TO DEVICE: %p -> %p (%zd)", &src[(system::CUDA_VM_ALIGN * idx)/sizeof(T)],
-                                                       &dst[(system::CUDA_VM_ALIGN * idx)/sizeof(T)],
+            DEBUG("COPYING TO DEVICE: %p -> %p (%zd)", &src[(system::CUDA_VM_ALIGN * idx)/sizeof(value_type)],
+                                                       &dst[(system::CUDA_VM_ALIGN * idx)/sizeof(value_type)],
                                                        size_t(bytesChunk));
-            CUDA_CALL(cudaMemcpy(&dst[(system::CUDA_VM_ALIGN * idx)/sizeof(T)],
-                                 &src[(system::CUDA_VM_ALIGN * idx)/sizeof(T)],
+            CUDA_CALL(cudaMemcpy(&dst[(system::CUDA_VM_ALIGN * idx)/sizeof(value_type)],
+                                 &src[(system::CUDA_VM_ALIGN * idx)/sizeof(value_type)],
                                  bytesChunk, cudaMemcpyHostToDevice));
         }
     }
 
     __host__
-    dynarray_storage(const extents<dimensions> &ext,
-                     const align_t &align) :
-        base_storage_type{ext, align},
+    dynarray_storage(const extents<dimensions> &ext) :
+        base_storage_type{ext},
         dataDev_{nullptr},
         hostInfo_{nullptr}
     {
@@ -363,11 +363,11 @@ public:
 #ifndef __CUDA_ARCH__
         if (dataDev_ != NULL) {
             // Get base address
-            T *data = dataDev_ - this->get_dim_manager().offset();
+            value_type *data = dataDev_ - this->get_dim_manager().offset();
 
             // Free each page in GPU memory
             for (auto idx : utils::make_range(hostInfo_->npages)) {
-                CUDA_CALL(cudaFree(&data[system::vm_cuda_align_elems<T>() * idx]));
+                CUDA_CALL(cudaFree(&data[system::vm_cuda_align_elems<value_type>() * idx]));
             }
         }
 #endif
@@ -375,7 +375,7 @@ public:
 
     template <typename... Idxs>
     __device__ inline
-    T &access_pos(Idxs&&... idxs)
+    value_type &access_pos(Idxs&&... idxs)
     {
         auto idx = indexer_type::access_pos(this->get_dim_manager().get_strides(), std::forward<Idxs>(idxs)...);
         return dataDev_[idx];
@@ -383,7 +383,7 @@ public:
 
     template <typename... Idxs>
     __device__ inline
-    const T &access_pos(Idxs&&... idxs) const
+    const value_type &access_pos(Idxs&&... idxs) const
     {
         auto idx = indexer_type::access_pos(this->get_dim_manager().get_strides(), std::forward<Idxs>(idxs)...);
         return dataDev_[idx];
@@ -409,7 +409,7 @@ private:
                             elemsAlign,
                             hostInfo_->localDims,
                             hostInfo_->arrayDimToGpus,
-                            system::vm_cuda_align_elems<T>());
+                            system::vm_cuda_align_elems<value_type>());
 
         char *last = NULL, *curr = NULL;
 
@@ -432,7 +432,7 @@ private:
                   curr, page.gpu, unsigned(ret.first), size_t(ret.second.get_total()));
 
             if (last == NULL) {
-                dataDev_ = (T *) curr;
+                dataDev_ = (value_type *) curr;
             } else {
                 // Check if the driver is allocating contiguous virtual addresses
                 ASSERT(last + system::CUDA_VM_ALIGN == curr);
@@ -499,7 +499,7 @@ private:
         DEBUG("- array grid offsets: %s", arrayDimToGpus);
     }
 
-    T *dataDev_;
+    value_type *dataDev_;
 
     std::unique_ptr<storage_host_info> hostInfo_;
 

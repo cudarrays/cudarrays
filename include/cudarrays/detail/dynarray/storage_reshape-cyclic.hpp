@@ -37,16 +37,17 @@
 
 namespace cudarrays {
 
-template <typename T, typename StorageTraits>
-class dynarray_storage<T, storage_tag::RESHAPE_CYCLIC, StorageTraits> :
-    public dynarray_base<T, StorageTraits::dimensions>
+template <typename StorageTraits>
+class dynarray_storage<storage_tag::RESHAPE_CYCLIC, StorageTraits> :
+    public dynarray_base<StorageTraits>
 {
-    static constexpr unsigned dimensions = StorageTraits::dimensions;
+    using base_storage_type = dynarray_base<StorageTraits>;
+    using        value_type = typename base_storage_type::value_type;
+    using  dim_manager_type = typename base_storage_type::dim_manager_type;
+
+    static constexpr auto dimensions = base_storage_type::dimensions;
 
     using PartConf = storage_part_dim_helper<StorageTraits::partition_value, dimensions>;
-
-    using base_storage_type = dynarray_base<T, dimensions>;
-    using  dim_manager_type = typename base_storage_type::dim_manager_type;
 
     using indexer_type = index_cyclic<typename StorageTraits::offsets_seq,
                                       typename StorageTraits::partitioning_seq>;
@@ -79,8 +80,8 @@ class dynarray_storage<T, storage_tag::RESHAPE_CYCLIC, StorageTraits> :
                     // Set the device where data is allocated
                     CUDA_CALL(cudaSetDevice(gpu));
                     // Perform memory allocation
-                    T *tmp;
-                    CUDA_CALL(cudaMalloc((void **) &tmp, hostInfo_->elemsLocal * sizeof(T)));
+                    value_type *tmp;
+                    CUDA_CALL(cudaMalloc((void **) &tmp, hostInfo_->elemsLocal * sizeof(value_type)));
                     if (idx == 0) {
                         // Initialize the base address of the allocation
                         dataDev_ = tmp;
@@ -89,7 +90,7 @@ class dynarray_storage<T, storage_tag::RESHAPE_CYCLIC, StorageTraits> :
                         ASSERT(dataDev_ + linear * hostInfo_->elemsLocal == tmp);
                     }
 
-                    DEBUG("- allocated %p (%zd) in GPU %u", tmp, hostInfo_->elemsLocal * sizeof(T), gpu);
+                    DEBUG("- allocated %p (%zd) in GPU %u", tmp, hostInfo_->elemsLocal * sizeof(value_type), gpu);
                 }
             }
         }
@@ -133,7 +134,7 @@ public:
         std::array<array_size_t, dimensions - 1> localOffs = helper_distribution_get_local_offs(localDims);
         utils::copy(localOffs, localOffs_);
         // 5- Compute elements of each tile
-        array_size_t elemsLocal = helper_distribution_get_local_elems(localDims, system::vm_cuda_align_elems<T>());
+        array_size_t elemsLocal = helper_distribution_get_local_elems(localDims, system::vm_cuda_align_elems<value_type>());
         hostInfo_->elemsLocal = elemsLocal;
         // 6- Compute the inter-GPU array offsets for each dimension (iterate from lowest-order dimension)
         std::array<array_size_t, dimensions> gpuOffs = helper_distribution_get_intergpu_offs(elemsLocal, utils::make_array(arrayPartitionGrid_), arrayDimToCompDim);
@@ -197,7 +198,7 @@ public:
         std::array<array_size_t, dimensions - 1> localOffs = helper_distribution_get_local_offs(localDims);
         utils::copy(localOffs, localOffs_);
         // 5- Compute elements of each tile
-        array_size_t elemsLocal = helper_distribution_get_local_elems(localDims, system::vm_cuda_align_elems<T>());
+        array_size_t elemsLocal = helper_distribution_get_local_elems(localDims, system::vm_cuda_align_elems<value_type>());
         hostInfo_->elemsLocal = elemsLocal;
         // 6- Compute the inter-GPU array offsets for each dimension (iterate from lowest-order dimension)
         std::array<array_size_t, dimensions> gpuOffs = helper_distribution_get_intergpu_offs(elemsLocal, arrayPartitionGrid, arrayDimToCompDim);
@@ -275,7 +276,7 @@ public:
     }
 
 private:
-    T *dataDev_;
+    value_type *dataDev_;
 
     array_size_t arrayPartitionGrid_[dimensions];
     array_size_t localOffs_[dimensions - 1];
@@ -299,10 +300,9 @@ private:
 
 public:
     __host__
-    dynarray_storage(const extents<dimensions> &ext,
-                  const align_t &align) :
-        base_storage_type(ext, align),
-        dataDev_(nullptr)
+    dynarray_storage(const extents<dimensions> &ext) :
+        base_storage_type(ext),
+        dataDev_{nullptr}
     {
     }
 
@@ -323,7 +323,7 @@ public:
     {
         TRACE_FUNCTION();
 
-        T *unaligned = host.addr<T>();
+        value_type *unaligned = host.addr<value_type>();
         auto &dimMgr = this->get_dim_manager();
 
         unsigned partZ = (dimensions > 2)? arrayPartitionGrid_[dim_manager_type::DimIdxZ]: 1;
@@ -333,7 +333,7 @@ public:
         cudaMemcpy3DParms myParms;
         memset(&myParms, 0, sizeof(myParms));
         myParms.dstPtr = make_cudaPitchedPtr(unaligned,
-                                             sizeof(T) * dimMgr.dim_align(dim_manager_type::DimIdxX),
+                                             sizeof(value_type) * dimMgr.dim_align(dim_manager_type::DimIdxX),
                                                          dimMgr.dim_align(dim_manager_type::DimIdxX),
                                              dimensions > 1? dimMgr.dim_align(dim_manager_type::DimIdxY): 1);
 
@@ -359,14 +359,14 @@ public:
                                                             pX *                  gpuOffs_[dim_manager_type::DimIdxX]);
 
                     myParms.srcPtr = make_cudaPitchedPtr(dataDev_ + blockOff,
-                                                         sizeof(T) * hostInfo_->localDims_[dim_manager_type::DimIdxX],
-                                                                     hostInfo_->localDims_[dim_manager_type::DimIdxX],
+                                                         sizeof(value_type) * hostInfo_->localDims_[dim_manager_type::DimIdxX],
+                                                                              hostInfo_->localDims_[dim_manager_type::DimIdxX],
                                                          dimensions > 1? hostInfo_->localDims_[dim_manager_type::DimIdxY]: 1);
 
                     // We copy the whole chunk
                     myParms.srcPos = make_cudaPos(0, 0, 0);
 
-                    myParms.dstPos = make_cudaPos(sizeof(T) * pX * localX,
+                    myParms.dstPos = make_cudaPos(sizeof(value_type) * pX * localX,
                                                   pY * localY,
                                                   pZ * localZ);
 
@@ -381,9 +381,9 @@ public:
                     if (localZ < 1 || localY < 1 || localZ < 1) continue;
 
                     DEBUG("TO_HOST: Extent: (%u %u %u)",
-                          sizeof(T) * localX, localY, localZ);
+                          sizeof(value_type) * localX, localY, localZ);
 
-                    myParms.extent = make_cudaExtent(sizeof(T) * localX,
+                    myParms.extent = make_cudaExtent(sizeof(value_type) * localX,
                                                      localY,
                                                      localZ);
 
@@ -400,7 +400,7 @@ public:
     {
         TRACE_FUNCTION();
 
-        T *unaligned = host.addr<T>();
+        value_type *unaligned = host.addr<value_type>();
         auto &dimMgr = this->get_dim_manager();
 
         unsigned partZ = (dimensions > 2)? arrayPartitionGrid_[dim_manager_type::DimIdxZ]: 1;
@@ -410,8 +410,8 @@ public:
         cudaMemcpy3DParms myParms;
         memset(&myParms, 0, sizeof(myParms));
         myParms.srcPtr = make_cudaPitchedPtr(unaligned,
-                                             sizeof(T) * dimMgr.dim_align(dim_manager_type::DimIdxX),
-                                                         dimMgr.dim_align(dim_manager_type::DimIdxX),
+                                             sizeof(value_type) * dimMgr.dim_align(dim_manager_type::DimIdxX),
+                                                                  dimMgr.dim_align(dim_manager_type::DimIdxX),
                                              dimensions > 1? dimMgr.dim_align(dim_manager_type::DimIdxY): 1);
 
         for (unsigned pZ : utils::make_range(partZ)) {
@@ -438,14 +438,14 @@ public:
                           pX * localX);
 
                     myParms.dstPtr = make_cudaPitchedPtr(dataDev_ + blockOff,
-                                                         sizeof(T) * hostInfo_->localDims_[dim_manager_type::DimIdxX],
-                                                                     hostInfo_->localDims_[dim_manager_type::DimIdxX],
+                                                         sizeof(value_type) * hostInfo_->localDims_[dim_manager_type::DimIdxX],
+                                                                              hostInfo_->localDims_[dim_manager_type::DimIdxX],
                                                          dimensions > 1?   hostInfo_->localDims_[dim_manager_type::DimIdxY]: 1);
 
                     // We copy the whole chunk
                     myParms.dstPos = make_cudaPos(0, 0, 0);
 
-                    myParms.srcPos = make_cudaPos(sizeof(T) * pX * localX,
+                    myParms.srcPos = make_cudaPos(sizeof(value_type) * pX * localX,
                                                   pY * localY,
                                                   pZ * localZ);
                     // TODO: Check if this is necessary. If so, use it in to_host and the rest of implementations
@@ -465,9 +465,9 @@ public:
                     localX = std::min(localX, array_index_t(dimMgr.dim_align(dim_manager_type::DimIdxX) - pX * localX));
 
                     DEBUG("TO_DEVICE: Extent: (%u %u %u)",
-                          sizeof(T) * localX, localY, localZ);
+                          sizeof(value_type) * localX, localY, localZ);
 
-                    myParms.extent = make_cudaExtent(sizeof(T) * localX,
+                    myParms.extent = make_cudaExtent(sizeof(value_type) * localX,
                                                      localY,
                                                      localZ);
 
@@ -486,7 +486,7 @@ public:
 
     template <typename... Idxs>
     __device__ inline
-    T &access_pos(Idxs... idxs)
+    value_type &access_pos(Idxs... idxs)
     {
         array_index_t idx;
         idx = indexer_type::access_pos(localOffs_, arrayPartitionGrid_,
@@ -497,7 +497,7 @@ public:
 
     template <typename... Idxs>
     __device__ inline
-    const T &access_pos(Idxs... idxs) const
+    const value_type &access_pos(Idxs... idxs) const
     {
         array_index_t idx;
         idx = indexer_type::access_pos(localOffs_, arrayPartitionGrid_,

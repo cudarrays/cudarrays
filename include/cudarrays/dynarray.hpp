@@ -75,7 +75,7 @@ struct fake_shared_ptr {
     }
 
     template <typename Deleter>
-    void reset(T *ptr, Deleter deleter)
+    void reset(T *, Deleter )
     {
     }
 
@@ -387,8 +387,9 @@ public:
 };
 
 template <typename T,
-          typename StorageType = layout::rmo,
-          typename PartConf = automatic::none,
+          typename StorageType     = layout::rmo,
+          typename Align           = noalign,
+          typename PartConf        = automatic::none,
           typename CoherencePolicy = default_coherence>
 class dynarray :
     public coherent {
@@ -398,8 +399,11 @@ class dynarray :
 
 public:
     using            array_type = T;
+    using        alignment_type = Align;
     using     array_traits_type = array_traits<array_type>;
-    using   storage_traits_type = storage_traits<array_type, StorageType, PartConf>;
+    using   storage_traits_type = storage_traits<array_type, StorageType, alignment_type, PartConf>;
+
+    static constexpr bool has_alignment = alignment_type::alignment > 1;
 
     using         permuter_type = typename storage_traits_type::permuter_type;
 
@@ -408,8 +412,7 @@ public:
     using coherence_policy_type = CoherencePolicy;
     using          indexer_type = linearizer_hybrid<typename storage_traits_type::offsets_seq>;
 
-    using device_storage_type = dynarray_storage<value_type,
-                                                 PartConf::final_impl,
+    using device_storage_type = dynarray_storage<PartConf::final_impl,
                                                  storage_traits_type>;
 
     static constexpr auto dimensions = array_traits_type::dimensions;
@@ -421,19 +424,17 @@ public:
     using const_dim_iterator_type = array_dim_iterator_facade<dynarray, true>;
 
     static dynarray *make(const extents<array_traits_type::dynamic_dimensions> &ext,
-                          const align_t &align,
                           coherence_policy_type coherence)
     {
-        return new dynarray(ext, align, coherence);
+        return new dynarray(ext, coherence);
     }
 
 private:
     __host__
     explicit dynarray(const extents<array_traits_type::dynamic_dimensions> &extents,
-                      const align_t &align,
                       coherence_policy_type coherence) :
         coherencePolicy_{coherence},
-        device_(permuter_type::reorder(array_traits_type::make_extents(extents)), align)
+        device_(permuter_type::reorder(array_traits_type::make_extents(extents)))
     {
         // LIBRARY ENTRY POINT
         cudarrays_entry_point();
@@ -507,14 +508,16 @@ public:
         return coherencePolicy_;
     }
 
+    inline
     void *host_addr()
     {
-        return host_.base_addr();
+        return host_.addr();
     }
 
+    inline
     const void *host_addr() const
     {
-        return host_.base_addr();
+        return host_.addr();
     }
 
     size_t size() const
@@ -530,6 +533,13 @@ public:
     void to_host()
     {
         device_.to_host(host_);
+    }
+
+    inline
+    const dim_manager<value_type, alignment_type, dimensions> &
+    get_dim_manager() const
+    {
+        return device_.get_dim_manager();
     }
 
     //
@@ -643,85 +653,86 @@ private:
 };
 
 template <typename T,
-          typename StorageType = layout::rmo,
-          typename PartConf = automatic::none,
+          typename StorageType     = layout::rmo,
+          typename Align           = noalign,
+          typename PartConf        = automatic::none,
           typename CoherencePolicy = default_coherence,
-          unsigned Dims = array_traits<T>::dimensions,
-          unsigned DynDims = array_traits<T>::dynamic_dimensions>
+          unsigned Dims            = array_traits<T>::dimensions,
+          unsigned DynDims         = array_traits<T>::dynamic_dimensions>
 inline
 utils::enable_if_t<
     utils::is_greater(Dims, 1u) &&
     utils::is_greater(DynDims, 0u),
-    dynarray_view<dynarray<T, StorageType, PartConf, CoherencePolicy>>
+    dynarray_view<dynarray<T, StorageType, Align, PartConf, CoherencePolicy>>
 >
 make_array(const extents<DynDims> &ext,
-           const align_t &align = align_t{},
            const CoherencePolicy &coherence = CoherencePolicy{})
 {
-    using dynarray_type = dynarray<T, StorageType, PartConf, CoherencePolicy>;
-    auto *ret = dynarray_type::make(ext, align, coherence);
+    using dynarray_type = dynarray<T, StorageType, Align, PartConf, CoherencePolicy>;
+    auto *ret = dynarray_type::make(ext, coherence);
     return dynarray_view<dynarray_type>{ret};
 }
 
 template <typename T,
-          typename StorageType = layout::rmo,
-          typename PartConf = automatic::none,
+          typename StorageType     = layout::rmo,
+          typename Align           = noalign,
+          typename PartConf        = automatic::none,
           typename CoherencePolicy = default_coherence,
-          unsigned Dims = array_traits<T>::dimensions,
-          unsigned DynDims = array_traits<T>::dynamic_dimensions>
+          unsigned Dims            = array_traits<T>::dimensions,
+          unsigned DynDims         = array_traits<T>::dynamic_dimensions>
 inline
 utils::enable_if_t<
     utils::is_greater(Dims, 1u) &&
     utils::is_equal(DynDims, 0u),
-    dynarray_view<dynarray<T, StorageType, PartConf, CoherencePolicy>>
+    dynarray_view<dynarray<T, StorageType, Align, PartConf, CoherencePolicy>>
 >
 make_array(const CoherencePolicy &coherence = CoherencePolicy{})
 {
-    using dynarray_type = dynarray<T, StorageType, PartConf, CoherencePolicy>;
+    using dynarray_type = dynarray<T, StorageType, Align, PartConf, CoherencePolicy>;
     extents<0> ext;
-    auto *ret = dynarray_type::make(ext, align_t{0}, coherence);
+    auto *ret = dynarray_type::make(ext, coherence);
     return dynarray_view<dynarray_type>{ret};
 }
 
 template <typename T,
-          typename PartConf = automatic::none,
+          typename Align           = noalign,
+          typename PartConf        = automatic::none,
           typename CoherencePolicy = default_coherence,
-          unsigned Dims = array_traits<T>::dimensions,
-          unsigned DynDims = array_traits<T>::dynamic_dimensions>
+          unsigned Dims            = array_traits<T>::dimensions,
+          unsigned DynDims         = array_traits<T>::dynamic_dimensions>
 inline
 utils::enable_if_t<
     utils::is_equal(Dims, 1u) &&
     utils::is_greater(DynDims, 0u),
-    dynarray_view<dynarray<T, layout::rmo, PartConf, CoherencePolicy>>
+    dynarray_view<dynarray<T, layout::rmo, Align, PartConf, CoherencePolicy>>
 >
 make_array(const extents<DynDims> &ext,
-           const align_t &align = align_t{},
            const CoherencePolicy &coherence = CoherencePolicy{})
 {
-    using dynarray_type = dynarray<T, layout::rmo, PartConf, CoherencePolicy>;
-    auto *ret = dynarray_type::make(ext, align, coherence);
+    using dynarray_type = dynarray<T, layout::rmo, Align, PartConf, CoherencePolicy>;
+    auto *ret = dynarray_type::make(ext, coherence);
     return dynarray_view<dynarray_type>{ret};
 }
 
 template <typename T,
-          typename PartConf = automatic::none,
+          typename Align           = noalign,
+          typename PartConf        = automatic::none,
           typename CoherencePolicy = default_coherence,
-          unsigned Dims = array_traits<T>::dimensions,
-          unsigned DynDims = array_traits<T>::dynamic_dimensions>
+          unsigned Dims            = array_traits<T>::dimensions,
+          unsigned DynDims         = array_traits<T>::dynamic_dimensions>
 inline
 utils::enable_if_t<
     utils::is_equal(Dims, 1u) &&
     utils::is_equal(DynDims, 0u),
-    dynarray_view<dynarray<T, layout::rmo, PartConf, CoherencePolicy>>
+    dynarray_view<dynarray<T, layout::rmo, Align, PartConf, CoherencePolicy>>
 >
 make_array(const CoherencePolicy &coherence = CoherencePolicy{})
 {
-    using dynarray_type = dynarray<T, layout::rmo, PartConf, CoherencePolicy>;
+    using dynarray_type = dynarray<T, layout::rmo, Align, PartConf, CoherencePolicy>;
     extents<0> ext;
-    auto *ret = dynarray_type::make(ext, align_t{0}, coherence);
+    auto *ret = dynarray_type::make(ext, coherence);
     return dynarray_view<dynarray_type>{ret};
 }
-
 
 }
 

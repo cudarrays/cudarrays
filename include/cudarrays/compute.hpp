@@ -57,8 +57,8 @@ struct compute_part_helper<1> {
     make_array(cudarrays::compute c)
     {
         std::array<bool, 1> ret;
-        if (c == cudarrays::compute::none)   ret = { false };
-        else if (c == cudarrays::compute::x) ret = { true  };
+        if (c == cudarrays::compute::none)   ret = {{ false }};
+        else if (c == cudarrays::compute::x) ret = {{ true  }};
         else abort();
         return ret;
     }
@@ -70,10 +70,10 @@ struct compute_part_helper<2> {
     make_array(cudarrays::compute c)
     {
         std::array<bool, 2> ret;
-        if (c == cudarrays::compute::none)    ret = { false, false };
-        else if (c == cudarrays::compute::x)  ret = { false, true  };
-        else if (c == cudarrays::compute::y)  ret = { true, false  };
-        else if (c == cudarrays::compute::xy) ret = { true, true   };
+        if (c == cudarrays::compute::none)    ret = {{ false, false }};
+        else if (c == cudarrays::compute::x)  ret = {{ false, true  }};
+        else if (c == cudarrays::compute::y)  ret = {{ true, false  }};
+        else if (c == cudarrays::compute::xy) ret = {{ true, true   }};
         else abort();
         return ret;
     }
@@ -85,14 +85,14 @@ struct compute_part_helper<3> {
     make_array(cudarrays::compute c)
     {
         std::array<bool, 3> ret;
-        if (c == cudarrays::compute::none)     ret = { false, false, false };
-        else if (c == cudarrays::compute::x)   ret = { false, false, true  };
-        else if (c == cudarrays::compute::y)   ret = { false, true,  false };
-        else if (c == cudarrays::compute::z)   ret = { true,  false, false };
-        else if (c == cudarrays::compute::xy)  ret = { false, true,  true  };
-        else if (c == cudarrays::compute::xz)  ret = { true,  false, true  };
-        else if (c == cudarrays::compute::yz)  ret = { true,  true,  false };
-        else if (c == cudarrays::compute::xyz) ret = { true,  true,  true  };
+        if (c == cudarrays::compute::none)     ret = {{ false, false, false }};
+        else if (c == cudarrays::compute::x)   ret = {{ false, false, true  }};
+        else if (c == cudarrays::compute::y)   ret = {{ false, true,  false }};
+        else if (c == cudarrays::compute::z)   ret = {{ true,  false, false }};
+        else if (c == cudarrays::compute::xy)  ret = {{ false, true,  true  }};
+        else if (c == cudarrays::compute::xz)  ret = {{ true,  false, true  }};
+        else if (c == cudarrays::compute::yz)  ret = {{ true,  true,  false }};
+        else if (c == cudarrays::compute::xyz) ret = {{ true,  true,  true  }};
         else abort();
         return ret;
     }

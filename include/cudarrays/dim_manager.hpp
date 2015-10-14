@@ -35,31 +35,22 @@
 
 namespace cudarrays {
 
-struct align_t {
-    array_size_t alignment;
-    array_size_t position;
-
-    align_t(array_size_t alignment_= 1,
-            array_size_t position_ = 0) :
-        alignment(alignment_),
-        position(position_)
-    {
-    }
-
+template <typename Align>
+struct aligner {
     std::tuple<array_size_t, array_size_t>
-    align(array_size_t dim) const
+    static align(array_size_t dim)
     {
         array_size_t offset;
         array_size_t sizeAlign;
 
         offset = 0;
-        if (alignment > 1) {
-            if (position > alignment) {
-                offset = utils::round_next(position, alignment) - position;
-            } else if (position > 0) {
-                offset = alignment - position;
+        if (Align::alignment > 1) {
+            if (Align::offset > Align::alignment) {
+                offset = utils::round_next(Align::offset, Align::alignment) - Align::offset;
+            } else if (Align::offset > 0) {
+                offset = Align::alignment - Align::offset;
             }
-            sizeAlign = utils::round_next(dim + offset, alignment);
+            sizeAlign = utils::round_next(dim + offset, Align::alignment);
         } else {
             sizeAlign = dim;
         }
@@ -68,7 +59,7 @@ struct align_t {
     }
 };
 
-template <typename T, unsigned Dims>
+template <typename T, typename Align, unsigned Dims>
 class dim_manager {
 public:
     static constexpr unsigned FirstDim = 3 - Dims;
@@ -78,8 +69,7 @@ public:
     static constexpr unsigned DimIdxX = 2 - FirstDim;
 
     __host__
-    dim_manager(const extents<Dims> &ext,
-                const align_t &align)
+    dim_manager(const extents<Dims> &ext)
     {
         ASSERT(ext.size() == Dims);
 
@@ -87,7 +77,7 @@ public:
         utils::copy(ext, sizes_);
 
         // Compute offset and aligned size of the lowest order dimension
-        std::tie(offset_, sizeAlign_) = align.align(ext[Dims - 1]);
+        std::tie(offset_, sizeAlign_) = aligner<Align>::align(ext[Dims - 1]);
 
         // Fill offsets' array
         array_size_t nextStride = sizeAlign_;

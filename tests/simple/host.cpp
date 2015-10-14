@@ -160,117 +160,8 @@ launch_test_vecadd_base_static()
     delete [] &C;
 
     return true;
-
 }
 
-bool
-launch_test_vecadd_iterator()
-{
-    static constexpr const array_size_t ELEMS_X = VOLADD_ELEMS_X[INPUTSET];
-    static constexpr const array_size_t ELEMS_Y = VOLADD_ELEMS_Y[INPUTSET];
-    static constexpr const array_size_t ELEMS_Z = VOLADD_ELEMS_Z[INPUTSET];
-
-    auto A = make_array<float ***>({ELEMS_Z, ELEMS_Y, ELEMS_X});
-    auto B = make_array<float ***>({ELEMS_Z, ELEMS_Y, ELEMS_X});
-    auto C = make_array<float ***>({ELEMS_Z, ELEMS_Y, ELEMS_X});
-
-    for (auto plane : A.dim_iterator()) {
-        for (auto row : plane) {
-            for (auto &col : row) {
-                col = 1.f;
-            }
-        }
-    }
-
-    for (auto plane : B.dim_iterator()) {
-        for (auto row : plane) {
-            for (auto &col : row) {
-                col = 2.f;
-            }
-        }
-    }
-
-    for (auto plane : C.dim_iterator()) {
-        for (auto row : plane) {
-            for (auto &col : row) {
-                col = 0.f;
-            }
-        }
-    }
-
-    for (unsigned i = 0; i < ELEMS_Z; ++i) {
-        for (unsigned j = 0; j < ELEMS_Y; ++j) {
-            for (unsigned k = 0; k < ELEMS_X; ++k) {
-                C(i, j, k) = A(i, j, k) + B(i, j, k);
-            }
-        }
-    }
-
-    for (auto plane : C.dim_iterator()) {
-        for (auto row : plane) {
-            for (auto col : row) {
-                assert(col == 3.f);
-            }
-        }
-    }
-
-
-    return true;
-}
-
-bool
-launch_test_vecadd_iterator_static()
-{
-    static constexpr const array_size_t ELEMS_X = VOLADD_ELEMS_X[INPUTSET];
-    static constexpr const array_size_t ELEMS_Y = VOLADD_ELEMS_Y[INPUTSET];
-    static constexpr const array_size_t ELEMS_Z = VOLADD_ELEMS_Z[INPUTSET];
-
-    auto A = make_array<float [ELEMS_Z][ELEMS_Y][ELEMS_X]>();
-    auto B = make_array<float [ELEMS_Z][ELEMS_Y][ELEMS_X]>();
-    auto C = make_array<float [ELEMS_Z][ELEMS_Y][ELEMS_X]>();
-
-    for (auto plane : A.dim_iterator()) {
-        for (auto row : plane) {
-            for (auto &col : row) {
-                col = 1.f;
-            }
-        }
-    }
-
-    for (auto plane : B.dim_iterator()) {
-        for (auto row : plane) {
-            for (auto &col : row) {
-                col = 2.f;
-            }
-        }
-    }
-
-    for (auto plane : C.dim_iterator()) {
-        for (auto row : plane) {
-            for (auto &col : row) {
-                col = 0.f;
-            }
-        }
-    }
-
-    for (unsigned i = 0; i < ELEMS_Z; ++i) {
-        for (unsigned j = 0; j < ELEMS_Y; ++j) {
-            for (unsigned k = 0; k < ELEMS_X; ++k) {
-                C(i, j, k) = A(i, j, k) + B(i, j, k);
-            }
-        }
-    }
-
-    for (auto plane : C.dim_iterator()) {
-        for (auto row : plane) {
-            for (auto col : row) {
-                assert(col == 3.f);
-            }
-        }
-    }
-
-    return true;
-}
 
 bool
 launch_test_vecadd()
@@ -279,9 +170,9 @@ launch_test_vecadd()
     static constexpr const array_size_t ELEMS_Y = VOLADD_ELEMS_Y[INPUTSET];
     static constexpr const array_size_t ELEMS_Z = VOLADD_ELEMS_Z[INPUTSET];
 
-    auto A = make_array<float ***>({ELEMS_Z, ELEMS_Y, ELEMS_X});
-    auto B = make_array<float ***>({ELEMS_Z, ELEMS_Y, ELEMS_X});
-    auto C = make_array<float ***>({ELEMS_Z, ELEMS_Y, ELEMS_X});
+    auto A = make_array<float ***>({{ELEMS_Z, ELEMS_Y, ELEMS_X}});
+    auto B = make_array<float ***>({{ELEMS_Z, ELEMS_Y, ELEMS_X}});
+    auto C = make_array<float ***>({{ELEMS_Z, ELEMS_Y, ELEMS_X}});
 
     for (unsigned i = 0; i < ELEMS_Z; ++i) {
         for (unsigned j = 0; j < ELEMS_Y; ++j) {
@@ -376,6 +267,187 @@ launch_test_vecadd_static()
     return true;
 }
 
+bool
+launch_test_vecadd_iterator()
+{
+    static constexpr const array_size_t ELEMS_X = VOLADD_ELEMS_X[INPUTSET];
+    static constexpr const array_size_t ELEMS_Y = VOLADD_ELEMS_Y[INPUTSET];
+    static constexpr const array_size_t ELEMS_Z = VOLADD_ELEMS_Z[INPUTSET];
+
+    auto A = make_array<float ***>({{ELEMS_Z, ELEMS_Y, ELEMS_X}});
+    auto B = make_array<float ***>({{ELEMS_Z, ELEMS_Y, ELEMS_X}});
+    auto C = make_array<float ***>({{ELEMS_Z, ELEMS_Y, ELEMS_X}});
+
+    auto valuesA = A.value_iterator();
+    std::fill(valuesA.begin(), valuesA.end(), 1.f);
+
+    auto valuesB = B.value_iterator();
+    std::fill(valuesB.begin(), valuesB.end(), 2.f);
+
+    auto valuesC = C.value_iterator();
+    std::fill(valuesC.begin(), valuesC.end(), 0.f);
+
+    for (unsigned i = 0; i < ELEMS_Z; ++i) {
+        for (unsigned j = 0; j < ELEMS_Y; ++j) {
+            for (unsigned k = 0; k < ELEMS_X; ++k) {
+                C(i, j, k) = A(i, j, k) + B(i, j, k);
+            }
+        }
+    }
+
+    bool ok = std::all_of(valuesC.begin(), valuesC.end(),
+                          [](float v) { return v == 3.f; });
+    assert(ok);
+
+    return true;
+}
+
+bool
+launch_test_vecadd_iterator_static()
+{
+    static constexpr const array_size_t ELEMS_X = VOLADD_ELEMS_X[INPUTSET];
+    static constexpr const array_size_t ELEMS_Y = VOLADD_ELEMS_Y[INPUTSET];
+    static constexpr const array_size_t ELEMS_Z = VOLADD_ELEMS_Z[INPUTSET];
+
+    auto A = make_array<float [ELEMS_Z][ELEMS_Y][ELEMS_X]>();
+    auto B = make_array<float [ELEMS_Z][ELEMS_Y][ELEMS_X]>();
+    auto C = make_array<float [ELEMS_Z][ELEMS_Y][ELEMS_X]>();
+
+    auto valuesA = A.value_iterator();
+    std::fill(valuesA.begin(), valuesA.end(), 1.f);
+
+    auto valuesB = B.value_iterator();
+    std::fill(valuesB.begin(), valuesB.end(), 2.f);
+
+    auto valuesC = C.value_iterator();
+    std::fill(valuesC.begin(), valuesC.end(), 0.f);
+
+    for (unsigned i = 0; i < ELEMS_Z; ++i) {
+        for (unsigned j = 0; j < ELEMS_Y; ++j) {
+            for (unsigned k = 0; k < ELEMS_X; ++k) {
+                C(i, j, k) = A(i, j, k) + B(i, j, k);
+            }
+        }
+    }
+
+    bool ok = std::all_of(valuesC.begin(), valuesC.end(),
+                          [](float v) { return v == 3.f; });
+    assert(ok);
+
+
+    return true;
+}
+
+
+bool
+launch_test_vecadd_dim_iterator()
+{
+    static constexpr const array_size_t ELEMS_X = VOLADD_ELEMS_X[INPUTSET];
+    static constexpr const array_size_t ELEMS_Y = VOLADD_ELEMS_Y[INPUTSET];
+    static constexpr const array_size_t ELEMS_Z = VOLADD_ELEMS_Z[INPUTSET];
+
+    auto A = make_array<float ***>({{ELEMS_Z, ELEMS_Y, ELEMS_X}});
+    auto B = make_array<float ***>({{ELEMS_Z, ELEMS_Y, ELEMS_X}});
+    auto C = make_array<float ***>({{ELEMS_Z, ELEMS_Y, ELEMS_X}});
+
+    for (auto plane : A.dim_iterator()) {
+        for (auto row : plane) {
+            for (auto &col : row) {
+                col = 1.f;
+            }
+        }
+    }
+
+    for (auto plane : B.dim_iterator()) {
+        for (auto row : plane) {
+            for (auto &col : row) {
+                col = 2.f;
+            }
+        }
+    }
+
+    for (auto plane : C.dim_iterator()) {
+        for (auto row : plane) {
+            for (auto &col : row) {
+                col = 0.f;
+            }
+        }
+    }
+
+    for (unsigned i = 0; i < ELEMS_Z; ++i) {
+        for (unsigned j = 0; j < ELEMS_Y; ++j) {
+            for (unsigned k = 0; k < ELEMS_X; ++k) {
+                C(i, j, k) = A(i, j, k) + B(i, j, k);
+            }
+        }
+    }
+
+    for (auto plane : C.dim_iterator()) {
+        for (auto row : plane) {
+            for (auto col : row) {
+                assert(col == 3.f);
+            }
+        }
+    }
+
+
+    return true;
+}
+
+bool
+launch_test_vecadd_dim_iterator_static()
+{
+    static constexpr const array_size_t ELEMS_X = VOLADD_ELEMS_X[INPUTSET];
+    static constexpr const array_size_t ELEMS_Y = VOLADD_ELEMS_Y[INPUTSET];
+    static constexpr const array_size_t ELEMS_Z = VOLADD_ELEMS_Z[INPUTSET];
+
+    auto A = make_array<float [ELEMS_Z][ELEMS_Y][ELEMS_X]>();
+    auto B = make_array<float [ELEMS_Z][ELEMS_Y][ELEMS_X]>();
+    auto C = make_array<float [ELEMS_Z][ELEMS_Y][ELEMS_X]>();
+
+    for (auto plane : A.dim_iterator()) {
+        for (auto row : plane) {
+            for (auto &col : row) {
+                col = 1.f;
+            }
+        }
+    }
+
+    for (auto plane : B.dim_iterator()) {
+        for (auto row : plane) {
+            for (auto &col : row) {
+                col = 2.f;
+            }
+        }
+    }
+
+    for (auto plane : C.dim_iterator()) {
+        for (auto row : plane) {
+            for (auto &col : row) {
+                col = 0.f;
+            }
+        }
+    }
+
+    for (unsigned i = 0; i < ELEMS_Z; ++i) {
+        for (unsigned j = 0; j < ELEMS_Y; ++j) {
+            for (unsigned k = 0; k < ELEMS_X; ++k) {
+                C(i, j, k) = A(i, j, k) + B(i, j, k);
+            }
+        }
+    }
+
+    for (auto plane : C.dim_iterator()) {
+        for (auto row : plane) {
+            for (auto col : row) {
+                assert(col == 3.f);
+            }
+        }
+    }
+
+    return true;
+}
+
 int main()
 {
     launch_test_vecadd_base();
@@ -384,6 +456,8 @@ int main()
     launch_test_vecadd_static();
     launch_test_vecadd_iterator();
     launch_test_vecadd_iterator_static();
+    launch_test_vecadd_dim_iterator();
+    launch_test_vecadd_dim_iterator_static();
 
     auto start1 = std::chrono::high_resolution_clock::now();
     launch_test_vecadd_base();
@@ -415,12 +489,24 @@ int main()
     auto end6 = std::chrono::high_resolution_clock::now();
     auto dur6 = std::chrono::duration_cast<std::chrono::nanoseconds>(end6 - start6);
 
-    std::cout << "BASE:            " << dur1.count() << "\n";
-    std::cout << "BASE STATIC:     " << dur2.count() << "\n";
-    std::cout << "INDEX:           " << dur3.count() << "\n";
-    std::cout << "INDEX STATIC:    " << dur4.count() << "\n";
-    std::cout << "ITERATOR:        " << dur5.count() << "\n";
-    std::cout << "ITERATOR STATIC: " << dur6.count() << "\n";
+    auto start7 = std::chrono::high_resolution_clock::now();
+    launch_test_vecadd_dim_iterator();
+    auto end7 = std::chrono::high_resolution_clock::now();
+    auto dur7 = std::chrono::duration_cast<std::chrono::nanoseconds>(end7 - start7);
+
+    auto start8 = std::chrono::high_resolution_clock::now();
+    launch_test_vecadd_dim_iterator_static();
+    auto end8 = std::chrono::high_resolution_clock::now();
+    auto dur8 = std::chrono::duration_cast<std::chrono::nanoseconds>(end8 - start8);
+
+    std::cout << "BASE:                " << dur1.count() << "\n";
+    std::cout << "BASE STATIC:         " << dur2.count() << "\n";
+    std::cout << "INDEX:               " << dur3.count() << "\n";
+    std::cout << "INDEX STATIC:        " << dur4.count() << "\n";
+    std::cout << "ITERATOR:            " << dur5.count() << "\n";
+    std::cout << "ITERATOR STATIC:     " << dur6.count() << "\n";
+    std::cout << "DIM_ITERATOR:        " << dur7.count() << "\n";
+    std::cout << "DIM_ITERATOR STATIC: " << dur8.count() << "\n";
 
     return 0;
 }

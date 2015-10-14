@@ -39,14 +39,15 @@
 
 namespace cudarrays {
 
-template <typename T, typename StorageTraits>
-class dynarray_storage<T, storage_tag::REPLICATED, StorageTraits> :
-    public dynarray_base<T, StorageTraits::dimensions>
+template <typename StorageTraits>
+class dynarray_storage<storage_tag::REPLICATED, StorageTraits> :
+    public dynarray_base<StorageTraits>
 {
-    static constexpr unsigned dimensions = StorageTraits::dimensions;
-
-    using base_storage_type = dynarray_base<T, dimensions>;
+    using base_storage_type = dynarray_base<StorageTraits>;
+    using        value_type = typename base_storage_type::value_type;
     using  dim_manager_type = typename base_storage_type::dim_manager_type;
+
+    static constexpr auto dimensions = base_storage_type::dimensions;
 
     using indexer_type = linearizer_hybrid<typename StorageTraits::offsets_seq>;
 
@@ -57,7 +58,7 @@ private:
         DEBUG("ALLOC begin");
         for (unsigned gpu : gpus) {
             CUDA_CALL(cudaSetDevice(gpu));
-            CUDA_CALL(cudaMalloc((void **) &hostInfo_->allocsDev[gpu], elems * sizeof(T)));
+            CUDA_CALL(cudaMalloc((void **) &hostInfo_->allocsDev[gpu], elems * sizeof(value_type)));
 
             DEBUG("ALLOC in GPU %u : %p", gpu, hostInfo_->allocsDev[gpu]);
 
@@ -68,21 +69,21 @@ private:
         dataDev_ = nullptr;
     }
 
-    T *dataDev_;
+    value_type *dataDev_;
 
     struct storage_host_info {
         std::vector<unsigned> gpus;
-        std::vector<T *> allocsDev;
+        std::vector<value_type *> allocsDev;
 
-        std::unique_ptr<T[]> mergeTmp;
-        std::unique_ptr<T[]> mergeFinal;
+        std::unique_ptr<value_type[]> mergeTmp;
+        std::unique_ptr<value_type[]> mergeFinal;
 
         storage_host_info(const std::vector<unsigned> &_gpus) :
             gpus(_gpus),
             allocsDev(system::gpu_count())
         {
             std::fill(allocsDev.begin(),
-                      allocsDev.end(), (T *)nullptr);
+                      allocsDev.end(), (value_type *)nullptr);
         }
     };
 
@@ -90,9 +91,8 @@ private:
 
 public:
     __host__
-    dynarray_storage(const extents<dimensions> &ext,
-                     const align_t &align) :
-        base_storage_type{ext, align},
+    dynarray_storage(const extents<dimensions> &ext) :
+        base_storage_type{ext},
         dataDev_{nullptr}
     {
     }
@@ -128,7 +128,7 @@ public:
 
             hostInfo_.reset(new storage_host_info{gpus});
 
-            alloc(this->get_dim_manager().get_elems_align() * sizeof(T),
+            alloc(this->get_dim_manager().get_elems_align() * sizeof(value_type),
                   this->get_dim_manager().offset(), gpus);
 
             ret = true;
@@ -147,7 +147,7 @@ public:
         if (!hostInfo_) {
             hostInfo_.reset(new storage_host_info{gpus});
 
-            alloc(this->get_dim_manager().get_elems_align() * sizeof(T),
+            alloc(this->get_dim_manager().get_elems_align() * sizeof(value_type),
                   this->get_dim_manager().offset(), gpus);
 
             ret = true;
@@ -162,12 +162,12 @@ public:
         return hostInfo_ != nullptr;
     }
 
-    T *get_dev_ptr(unsigned gpu = 0)
+    value_type *get_dev_ptr(unsigned gpu = 0)
     {
         return hostInfo_->allocsDev[gpu];
     }
 
-    const T *get_dev_ptr(unsigned gpu = 0) const
+    const value_type *get_dev_ptr(unsigned gpu = 0) const
     {
         return hostInfo_->allocsDev[gpu];
     }
@@ -189,7 +189,7 @@ public:
 
     template <typename... Idxs>
     __device__ inline
-    T &access_pos(Idxs&&... idxs)
+    value_type &access_pos(Idxs&&... idxs)
     {
         auto idx = indexer_type::access_pos(this->get_dim_manager().get_strides(), std::forward<Idxs>(idxs)...);
         return dataDev_[idx];
@@ -197,7 +197,7 @@ public:
 
     template <typename... Idxs>
     __device__ inline
-    const T &access_pos(Idxs&&... idxs) const
+    const value_type &access_pos(Idxs&&... idxs) const
     {
         auto idx = indexer_type::access_pos(this->get_dim_manager().get_strides(), std::forward<Idxs>(idxs)...);
         return dataDev_[idx];
@@ -214,7 +214,7 @@ public:
             for (unsigned gpu : utils::make_range(system::gpu_count())) {
                 if (hostInfo_->allocsDev[gpu] != nullptr) {
                     DEBUG("gpu %u > to host: %p", gpu, hostInfo_->allocsDev[gpu] - this->get_dim_manager().offset());
-                    CUDA_CALL(cudaMemcpy(host.base_addr<T>(),
+                    CUDA_CALL(cudaMemcpy(host.base_addr<value_type>(),
                                          hostInfo_->allocsDev[gpu] - this->get_dim_manager().offset(),
                                          this->get_dim_manager().get_bytes(),
                                          cudaMemcpyDeviceToHost));
@@ -222,12 +222,12 @@ public:
             }
         } else {
             if (hostInfo_->mergeTmp == nullptr) {
-                hostInfo_->mergeTmp.reset(new T[this->get_dim_manager().get_elems_align()]);
-                hostInfo_->mergeFinal.reset(new T[this->get_dim_manager().get_elems_align()]);
+                hostInfo_->mergeTmp.reset(new value_type[this->get_dim_manager().get_elems_align()]);
+                hostInfo_->mergeFinal.reset(new value_type[this->get_dim_manager().get_elems_align()]);
             }
 
-            std::copy(host.base_addr<T>(),
-                      host.base_addr<T>() + this->get_dim_manager().get_elems_align(),
+            std::copy(host.base_addr<value_type>(),
+                      host.base_addr<value_type>() + this->get_dim_manager().get_elems_align(),
                       hostInfo_->mergeFinal.get());
 
             // Merge copies
@@ -243,7 +243,7 @@ public:
                     // Merge step
                     #pragma omp parallel for
                     for (array_size_t j = 0; j < this->get_dim_manager().get_elems_align(); ++j) {
-                        if (memcmp(hostInfo_->mergeTmp.get() + j, host.base_addr<T>() + j, sizeof(T)) != 0) {
+                        if (memcmp(hostInfo_->mergeTmp.get() + j, host.base_addr<value_type>() + j, sizeof(value_type)) != 0) {
                             hostInfo_->mergeFinal[j] = hostInfo_->mergeTmp[j];
                         }
                     }
@@ -253,7 +253,7 @@ public:
             DEBUG("Updating main host copy");
             std::copy(hostInfo_->mergeFinal.get(),
                       hostInfo_->mergeFinal.get() + this->get_dim_manager().get_elems_align(),
-                      host.base_addr<T>());
+                      host.base_addr<value_type>());
 
             // Request copy-to-device
             to_device(host);
@@ -281,7 +281,7 @@ public:
             if (hostInfo_->allocsDev[gpu] != nullptr) {
                 DEBUG("Index %u > to dev: %p", gpu, hostInfo_->allocsDev[gpu] - this->get_dim_manager().offset());
                 CUDA_CALL(cudaMemcpyAsync(hostInfo_->allocsDev[gpu] - this->get_dim_manager().offset(),
-                                          host.base_addr<T>(),
+                                          host.base_addr<value_type>(),
                                           this->get_dim_manager().get_bytes(),
                                           cudaMemcpyHostToDevice,
                                           streams[gpu]));
