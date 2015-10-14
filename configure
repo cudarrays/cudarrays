@@ -39,13 +39,18 @@ do
         ;;
     --with-gcc=*)
         compiler=`echo $i | sed 's/[-a-zA-Z0-9]*=//'`
-        echo "Setting compiler: ${compiler}"
+        echo "Setting gcc compiler: ${compiler}"
         CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_CXX_COMPILER=${compiler} -DCMAKE_C_COMPILER=${compiler/\+\+/cc}"
         ;;
     --with-clang=*)
         compiler=`echo $i | sed 's/[-a-zA-Z0-9]*=//'`
-        echo "Setting compiler: ${compiler}"
+        echo "Setting clang compiler: ${compiler}"
         CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_CXX_COMPILER=${compiler} -DCMAKE_C_COMPILER=${compiler/\+\+/}"
+        ;;
+    --with-intel=*)
+        compiler=`echo $i | sed 's/[-a-zA-Z0-9]*=//'`
+        echo "Setting intel compiler: ${compiler}"
+        CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_CXX_COMPILER=${compiler} -DCMAKE_C_COMPILER=${compiler}"
         ;;
     --enable-gcov)
         CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_GCOV=ON"
