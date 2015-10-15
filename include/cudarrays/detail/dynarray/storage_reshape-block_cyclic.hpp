@@ -45,7 +45,9 @@ class dynarray_storage<storage_tag::RESHAPE_BLOCK_CYCLIC, StorageTraits> :
 
     using base_storage_type = dynarray_base<StorageTraits>;
     using        value_type = typename base_storage_type::value_type;
+    using    alignment_type = typename base_storage_type::alignment_type;
     using  dim_manager_type = typename base_storage_type::dim_manager_type;
+    using host_storage_type = typename base_storage_type::host_storage_type;
 
     static constexpr auto dimensions = base_storage_type::dimensions;
 
@@ -394,11 +396,11 @@ public:
     }
 
     __host__
-    void to_host(host_storage &host)
+    void to_host(host_storage_type &host)
     {
         TRACE_FUNCTION();
 
-        value_type *unaligned = host.addr<value_type>();
+        value_type *unaligned = host.addr();
         auto &dimMgr = this->get_dim_manager();
 
         unsigned partZ = (dimensions > 2)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxZ]: 1;
@@ -477,16 +479,16 @@ public:
     }
 
     __host__
-    void to_device(host_storage &host)
+    void to_device(host_storage_type &host)
     {
         TRACE_FUNCTION();
 
-        value_type *unaligned = host.addr<value_type>();
+        value_type *unaligned = host.addr();
         auto &dimMgr = this->get_dim_manager();
 
         unsigned partZ = (dimensions > 2)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxZ]: 1;
         unsigned partY = (dimensions > 1)? hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxY]: 1;
-        unsigned partX =             hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxX];
+        unsigned partX =                   hostInfo_->arrayPartitionGrid[dim_manager_type::DimIdxX];
 
         cudaMemcpy3DParms myParms;
         memset(&myParms, 0, sizeof(myParms));

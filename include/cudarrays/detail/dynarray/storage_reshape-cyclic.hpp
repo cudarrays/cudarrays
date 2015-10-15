@@ -43,7 +43,9 @@ class dynarray_storage<storage_tag::RESHAPE_CYCLIC, StorageTraits> :
 {
     using base_storage_type = dynarray_base<StorageTraits>;
     using        value_type = typename base_storage_type::value_type;
+    using    alignment_type = typename base_storage_type::alignment_type;
     using  dim_manager_type = typename base_storage_type::dim_manager_type;
+    using host_storage_type = typename base_storage_type::host_storage_type;
 
     static constexpr auto dimensions = base_storage_type::dimensions;
 
@@ -319,11 +321,11 @@ public:
     }
 
     __host__
-    void to_host(host_storage &host)
+    void to_host(host_storage_type &host)
     {
         TRACE_FUNCTION();
 
-        value_type *unaligned = host.addr<value_type>();
+        value_type *unaligned = host.addr();
         auto &dimMgr = this->get_dim_manager();
 
         unsigned partZ = (dimensions > 2)? arrayPartitionGrid_[dim_manager_type::DimIdxZ]: 1;
@@ -334,7 +336,7 @@ public:
         memset(&myParms, 0, sizeof(myParms));
         myParms.dstPtr = make_cudaPitchedPtr(unaligned,
                                              sizeof(value_type) * dimMgr.dim_align(dim_manager_type::DimIdxX),
-                                                         dimMgr.dim_align(dim_manager_type::DimIdxX),
+                                                                  dimMgr.dim_align(dim_manager_type::DimIdxX),
                                              dimensions > 1? dimMgr.dim_align(dim_manager_type::DimIdxY): 1);
 
         for (unsigned pZ : utils::make_range(partZ)) {
@@ -396,11 +398,11 @@ public:
     }
 
     __host__
-    void to_device(host_storage &host)
+    void to_device(host_storage_type &host)
     {
         TRACE_FUNCTION();
 
-        value_type *unaligned = host.addr<value_type>();
+        value_type *unaligned = host.addr();
         auto &dimMgr = this->get_dim_manager();
 
         unsigned partZ = (dimensions > 2)? arrayPartitionGrid_[dim_manager_type::DimIdxZ]: 1;

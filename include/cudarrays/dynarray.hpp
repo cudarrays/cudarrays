@@ -186,19 +186,19 @@ public:
 
     using coherence_policy_type = typename dynarray_type::coherence_policy_type;
 
-    coherence_policy_type &get_coherence_policy()
+    coherence_policy_type &get_coherence_policy() override
     {
         return get_array().get_coherence_policy();
     }
 
     void
-    set_current_gpu(unsigned idx)
+    set_current_gpu(unsigned idx) override
     {
         array_gpu_ = arrays_gpu_.get()[idx];
         get_array().set_current_gpu(idx);
     }
 
-    bool is_distributed() const
+    bool is_distributed() const override
     {
         return get_array().is_distributed();
     }
@@ -214,7 +214,7 @@ public:
         return ret;
     }
 
-    bool distribute(const std::vector<unsigned> &gpus)
+    bool distribute(const std::vector<unsigned> &gpus) override
     {
         auto ret = get_array().distribute(gpus);
         // Create GPU array copies lazily
@@ -224,27 +224,27 @@ public:
         return ret;
     }
 
-    void to_device()
+    void to_device() override
     {
         get_array().to_device();
     }
 
-    void to_host()
+    void to_host() override
     {
         get_array().to_host();
     }
 
-    void *host_addr()
+    void *host_addr() override
     {
         return get_array().host_addr();
     }
 
-    const void *host_addr() const
+    const void *host_addr() const override
     {
         return get_array().host_addr();
     }
 
-    size_t size() const
+    size_t size() const override
     {
         return get_array().size();
     }
@@ -440,8 +440,7 @@ private:
         cudarrays_entry_point();
 
         // Alloc host memory
-        host_.alloc(device_.get_dim_manager().get_elems_align() * sizeof(value_type),
-                    device_.get_dim_manager().offset());
+        host_.alloc(device_.get_dim_manager().get_elems_align() * sizeof(value_type));
 
         coherencePolicy_.bind(*this);
     }
@@ -471,13 +470,13 @@ public:
     }
 
     __host__ bool
-    distribute(const std::vector<unsigned> &gpus)
+    distribute(const std::vector<unsigned> &gpus) override
     {
         return device_.distribute(gpus);
     }
 
     __host__ bool
-    is_distributed() const
+    is_distributed() const override
     {
         return device_.is_distributed();
     }
@@ -498,39 +497,39 @@ public:
     }
 
     void
-    set_current_gpu(unsigned idx)
+    set_current_gpu(unsigned idx) override
     {
         device_.set_current_gpu(idx);
     }
 
-    coherence_policy_type &get_coherence_policy()
+    coherence_policy_type &get_coherence_policy() override
     {
         return coherencePolicy_;
     }
 
     inline
-    void *host_addr()
+    void *host_addr() override final
     {
         return host_.addr();
     }
 
     inline
-    const void *host_addr() const
+    const void *host_addr() const override final
     {
         return host_.addr();
     }
 
-    size_t size() const
+    size_t size() const override final
     {
         return host_.size();
     }
 
-    void to_device()
+    void to_device() override final
     {
         device_.to_device(host_);
     }
 
-    void to_host()
+    void to_host() override final
     {
         device_.to_host(host_);
     }
@@ -615,7 +614,7 @@ private:
         __array_index__
         static
         value_type &at(device_storage_type &device,
-                       host_storage &host,
+                       host_storage<storage_traits_type> &host,
                        Idxs &&...idxs)
         {
             static_assert(sizeof...(Idxs) == sizeof...(Vals), "Wrong number of indexes");
@@ -624,7 +623,7 @@ private:
 #else
             auto idx = indexer_type::access_pos(device.get_dim_manager().get_strides(),
                                                 permuter_type::template select<Vals>(std::forward<Idxs>(idxs)...)...);
-            return host.addr<value_type>()[idx];
+            return host.addr()[idx];
 #endif
         }
 
@@ -632,7 +631,7 @@ private:
         __array_index__
         static
         const value_type &at_const(const device_storage_type &device,
-                                   const host_storage &host,
+                                   const host_storage<storage_traits_type> &host,
                                    Idxs &&...idxs)
         {
             static_assert(sizeof...(Idxs) == sizeof...(Vals), "Wrong number of indexes");
@@ -641,7 +640,7 @@ private:
 #else
             auto idx = indexer_type::access_pos(device.get_dim_manager().get_strides(),
                                                 permuter_type::template select<Vals>(std::forward<Idxs>(idxs)...)...);
-            return host.addr<value_type>()[idx];
+            return host.addr()[idx];
 #endif
         }
 
@@ -649,7 +648,7 @@ private:
 
     coherence_policy_type coherencePolicy_;
     device_storage_type   device_;
-    host_storage host_;
+    host_storage<storage_traits_type> host_;
 };
 
 template <typename T,

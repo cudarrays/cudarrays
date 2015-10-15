@@ -42,8 +42,9 @@ namespace cudarrays {
 template <typename StorageTraits>
 class dynarray_base {
 protected:
-    using     value_type = typename StorageTraits::array_traits_type::value_type;
-    using alignment_type = typename StorageTraits::alignment_type;
+    using        value_type = typename StorageTraits::array_traits_type::value_type;
+    using    alignment_type = typename StorageTraits::alignment_type;
+    using host_storage_type = host_storage<StorageTraits>;
 
     static constexpr auto dimensions = StorageTraits::dimensions;
 
@@ -66,8 +67,8 @@ public:
     }
 
     virtual void set_current_gpu(unsigned /*idx*/) {}
-    virtual void to_device(host_storage &host) = 0;
-    virtual void to_host(host_storage &host) = 0;
+    virtual void to_device(host_storage_type &host) = 0;
+    virtual void to_host(host_storage_type &host) = 0;
 
 private:
     dim_manager_type dimManager_;

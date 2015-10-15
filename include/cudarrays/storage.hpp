@@ -201,15 +201,17 @@ struct storage_part
     }
 };
 
-template <array_size_t Alignment, array_index_t Offset = 0>
+template <array_size_t Alignment = 1, array_index_t Offset = 0>
 struct align {
     static constexpr array_size_t  alignment = Alignment;
     static constexpr array_index_t offset    = Offset;
 
+    static_assert(Alignment > 0, "Invalid alignment value");
+
     static inline
     constexpr array_size_t get_aligned(const array_size_t &value)
     {
-        return alignment <= 1?
+        return alignment == 1 || (value % alignment == 0 && offset == 0)?
             value:
             utils::round_next(
                     value + (offset > alignment?
@@ -225,13 +227,14 @@ constexpr array_size_t align<Alignment, Offset>::alignment;
 template <array_size_t Alignment, array_index_t Offset>
 constexpr array_index_t align<Alignment, Offset>::offset;
 
-using noalign = align<0>;
+using noalign = align<1>;
 
 template <typename T, typename StorageType, typename Align, typename PartConf>
 struct storage_traits {
     using         array_type = T;
     using     alignment_type = Align;
     using  array_traits_type = array_traits<array_type>;
+    using         value_type = typename array_traits_type::value_type;
 
     static constexpr unsigned         dimensions = array_traits_type::dimensions;
     static constexpr unsigned  static_dimensions = array_traits_type::static_dimensions;
@@ -243,11 +246,14 @@ struct storage_traits {
     using extents_pre_seq =
         SEQ_REORDER(typename array_traits_type::extents_seq,
                     dim_order_seq);
+
+    static constexpr array_size_t aligned_dim = alignment_type::get_aligned(SEQ_AT(extents_pre_seq, dimensions - 1));
+
     // Ordered and aligned array extents
     using extents_pre2_seq =
         SEQ_SET(extents_pre_seq,
                 dimensions - 1,
-                alignment_type::get_aligned(SEQ_AT(extents_pre_seq, dimensions - 1)));
+                aligned_dim);
     // Nullify static extents if the last physical dimensions are not static
     using extents_seq =
         typename

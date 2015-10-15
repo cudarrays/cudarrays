@@ -271,18 +271,21 @@ TEST_F(storage_test, dim_manager_get_dim)
     ASSERT_EQ(mgr1.dims_align()[1], mgr1.dim_align(1));
 }
 
+template <typename Align>
+using my_storage = cudarrays::host_storage<cudarrays::storage_traits<float *, cudarrays::layout::rmo, Align, cudarrays::replicate::none>>;
+
 TEST_F(storage_test, host_storage)
 {
-    cudarrays::host_storage mgr{};
+    my_storage<cudarrays::noalign> mgr{};
 
-    mgr.alloc(10, 0);
+    mgr.alloc(10);
     ASSERT_EQ(mgr.addr(), mgr.base_addr());
 
-    cudarrays::host_storage mgr2{};
+    my_storage<cudarrays::align<2, 1>> mgr2{};
 
-    mgr.alloc(10, 1);
+    mgr.alloc(10);
     ASSERT_NE(mgr.addr(), mgr.base_addr());
-    ASSERT_EQ(mgr.addr<char>() - mgr.base_addr<char>(), 1);
+    ASSERT_EQ(mgr.addr() - mgr.base_addr(), 1);
 }
 
 TEST_F(storage_test, vm_page_allocator1)

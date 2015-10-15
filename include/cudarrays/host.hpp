@@ -30,66 +30,88 @@
 #ifndef CUDARRAYS_HOST_HPP_
 #define CUDARRAYS_HOST_HPP_
 
-#include <memory>
+#include <sys/mman.h>
 
 #include "common.hpp"
 #include "utils.hpp"
 
 namespace cudarrays {
 
+template <typename StorageTraits>
 class host_storage {
 public:
-    host_storage();
+    using     value_type = typename StorageTraits::value_type;
+    using alignment_type = typename StorageTraits::alignment_type;
 
-    virtual ~host_storage();
+    host_storage() :
+        data_{nullptr}
+    {
+    }
 
-    void alloc(array_size_t bytes, array_size_t offset, void *addr = nullptr);
+    virtual ~host_storage()
+    {
+        if (data_ != nullptr) {
+            free_data();
+        }
+    }
 
-    template <typename T = void>
-    inline const T *
+    void alloc(array_size_t bytes, value_type *addr = nullptr)
+    {
+        int flags = MAP_PRIVATE | MAP_ANONYMOUS;
+        if (addr != nullptr) flags |= MAP_FIXED;
+        hostSize_ = bytes;
+        data_ = (value_type *) mmap(addr, hostSize_,
+                                    PROT_READ | PROT_WRITE,
+                                    flags, -1, 0);
+
+        if (addr != nullptr && data_ != addr) {
+            FATAL("%p vs %p", data_, addr);
+        }
+        DEBUG("host> mmapped: %p (%zd)", data_, hostSize_);
+
+        data_ = data_ + alignment_type::offset;
+    }
+
+    inline const value_type *
     addr() const
     {
-        return reinterpret_cast<const T *>(reinterpret_cast<const T *>(state_->data_));
+        return data_;
     }
 
-    template <typename T = void>
-    inline T *
+    inline value_type *
     addr()
     {
-        return reinterpret_cast<T *>(state_->data_);
+        return data_;
     }
 
-    template <typename T = void>
-    inline const T *
-    base_addr() const
+    inline const value_type *
+    base_addr() const __attribute__((assume_aligned(4096)))
     {
-        return reinterpret_cast<const T *>(reinterpret_cast<const char *>(state_->data_) - state_->offset_);
+        return data_ - alignment_type::offset;
     }
 
-    template <typename T = void>
-    inline T *
-    base_addr()
+    inline value_type *
+    base_addr() __attribute__((assume_aligned(4096)))
     {
-        return reinterpret_cast<T *>(reinterpret_cast<char *>(state_->data_) - state_->offset_);
+        return data_ - alignment_type::offset;
     }
 
     inline size_t
     size() const
     {
-        return state_->hostSize_;
+        return hostSize_;
     }
 
 private:
-    void free_data();
+    void free_data()
+    {
+        int ret = munmap(this->base_addr(), hostSize_);
+        ASSERT(ret == 0);
+        data_ = nullptr;
+    }
 
-    struct state {
-        void *data_          = nullptr;
-        array_size_t offset_ = 0;
-        size_t hostSize_     = 0;
-    };
-
-    // Store the state of the object in the heap to minimize the size in the GPU
-    std::unique_ptr<state> state_;
+    value_type *data_ = nullptr;
+    size_t hostSize_  = 0;
 
     CUDARRAYS_TESTED(storage_test, host_storage)
 };

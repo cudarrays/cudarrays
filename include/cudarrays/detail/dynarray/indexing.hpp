@@ -64,13 +64,14 @@ struct linearizer_hybrid {
 struct indexer_utils {
 
 template <typename... Idxs>
-static __host__ __device__ inline
+__host__ __device__ inline
+static constexpr
 array_index_t sum(array_index_t idx, Idxs... idxs)
 {
     return idx + sum(idxs...);
 }
-
-static __host__ __device__ inline
+ __host__ __device__ inline
+static constexpr
 array_index_t sum(array_index_t idx)
 {
     return idx;

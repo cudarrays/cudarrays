@@ -45,7 +45,9 @@ class dynarray_storage<storage_tag::REPLICATED, StorageTraits> :
 {
     using base_storage_type = dynarray_base<StorageTraits>;
     using        value_type = typename base_storage_type::value_type;
+    using    alignment_type = typename base_storage_type::alignment_type;
     using  dim_manager_type = typename base_storage_type::dim_manager_type;
+    using host_storage_type = typename base_storage_type::host_storage_type;
 
     static constexpr auto dimensions = base_storage_type::dimensions;
 
@@ -203,7 +205,7 @@ public:
         return dataDev_[idx];
     }
 
-    void to_host(host_storage &host)
+    void to_host(host_storage_type &host)
     {
         TRACE_FUNCTION();
 
@@ -214,7 +216,7 @@ public:
             for (unsigned gpu : utils::make_range(system::gpu_count())) {
                 if (hostInfo_->allocsDev[gpu] != nullptr) {
                     DEBUG("gpu %u > to host: %p", gpu, hostInfo_->allocsDev[gpu] - this->get_dim_manager().offset());
-                    CUDA_CALL(cudaMemcpy(host.base_addr<value_type>(),
+                    CUDA_CALL(cudaMemcpy(host.addr(),
                                          hostInfo_->allocsDev[gpu] - this->get_dim_manager().offset(),
                                          this->get_dim_manager().get_bytes(),
                                          cudaMemcpyDeviceToHost));
@@ -226,8 +228,8 @@ public:
                 hostInfo_->mergeFinal.reset(new value_type[this->get_dim_manager().get_elems_align()]);
             }
 
-            std::copy(host.base_addr<value_type>(),
-                      host.base_addr<value_type>() + this->get_dim_manager().get_elems_align(),
+            std::copy(host.addr(),
+                      host.addr() + this->get_dim_manager().get_elems_align(),
                       hostInfo_->mergeFinal.get());
 
             // Merge copies
@@ -243,7 +245,7 @@ public:
                     // Merge step
                     #pragma omp parallel for
                     for (array_size_t j = 0; j < this->get_dim_manager().get_elems_align(); ++j) {
-                        if (memcmp(hostInfo_->mergeTmp.get() + j, host.base_addr<value_type>() + j, sizeof(value_type)) != 0) {
+                        if (memcmp(hostInfo_->mergeTmp.get() + j, host.base_addr() + j, sizeof(value_type)) != 0) {
                             hostInfo_->mergeFinal[j] = hostInfo_->mergeTmp[j];
                         }
                     }
@@ -253,14 +255,14 @@ public:
             DEBUG("Updating main host copy");
             std::copy(hostInfo_->mergeFinal.get(),
                       hostInfo_->mergeFinal.get() + this->get_dim_manager().get_elems_align(),
-                      host.base_addr<value_type>());
+                      host.base_addr());
 
             // Request copy-to-device
             to_device(host);
         }
     }
 
-    void to_device(host_storage &host)
+    void to_device(host_storage_type &host)
     {
         TRACE_FUNCTION();
 
@@ -281,7 +283,7 @@ public:
             if (hostInfo_->allocsDev[gpu] != nullptr) {
                 DEBUG("Index %u > to dev: %p", gpu, hostInfo_->allocsDev[gpu] - this->get_dim_manager().offset());
                 CUDA_CALL(cudaMemcpyAsync(hostInfo_->allocsDev[gpu] - this->get_dim_manager().offset(),
-                                          host.base_addr<value_type>(),
+                                          host.base_addr(),
                                           this->get_dim_manager().get_bytes(),
                                           cudaMemcpyHostToDevice,
                                           streams[gpu]));

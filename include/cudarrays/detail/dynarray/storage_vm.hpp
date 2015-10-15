@@ -30,6 +30,8 @@
 #ifndef CUDARRAYS_DETAIL_DYNARRAY_STORAGE_VM_HPP_
 #define CUDARRAYS_DETAIL_DYNARRAY_STORAGE_VM_HPP_
 
+#include <memory>
+
 #include "../../system.hpp"
 #include "../../utils.hpp"
 
@@ -217,7 +219,9 @@ class dynarray_storage<storage_tag::VM, StorageTraits> :
 {
     using base_storage_type = dynarray_base<StorageTraits>;
     using        value_type = typename base_storage_type::value_type;
+    using    alignment_type = typename base_storage_type::alignment_type;
     using  dim_manager_type = typename base_storage_type::dim_manager_type;
+    using host_storage_type = typename base_storage_type::host_storage_type;
 
     static constexpr auto dimensions = base_storage_type::dimensions;
 
@@ -298,13 +302,13 @@ public:
     }
 
     __host__
-    void to_host(host_storage &host)
+    void to_host(host_storage_type &host)
     {
         unsigned npages;
         npages = utils::div_ceil(host.size(), system::CUDA_VM_ALIGN.value());
 
         value_type *src = dataDev_ - this->get_dim_manager().offset();
-        value_type *dst = host.base_addr<value_type>();
+        value_type *dst = host.base_addr();
         for (array_size_t idx  = 0; idx < npages; ++idx) {
             array_size_t bytesChunk = system::CUDA_VM_ALIGN;
             if ((idx + 1) * system::CUDA_VM_ALIGN > host.size())
@@ -320,12 +324,12 @@ public:
     }
 
     __host__
-    void to_device(host_storage &host)
+    void to_device(host_storage_type &host)
     {
         unsigned npages;
         npages = utils::div_ceil(host.size(), system::CUDA_VM_ALIGN.value());
 
-        value_type *src = host.base_addr<value_type>();
+        value_type *src = host.base_addr();
         value_type *dst = dataDev_ - this->get_dim_manager().offset();
         for (array_size_t idx  = 0; idx < npages; ++idx) {
             array_size_t bytesChunk = system::CUDA_VM_ALIGN;
