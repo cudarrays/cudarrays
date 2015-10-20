@@ -403,7 +403,7 @@ public:
     using            array_type = T;
     using        alignment_type = Align;
     using     array_traits_type = array_traits<array_type>;
-    using   storage_traits_type = storage_traits<array_type, StorageType, alignment_type, PartConf>;
+    using   storage_traits_type = dist_storage_traits<array_type, StorageType, alignment_type, PartConf>;
 
     static constexpr bool has_alignment = alignment_type::alignment > 1;
 

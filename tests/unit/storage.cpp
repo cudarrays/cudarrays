@@ -272,7 +272,7 @@ TEST_F(storage_test, dim_manager_get_dim)
 }
 
 template <typename Align>
-using my_storage = cudarrays::host_storage<cudarrays::storage_traits<float *, cudarrays::layout::rmo, Align, cudarrays::replicate::none>>;
+using my_storage = cudarrays::host_storage<cudarrays::storage_traits<float *, cudarrays::layout::rmo, Align>>;
 
 TEST_F(storage_test, host_storage)
 {

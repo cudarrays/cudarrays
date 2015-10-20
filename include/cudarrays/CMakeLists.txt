@@ -3,10 +3,10 @@ set(CUDARRAYS_ROOT_DIR ${CMAKE_SOURCE_DIR})
 
 configure_file(config.hpp.in config.hpp)
 
-set(CUDARRAYS_BASE_HEADERS coherence.hpp
+set(CUDARRAYS_BASE_HEADERS
                       coherence.hpp
                       common.hpp
-                      config.hpp.in
+                      ${CMAKE_BINARY_DIR}/include/cudarrays/config.hpp
                       compiler.hpp
                       compute.hpp
                       dim_manager.hpp
@@ -16,6 +16,7 @@ set(CUDARRAYS_BASE_HEADERS coherence.hpp
                       launch.hpp
                       launch_cpu.hpp
                       memory.hpp
+                      static_array.hpp
                       storage.hpp
                       storage_impl.hpp
                       system.hpp

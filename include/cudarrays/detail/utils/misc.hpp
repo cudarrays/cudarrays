@@ -89,6 +89,16 @@ round_next(const T &val, const U &step)
                               val;
 }
 
+template <typename T>
+static inline
+constexpr bool is_pow2(T val)
+{
+    return ((val & 1) != 0) && val > 1?
+            false:
+            (val == 1? true:
+                       is_pow2(val >> 1));
+}
+
 template <typename T, typename U>
 static inline
 constexpr bool is_greater(T val1, U val2)

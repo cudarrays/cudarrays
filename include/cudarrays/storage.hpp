@@ -197,19 +197,25 @@ struct align {
     static constexpr array_size_t  alignment = Alignment;
     static constexpr array_index_t offset    = Offset;
 
-    static_assert(Alignment > 0, "Invalid alignment value");
+    static_assert(Alignment > 0,             "Alignment must be greater than 0");
+    static_assert(utils::is_pow2(Alignment), "Alignment must be a power of 2");
 
     static inline
     constexpr array_size_t get_aligned(const array_size_t &value)
     {
         return alignment == 1 || (value % alignment == 0 && offset == 0)?
             value:
-            utils::round_next(
-                    value + (offset > alignment?
-                        utils::round_next(offset, alignment) - offset :
-                        offset > 0? alignment - offset: 0
-                        ),
-                    alignment);
+            utils::round_next(value + get_offset(), alignment);
+    }
+
+    static inline
+    constexpr array_size_t get_offset()
+    {
+        return alignment == 1?
+            0:
+            offset > alignment?
+                utils::round_next(offset, alignment) - offset:
+                offset > 0? alignment - offset: 0;
     }
 };
 
@@ -220,9 +226,9 @@ constexpr array_index_t align<Alignment, Offset>::offset;
 
 using noalign = align<1>;
 
-template <typename T, typename StorageType, typename Align, typename PartConf>
+template <typename T, typename StorageType, typename Align>
 struct storage_traits {
-    using         array_type = T;
+using         array_type = T;
     using     alignment_type = Align;
     using  array_traits_type = array_traits<array_type>;
     using         value_type = typename array_traits_type::value_type;
@@ -258,26 +264,33 @@ struct storage_traits {
     // Get offsets for the ordered extents
     using offsets_seq = typename array_offsets_helper<extents_seq>::seq;
 
-    // Order dimension partitioning configuration
-    using partitioning_seq =
-        SEQ_REORDER(
-            typename PartConf::template part_seq<array_traits_type::dimensions>,
-            dim_order_seq);
-    static constexpr partition partition_value =
-        partition(seq_to_bitset<partitioning_seq>::value);
-
     // Type to order elements at run-time
     using permuter_type = utils::permuter<dim_order_seq>;
 };
 
+template <typename T, typename StorageType, typename Align>
+constexpr unsigned storage_traits<T, StorageType, Align>::dimensions;
+template <typename T, typename StorageType, typename Align>
+constexpr unsigned storage_traits<T, StorageType, Align>::static_dimensions;
+template <typename T, typename StorageType, typename Align>
+constexpr unsigned storage_traits<T, StorageType, Align>::dynamic_dimensions;
+
 template <typename T, typename StorageType, typename Align, typename PartConf>
-constexpr unsigned storage_traits<T, StorageType, Align, PartConf>::dimensions;
+struct dist_storage_traits :
+    storage_traits<T, StorageType, Align> {
+    using parent_type = storage_traits<T, StorageType, Align>;
+
+    // Order dimension partitioning configuration
+    using partitioning_seq =
+        SEQ_REORDER(
+            typename PartConf::template part_seq<parent_type::array_traits_type::dimensions>,
+            typename parent_type::dim_order_seq);
+    static constexpr partition partition_value =
+        partition(seq_to_bitset<partitioning_seq>::value);
+};
+
 template <typename T, typename StorageType, typename Align, typename PartConf>
-constexpr unsigned storage_traits<T, StorageType, Align, PartConf>::static_dimensions;
-template <typename T, typename StorageType, typename Align, typename PartConf>
-constexpr unsigned storage_traits<T, StorageType, Align, PartConf>::dynamic_dimensions;
-template <typename T, typename StorageType, typename Align, typename PartConf>
-constexpr partition storage_traits<T, StorageType, Align, PartConf>::partition_value;
+constexpr partition dist_storage_traits<T, StorageType, Align, PartConf>::partition_value;
 
 using automatic            = storage_part<select_auto_impl(storage_tag::AUTO)>;
 using reshape_block        = storage_part<storage_tag::RESHAPE_BLOCK>;

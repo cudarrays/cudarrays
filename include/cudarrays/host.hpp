@@ -69,7 +69,7 @@ public:
         }
         DEBUG("host> mmapped: %p (%zd)", data_, hostSize_);
 
-        data_ = data_ + alignment_type::offset;
+        data_ = data_ + alignment_type::get_offset();
     }
 
     inline const value_type *
@@ -87,13 +87,13 @@ public:
     inline const value_type *
     base_addr() const __attribute__((assume_aligned(4096)))
     {
-        return data_ - alignment_type::offset;
+        return data_ - alignment_type::get_offset();
     }
 
     inline value_type *
     base_addr() __attribute__((assume_aligned(4096)))
     {
-        return data_ - alignment_type::offset;
+        return data_ - alignment_type::get_offset();
     }
 
     inline size_t

@@ -427,6 +427,51 @@ struct seq_find_last {
 
 #define SEQ_FIND_LAST(...)  (SEQ_V_OP(find_last,##__VA_ARGS__))
 
+namespace detail {
+
+template <typename S, size_t Index, SEQ_TYPE(S) Current = 0>
+struct seq_sum  {
+    static constexpr SEQ_TYPE(S) value = seq_sum<S, Index - 1, Current + SEQ_AT(S, Index)>::value;
+};
+
+template <typename S, SEQ_TYPE(S) Current>
+struct seq_sum<S, 0, Current>  {
+    static constexpr SEQ_TYPE(S) value = Current + SEQ_AT(S, 0);
+};
+
+}
+
+template <typename S>
+struct seq_sum {
+    using type = SEQ_TYPE(S);
+    static constexpr type value = detail::seq_sum<S, SEQ_SIZE(S) - 1>::value;
+};
+
+#define SEQ_SUM(s) SEQ_V_OP(sum,s)
+
+namespace detail {
+
+template <typename S, size_t Index, SEQ_TYPE(S) Current = 1>
+struct seq_prod  {
+    static constexpr SEQ_TYPE(S) value = seq_prod<S, Index - 1, Current * SEQ_AT(S, Index)>::value;
+};
+
+template <typename S, SEQ_TYPE(S) Current>
+struct seq_prod<S, 0, Current>  {
+    static constexpr SEQ_TYPE(S) value = Current * SEQ_AT(S, 0);
+};
+
+}
+
+template <typename S>
+struct seq_prod {
+    using type = SEQ_TYPE(S);
+    static constexpr type value = detail::seq_prod<S, SEQ_SIZE(S) - 1>::value;
+};
+
+#define SEQ_PROD(s) SEQ_V_OP(prod,s)
+
+
 namespace detail __attribute__ ((visibility ("hidden"))) {
 
     template <typename T, typename T2, class U, class M>

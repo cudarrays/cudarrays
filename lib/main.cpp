@@ -76,10 +76,17 @@ void init_lib()
     initializing = false;
 }
 
-//__attribute__((destructor(65535)))
+__attribute__((destructor(65535)))
 void fini_lib()
 {
-    handler_sigsegv_restore();
+    // Only first thread initializes
+    if (initialized.test_and_set()) {
+        // Wait for other threads to finish library initialization
+        while (initializing);
+
+        handler_sigsegv_restore();
+        return;
+    }
 }
 
 }
