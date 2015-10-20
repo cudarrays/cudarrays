@@ -41,7 +41,7 @@
 namespace cudarrays {
 
 template <typename Array, bool Const, unsigned Dim, typename Traits>
-class array_dim_iterator_access_detail {
+class array_dim_iterator_detail {
     using traits_base = Traits;
 public:
     static constexpr auto is_const    = Const;
@@ -59,14 +59,14 @@ public:
 protected:
     // Empty iterator
     inline
-    array_dim_iterator_access_detail() :
+    array_dim_iterator_detail() :
         parent_(NULL)
     {
     }
 
     // Initialize iterator
     inline
-    array_dim_iterator_access_detail(array_reference parent, array_index_t idx) :
+    array_dim_iterator_detail(array_reference parent, array_index_t idx) :
         parent_(&parent)
     {
         idx_[Dim] = idx;
@@ -74,48 +74,51 @@ protected:
 
     // Initialize iterator with previous offsets
     inline
-    array_dim_iterator_access_detail(array_reference parent, const array_index_t off[Dim], array_index_t curr) :
+    array_dim_iterator_detail(array_reference parent, const array_index_t off[Dim], array_index_t curr) :
         parent_(&parent)
     {
         std::copy(off, off + Dim, idx_);
         idx_[Dim] = curr;
     }
 
+    inline
     void inc(array_index_t off)
     {
         idx_[Dim] += off;
     }
 
+    inline
     void dec(array_index_t off)
     {
         idx_[Dim] -= off;
     }
 
     inline
-    bool less_than(const array_dim_iterator_access_detail &it) const
+    bool less_than(const array_dim_iterator_detail &it) const
     {
         return less<false>(it);
     }
 
     inline
-    bool less_eq_than(const array_dim_iterator_access_detail &it) const
+    bool less_eq_than(const array_dim_iterator_detail &it) const
     {
         return less<true>(it);
     }
 
     inline
-    bool greater_than(const array_dim_iterator_access_detail &it) const
+    bool greater_than(const array_dim_iterator_detail &it) const
     {
         return greater<false>(it);
     }
 
     inline
-    bool greater_eq_than(const array_dim_iterator_access_detail &it) const
+    bool greater_eq_than(const array_dim_iterator_detail &it) const
     {
         return greater<true>(it);
     }
 
-    difference_type subtract(const array_dim_iterator_access_detail &it) const
+    inline
+    difference_type subtract(const array_dim_iterator_detail &it) const
     {
         return idx_[Dim] - it.idx_[Dim];
     }
@@ -125,7 +128,8 @@ protected:
 
 private:
     template <bool Equal>
-    bool less(const array_dim_iterator_access_detail &it) const
+    inline
+    bool less(const array_dim_iterator_detail &it) const
     {
         if (Equal)
             return idx_[Dim] <= it.idx_[Dim];
@@ -135,7 +139,7 @@ private:
 
     template <bool Equal>
     inline
-    bool greater(const array_dim_iterator_access_detail &it) const
+    bool greater(const array_dim_iterator_detail &it) const
     {
         if (Equal)
             return idx_[Dim] >= it.idx_[Dim];
@@ -144,10 +148,11 @@ private:
     }
 };
 
-template <typename Array, bool Const, typename PrevIterator, typename Iterator, typename ConstIterator>
+template <bool Const, typename PrevIterator, typename Iterator, typename ConstIterator>
 class array_dim_iterator_facade_helper {
     static constexpr auto  current_dim = Iterator::current_dim;
     static constexpr auto is_first_dim = current_dim == 0;
+
     using       iterator = Iterator;
     using const_iterator = ConstIterator;
 
@@ -160,6 +165,7 @@ class array_dim_iterator_facade_helper {
     };
 
     typename Iterator::array_reference
+    inline
     get_parent()
     {
         if (is_first_dim)
@@ -169,6 +175,7 @@ class array_dim_iterator_facade_helper {
     }
 
     typename Iterator::array_reference
+    inline
     get_parent() const
     {
         if (is_first_dim)
@@ -179,17 +186,20 @@ class array_dim_iterator_facade_helper {
 
 public:
     template <typename U = array_dim_iterator_facade_helper>
+    inline
     array_dim_iterator_facade_helper(utils::enable_if_t<!U::is_first_dim, PrevIterator> &prev) :
         prev_{&prev}
     {
     }
 
     template <typename U = array_dim_iterator_facade_helper>
+    inline
     array_dim_iterator_facade_helper(utils::enable_if_t<U::is_first_dim, typename Iterator::array_reference> parent) :
         parent_{&parent}
     {
     }
 
+    inline
     iterator begin()
     {
         if (is_first_dim)
@@ -198,11 +208,13 @@ public:
             return iterator{this->get_parent(), this->prev_->get_idx(), 0};
     }
 
+    inline
     const_iterator begin() const
     {
         return cbegin();
     }
 
+    inline
     const_iterator cbegin() const
     {
         if (is_first_dim)
@@ -211,6 +223,7 @@ public:
             return const_iterator{this->get_parent(), this->prev_->get_idx(), 0};
     }
 
+    inline
     iterator end()
     {
         array_index_t current = this->get_parent().template dim<current_dim>();
@@ -220,11 +233,13 @@ public:
             return iterator{this->get_parent(), this->prev_->get_idx(), current};
     }
 
+    inline
     const_iterator end() const
     {
         return cend();
     }
 
+    inline
     const_iterator cend() const
     {
         array_index_t current = this->get_parent().template dim<current_dim>();
@@ -234,6 +249,7 @@ public:
             return const_iterator{this->get_parent(), this->prev_->get_idx(), current};
     }
 
+    inline
     reverse_iterator rbegin()
     {
         if (is_first_dim)
@@ -242,11 +258,13 @@ public:
             return reverse_iterator{iterator{this->get_parent(), this->prev_->get_idx(), this->get_parent().template dim<current_dim>() - 1}};
     }
 
+    inline
     const_reverse_iterator rbegin() const
     {
         return crbegin();
     }
 
+    inline
     const_reverse_iterator crbegin() const
     {
         if (is_first_dim)
@@ -255,6 +273,7 @@ public:
             return const_reverse_iterator{const_iterator{this->get_parent(), this->prev_->get_idx(), this->get_parent().template dim<current_dim>() - 1}};
     }
 
+    inline
     reverse_iterator rend()
     {
         if (is_first_dim)
@@ -263,11 +282,13 @@ public:
             return reverse_iterator{iterator{this->get_parent(), this->prev_->get_idx(), -1}};
     }
 
+    inline
     const_reverse_iterator rend() const
     {
         return crend();
     }
 
+    inline
     const_reverse_iterator crend() const
     {
         if (is_first_dim)
@@ -282,24 +303,23 @@ class array_dim_iterator;
 
 template <typename Array, bool Const, unsigned Dim>
 class array_dim_iterator<Array, Const, Dim, true> :
-    public array_dim_iterator_access_detail<Array, Const, Dim,
-                                            array_iterator_traits<Array, Const>> {
+    public array_dim_iterator_detail<Array, Const, Dim,
+                                     array_iterator_traits<Array, Const>> {
     using array_type = Array;
 
     using iterator_traits_base = array_iterator_traits<array_type, Const>;
 
-    using      parent_type = array_dim_iterator_access_detail<array_type, Const, Dim, iterator_traits_base>;
-    using dereference_type = array_iterator_dereference<Array, Const>;
+    using      parent_type = array_dim_iterator_detail<array_type, Const, Dim, iterator_traits_base>;
 
 public:
 
-    using array_reference = typename parent_type::array_reference;
-    using array_pointer   = typename parent_type::array_pointer;
+    using   array_reference = typename parent_type::array_reference;
+    using   array_pointer   = typename parent_type::array_pointer;
 
-    using difference_type = typename iterator_traits_base::difference_type;
-    using      value_type = typename iterator_traits_base::value_type;
-    using       reference = typename iterator_traits_base::reference;
-    using         pointer = typename iterator_traits_base::pointer;
+    using   difference_type = typename iterator_traits_base::difference_type;
+    using        value_type = typename iterator_traits_base::value_type;
+    using         reference = typename iterator_traits_base::reference;
+    using           pointer = typename iterator_traits_base::pointer;
     using iterator_category = std::random_access_iterator_tag;
 
     inline
@@ -317,27 +337,12 @@ public:
     inline reference
     operator*() const
     {
-        return dereference_type::unwrap(*this->parent_, this->idx_);
-    }
-
-    template <typename U = array_dim_iterator>
-    inline
-    utils::enable_if_t<!U::is_const, reference>
-    operator*()
-    {
+        using dereference_type = array_iterator_dereference<array_type, Const>;
         return dereference_type::unwrap(*this->parent_, this->idx_);
     }
 
     inline
     pointer operator->() const
-    {
-        return &(operator*());
-    }
-
-    template <typename U = array_dim_iterator>
-    inline
-    utils::enable_if_t<!U::is_const, pointer>
-    operator->()
     {
         return &(operator*());
     }
@@ -392,14 +397,14 @@ public:
 
     inline array_dim_iterator operator+(difference_type inc) const
     {
-        array_dim_iterator res(*this);
+        array_dim_iterator res{*this};
         res += inc;
         return res;
     }
 
     inline array_dim_iterator operator-(difference_type dec) const
     {
-        array_dim_iterator res(*this);
+        array_dim_iterator res{*this};
         res -= dec;
         return res;
     }
@@ -437,41 +442,48 @@ public:
 
 template <typename Array, bool Const, unsigned Dim>
 class array_dim_iterator<Array, Const, Dim, false> :
-    public array_dim_iterator_access_detail<Array, Const, Dim,
-                                            iterator_traits<
-                                                array_dim_iterator_facade_helper<
-                                                    Array,
-                                                    Const,
-                                                    array_dim_iterator<Array, Const, Dim, false>,
-                                                    array_dim_iterator<Array, false, Dim + 1, Array::dimensions - 1 == Dim + 1>,
-                                                    array_dim_iterator<Array, true,  Dim + 1, Array::dimensions - 1 == Dim + 1>
-                                                >,
-                                                Const
-                                           >
+    public array_dim_iterator_detail<Array, Const, Dim,
+                                     iterator_traits<
+                                         array_dim_iterator_facade_helper<
+                                             Const,
+                                             array_dim_iterator<Array, Const, Dim, false>,
+                                             array_dim_iterator<Array, false, Dim + 1, Array::dimensions - 1 == Dim + 1>,
+                                             array_dim_iterator<Array, true,  Dim + 1, Array::dimensions - 1 == Dim + 1>
+                                         >,
+                                         Const
+                                    >
            > {
+    using  array_type = Array;
+
     using iterator_traits_base = iterator_traits<
                                     array_dim_iterator_facade_helper<
-                                        Array,
                                         Const,
-                                        array_dim_iterator<Array, Const, Dim, false>,
-                                        array_dim_iterator<Array, false, Dim + 1, Array::dimensions - 1 == Dim + 1>,
-                                        array_dim_iterator<Array, true,  Dim + 1, Array::dimensions - 1 == Dim + 1>
+                                        array_dim_iterator<array_type, Const, Dim, false>,
+                                        array_dim_iterator<array_type, false, Dim + 1, array_type::dimensions - 1 == Dim + 1>,
+                                        array_dim_iterator<array_type, true,  Dim + 1, array_type::dimensions - 1 == Dim + 1>
                                     >,
                                     Const
                                  >;
 
-    using  array_type = Array;
-    using parent_type = array_dim_iterator_access_detail<array_type, Const, Dim, iterator_traits_base>;
+    using parent_type = array_dim_iterator_detail<array_type, Const, Dim, iterator_traits_base>;
 
 public:
+
+    using   array_reference = typename parent_type::array_reference;
+    using   array_pointer   = typename parent_type::array_pointer;
+
+    using   difference_type = typename iterator_traits_base::difference_type;
+    using        value_type = typename iterator_traits_base::value_type;
+    using         reference = const value_type &;
+    using           pointer = const value_type *;
+    using iterator_category = std::random_access_iterator_tag;
+
+
     inline
     const array_index_t *get_idx() const
     {
         return this->idx_;
     }
-
-    using array_reference = typename parent_type::array_reference;
-    using array_pointer   = typename parent_type::array_pointer;
 
     template <typename U = array_dim_iterator>
     inline
@@ -489,11 +501,6 @@ public:
         return this->parent_;
     }
 
-    using difference_type = typename iterator_traits_base::difference_type;
-    using      value_type = typename iterator_traits_base::value_type;
-    using       reference = typename iterator_traits_base::reference;
-    using         pointer = typename iterator_traits_base::pointer;
-    using iterator_category = std::random_access_iterator_tag;
 
 private:
     value_type next_;
@@ -514,32 +521,12 @@ public:
     {
     }
 
-    template <typename U = array_dim_iterator>
-    inline
-    utils::enable_if_t<U::is_const, reference>
-    operator*() const
+    inline reference operator*() const
     {
         return next_;
     }
 
-    template <typename U = array_dim_iterator>
-    inline
-    utils::enable_if_t<!U::is_const, reference>
-    operator*()
-    {
-        return next_;
-    }
-
-    inline
-    pointer operator->() const
-    {
-        return &(operator*());
-    }
-
-    template <typename U = array_dim_iterator>
-    inline
-    utils::enable_if_t<!U::is_const, pointer>
-    operator->()
+    inline pointer operator->() const
     {
         return &(operator*());
     }
@@ -594,14 +581,14 @@ public:
 
     inline array_dim_iterator operator+(difference_type inc) const
     {
-        array_dim_iterator res(*this);
+        array_dim_iterator res{*this};
         res += inc;
         return res;
     }
 
     inline array_dim_iterator operator-(difference_type dec) const
     {
-        array_dim_iterator res(*this);
+        array_dim_iterator res{*this};
         res -= dec;
         return res;
     }
@@ -641,7 +628,6 @@ public:
 template <typename Array, bool Const>
 using array_dim_iterator_facade =
     array_dim_iterator_facade_helper<
-        Array,
         Const,
         array_dim_iterator<Array, false, 0, false>,
         array_dim_iterator<Array, false, 0, 1 == Array::dimensions>,

@@ -390,16 +390,16 @@ public:
     {
     }
 
-    template <typename U = array_iterator>
+    template <typename U = Array>
     inline
-    array_iterator(utils::enable_if_t<U::array_type::has_alignment, array_reference> parent, array_index_t off[Array::dimensions]) :
+    array_iterator(utils::enable_if_t<U::has_alignment, array_reference> parent, array_index_t off[Array::dimensions]) :
         parent_type(parent, off)
     {
     }
 
-    template <typename U = array_iterator>
+    template <typename U = Array>
     inline
-    array_iterator(utils::enable_if_t<!U::array_type::has_alignment, array_reference> parent, array_index_t off) :
+    array_iterator(utils::enable_if_t<!U::has_alignment, array_reference> parent, array_index_t off) :
         parent_type(parent, off)
     {
     }
@@ -498,10 +498,7 @@ public:
 };
 
 template <typename T, bool Const, bool IsAligned = T::has_alignment>
-class array_iterator_facade;
-
-template <typename T, bool Const>
-class array_iterator_facade<T, Const, true>
+class array_iterator_facade
 {
 public:
     static constexpr bool is_const = Const;
@@ -524,118 +521,20 @@ public:
     {
     }
 
-    iterator begin()
+    template <typename U = T>
+    inline
+    utils::enable_if_t<U::has_alignment, iterator>
+    begin()
     {
         array_index_t dims[array_type::dimensions];
         std::fill(dims, dims + array_type::dimensions, 0);
         return iterator{parent_, dims};
     }
 
+    template <typename U = T>
     inline
-    const_iterator begin() const
-    {
-        return cbegin();
-    }
-
-    const_iterator cbegin() const
-    {
-        array_index_t dims[array_type::dimensions];
-        std::fill(dims, dims + array_type::dimensions, 0);
-        return const_iterator{parent_, dims};
-    }
-
-    inline
-    reverse_iterator rbegin()
-    {
-        return reverse_iterator(end());
-    }
-
-    inline
-    const_reverse_iterator rbegin() const
-    {
-        return crbegin();
-    }
-
-    inline
-    const_reverse_iterator crbegin() const
-    {
-        return const_reverse_iterator(cend());
-    }
-
-    iterator end()
-    {
-        array_index_t dims[array_type::dimensions];
-        dims[0] = parent_.dim(0);
-        if (array_type::dimensions > 1) {
-            std::fill(dims + 1, dims + array_type::dimensions, 0);
-        }
-        return iterator(parent_, dims);
-    }
-
-    inline
-    const_iterator end() const
-    {
-        return cend();
-    }
-
-    const_iterator cend() const
-    {
-        array_index_t dims[array_type::dimensions];
-        dims[0] = parent_.dim(0);
-        if (array_type::dimensions > 1) {
-            std::fill(dims + 1, dims + array_type::dimensions, 0);
-        }
-        return const_iterator(parent_, dims);
-    }
-
-    inline
-    reverse_iterator rend()
-    {
-        return reverse_iterator(begin());
-    }
-
-    inline
-    const_reverse_iterator rend() const
-    {
-        return crend();
-    }
-
-    inline
-    const_reverse_iterator crend() const
-    {
-        return const_reverse_iterator(cbegin());
-    }
-
-private:
-    array_reference parent_;
-};
-
-template <typename T, bool Const>
-class array_iterator_facade<T, Const, false>
-{
-public:
-    static constexpr bool is_const = Const;
-    using   iterator_type = array_iterator<T, Const>;
-    using array_reference = typename iterator_type::array_reference;
-
-    using array_type = T;
-    //
-    // Iterator interface
-    //
-    using       iterator = array_iterator<array_type, false>;
-    using const_iterator = array_iterator<array_type, true>;
-
-    using       reverse_iterator = std::reverse_iterator<iterator>;
-    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-
-    inline
-    array_iterator_facade(array_reference a) :
-        parent_{a}
-    {
-    }
-
-    inline
-    iterator begin()
+    utils::enable_if_t<!U::has_alignment, iterator>
+    begin()
     {
         return iterator{parent_, 0};
     }
@@ -646,8 +545,20 @@ public:
         return cbegin();
     }
 
+    template <typename U = T>
     inline
-    const_iterator cbegin() const
+    utils::enable_if_t<U::has_alignment, const_iterator>
+    cbegin() const
+    {
+        array_index_t dims[array_type::dimensions];
+        std::fill(dims, dims + array_type::dimensions, 0);
+        return const_iterator{parent_, dims};
+    }
+
+    template <typename U = T>
+    inline
+    utils::enable_if_t<!U::has_alignment, const_iterator>
+    cbegin() const
     {
         return const_iterator{parent_, 0};
     }
@@ -670,8 +581,23 @@ public:
         return const_reverse_iterator(cend());
     }
 
+    template <typename U = T>
     inline
-    iterator end()
+    utils::enable_if_t<U::has_alignment, iterator>
+    end()
+    {
+        array_index_t dims[array_type::dimensions];
+        dims[0] = parent_.dim(0);
+        if (array_type::dimensions > 1) {
+            std::fill(dims + 1, dims + array_type::dimensions, 0);
+        }
+        return iterator(parent_, dims);
+    }
+
+    template <typename U = T>
+    inline
+    utils::enable_if_t<!U::has_alignment, iterator>
+    end()
     {
         return iterator(parent_, parent_.get_dim_manager().get_elems_align());
     }
@@ -682,8 +608,23 @@ public:
         return cend();
     }
 
+    template <typename U = T>
     inline
-    const_iterator cend() const
+    utils::enable_if_t<U::has_alignment, const_iterator>
+    cend() const
+    {
+        array_index_t dims[array_type::dimensions];
+        dims[0] = parent_.dim(0);
+        if (array_type::dimensions > 1) {
+            std::fill(dims + 1, dims + array_type::dimensions, 0);
+        }
+        return const_iterator(parent_, dims);
+    }
+
+    template <typename U = T>
+    inline
+    utils::enable_if_t<!U::has_alignment, const_iterator>
+    cend() const
     {
         return const_iterator(parent_, parent_.get_dim_manager().get_elems_align());
     }

@@ -181,6 +181,7 @@ launch_test_vecadd()
             }
         }
     }
+
     for (unsigned i = 0; i < ELEMS_Z; ++i) {
         for (unsigned j = 0; j < ELEMS_Y; ++j) {
             for (unsigned k = 0; k < ELEMS_X; ++k) {
@@ -266,6 +267,75 @@ launch_test_vecadd_static()
 
     return true;
 }
+
+bool
+launch_test_vecadd_for_each()
+{
+    static constexpr const array_size_t ELEMS_X = VOLADD_ELEMS_X[INPUTSET];
+    static constexpr const array_size_t ELEMS_Y = VOLADD_ELEMS_Y[INPUTSET];
+    static constexpr const array_size_t ELEMS_Z = VOLADD_ELEMS_Z[INPUTSET];
+
+    auto A = make_array<float ***>({{ELEMS_Z, ELEMS_Y, ELEMS_X}});
+    auto B = make_array<float ***>({{ELEMS_Z, ELEMS_Y, ELEMS_X}});
+    auto C = make_array<float ***>({{ELEMS_Z, ELEMS_Y, ELEMS_X}});
+
+    for_each_element(A, [](unsigned, unsigned, unsigned)
+                        { return 1.f; });
+
+    for_each_element(B, [](unsigned, unsigned, unsigned)
+                        { return 2.f; });
+
+    for_each_element(C, [](unsigned, unsigned, unsigned)
+                        { return 0.f; });
+
+    for_each_element(C, [&](unsigned i, unsigned j, unsigned k)
+                        { return A(i, j, k) + B(i, j, k); });
+
+    for (unsigned i = 0; i < ELEMS_Z; ++i) {
+        for (unsigned j = 0; j < ELEMS_Y; ++j) {
+            for (unsigned k = 0; k < ELEMS_X; ++k) {
+                assert(C(i, j, k) == 3.f);
+            }
+        }
+    }
+
+    return true;
+}
+
+bool
+launch_test_vecadd_for_each_static()
+{
+    static constexpr const array_size_t ELEMS_X = VOLADD_ELEMS_X[INPUTSET];
+    static constexpr const array_size_t ELEMS_Y = VOLADD_ELEMS_Y[INPUTSET];
+    static constexpr const array_size_t ELEMS_Z = VOLADD_ELEMS_Z[INPUTSET];
+
+    auto A = make_array<float [ELEMS_Z][ELEMS_Y][ELEMS_X]>();
+    auto B = make_array<float [ELEMS_Z][ELEMS_Y][ELEMS_X]>();
+    auto C = make_array<float [ELEMS_Z][ELEMS_Y][ELEMS_X]>();
+
+    for_each_element(A, [](unsigned, unsigned, unsigned)
+                        { return 1.f; });
+
+    for_each_element(B, [](unsigned, unsigned, unsigned)
+                        { return 2.f; });
+
+    for_each_element(C, [](unsigned, unsigned, unsigned)
+                        { return 0.f; });
+
+    for_each_element(C, [&](unsigned i, unsigned j, unsigned k)
+                        { return A(i, j, k) + B(i, j, k); });
+
+    for (unsigned i = 0; i < ELEMS_Z; ++i) {
+        for (unsigned j = 0; j < ELEMS_Y; ++j) {
+            for (unsigned k = 0; k < ELEMS_X; ++k) {
+                assert(C(i, j, k) == 3.f);
+            }
+        }
+    }
+
+    return true;
+}
+
 
 bool
 launch_test_vecadd_iterator()
@@ -454,6 +524,8 @@ int main()
     launch_test_vecadd_base_static();
     launch_test_vecadd();
     launch_test_vecadd_static();
+    launch_test_vecadd_for_each();
+    launch_test_vecadd_for_each_static();
     launch_test_vecadd_iterator();
     launch_test_vecadd_iterator_static();
     launch_test_vecadd_dim_iterator();
@@ -480,33 +552,45 @@ int main()
     auto dur4 = std::chrono::duration_cast<std::chrono::nanoseconds>(end4 - start4);
 
     auto start5 = std::chrono::high_resolution_clock::now();
-    launch_test_vecadd_iterator();
+    launch_test_vecadd_for_each();
     auto end5 = std::chrono::high_resolution_clock::now();
     auto dur5 = std::chrono::duration_cast<std::chrono::nanoseconds>(end5 - start5);
 
     auto start6 = std::chrono::high_resolution_clock::now();
-    launch_test_vecadd_iterator_static();
+    launch_test_vecadd_for_each_static();
     auto end6 = std::chrono::high_resolution_clock::now();
     auto dur6 = std::chrono::duration_cast<std::chrono::nanoseconds>(end6 - start6);
 
     auto start7 = std::chrono::high_resolution_clock::now();
-    launch_test_vecadd_dim_iterator();
+    launch_test_vecadd_iterator();
     auto end7 = std::chrono::high_resolution_clock::now();
     auto dur7 = std::chrono::duration_cast<std::chrono::nanoseconds>(end7 - start7);
 
     auto start8 = std::chrono::high_resolution_clock::now();
-    launch_test_vecadd_dim_iterator_static();
+    launch_test_vecadd_iterator_static();
     auto end8 = std::chrono::high_resolution_clock::now();
     auto dur8 = std::chrono::duration_cast<std::chrono::nanoseconds>(end8 - start8);
 
-    std::cout << "BASE:                " << dur1.count() << "\n";
-    std::cout << "BASE STATIC:         " << dur2.count() << "\n";
-    std::cout << "INDEX:               " << dur3.count() << "\n";
-    std::cout << "INDEX STATIC:        " << dur4.count() << "\n";
-    std::cout << "ITERATOR:            " << dur5.count() << "\n";
-    std::cout << "ITERATOR STATIC:     " << dur6.count() << "\n";
-    std::cout << "DIM_ITERATOR:        " << dur7.count() << "\n";
-    std::cout << "DIM_ITERATOR STATIC: " << dur8.count() << "\n";
+    auto start9 = std::chrono::high_resolution_clock::now();
+    launch_test_vecadd_dim_iterator();
+    auto end9 = std::chrono::high_resolution_clock::now();
+    auto dur9 = std::chrono::duration_cast<std::chrono::nanoseconds>(end9 - start9);
+
+    auto start10 = std::chrono::high_resolution_clock::now();
+    launch_test_vecadd_dim_iterator_static();
+    auto end10 = std::chrono::high_resolution_clock::now();
+    auto dur10 = std::chrono::duration_cast<std::chrono::nanoseconds>(end10 - start10);
+
+    std::cout << "BASE:                  " << dur1.count() << "\n";
+    std::cout << "BASE STATIC:           " << dur2.count() << "\n";
+    std::cout << "INDEX:                 " << dur3.count() << "\n";
+    std::cout << "INDEX STATIC:          " << dur4.count() << "\n";
+    std::cout << "INDEX FOR_EACH:        " << dur5.count() << "\n";
+    std::cout << "INDEX FOR_EACH STATIC: " << dur6.count() << "\n";
+    std::cout << "ITERATOR:              " << dur7.count() << "\n";
+    std::cout << "ITERATOR STATIC:       " << dur8.count() << "\n";
+    std::cout << "DIM_ITERATOR:          " << dur9.count() << "\n";
+    std::cout << "DIM_ITERATOR STATIC:   " << dur10.count() << "\n";
 
     return 0;
 }

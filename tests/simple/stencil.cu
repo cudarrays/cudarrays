@@ -77,11 +77,11 @@ launch_test_stencil(compute_conf<2> gpus, mapping2D infoB,
 #else
         auto dimsA = A.dim_iterator();
         auto dimsB = B.dim_iterator();
-        for (auto & row : dimsA)
+        for (auto row : dimsA)
             for (auto & col : row)
                 col = -1.f;
 
-        for (auto & row : dimsB)
+        for (auto row : dimsB)
             for (auto & col : row)
                 col = 0;
 #endif

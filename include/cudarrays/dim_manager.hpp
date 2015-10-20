@@ -139,7 +139,7 @@ public:
         else return this->sizes_[dim];
     }
 
-    using sizes_type = std::array<array_size_t, Dims>;
+    using sizes_type = extents<Dims>;
     __host__
     inline
     sizes_type dims() const

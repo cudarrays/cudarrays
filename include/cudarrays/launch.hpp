@@ -670,6 +670,39 @@ launch_async_(const char *name,
 #define launch(f,...)       launch_(#f, f,##__VA_ARGS__)
 #define launch_async(f,...) launch_async_(#f, f,##__VA_ARGS__)
 
+template <typename Array, typename F, unsigned Dim = std::remove_reference<Array>::type::dimensions>
+struct unwrap_extents {
+    template <typename... Idx>
+    inline static
+    void call(Array &a, const F &f, Idx && ... idx)
+    {
+        constexpr unsigned current_dim = Array::dimensions - Dim;
+
+        for (array_size_t i = 0; i < a.template dim<current_dim>(); ++i) {
+            unwrap_extents<Array, F, Dim - 1>::call(a, f,
+                                                    std::forward<Idx>(idx)..., i);
+        }
+    }
+};
+
+template <typename Array, typename F>
+struct unwrap_extents<Array, F, 0> {
+    template <typename... Idx>
+    inline static
+    void call(Array &a, const F &f, Idx && ... idx)
+    {
+        a(std::forward<Idx>(idx)...) = f(std::forward<Idx>(idx)...);
+    }
+};
+
+template <typename Array, typename F>
+inline static
+void
+for_each_element(Array & a, const F &f)
+{
+    unwrap_extents<Array, F>::call(a, f);
+}
+
 }
 
 #endif // CUDARRAYS_LAUNCH_HPP_

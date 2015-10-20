@@ -186,6 +186,8 @@ public:
 
     using coherence_policy_type = typename dynarray_type::coherence_policy_type;
 
+    static constexpr auto dimensions = dynarray_type::dimensions;
+
     coherence_policy_type &get_coherence_policy() override
     {
         return get_array().get_coherence_policy();
@@ -412,7 +414,7 @@ public:
     using coherence_policy_type = CoherencePolicy;
     using          indexer_type = linearizer_hybrid<typename storage_traits_type::offsets_seq>;
 
-    using device_storage_type = dynarray_storage<PartConf::final_impl,
+    using device_storage_type = dynarray_storage<PartConf::impl,
                                                  storage_traits_type>;
 
     static constexpr auto dimensions = array_traits_type::dimensions;

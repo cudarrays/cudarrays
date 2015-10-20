@@ -93,8 +93,7 @@ struct storage_part_dim_helper {
     static constexpr bool Z = bool(partition::Z & Part);
 };
 
-
-namespace detail {
+namespace detail __attribute__ ((visibility ("hidden"))) {
 template <unsigned Bits, typename Idxs>
 struct bitset_to_seq;
 
@@ -108,18 +107,13 @@ struct seq_to_bitset;
 
 template <unsigned Idx, bool Val, bool ...Vals>
 struct seq_to_bitset<Idx, SEQ_WITH_TYPE(bool, Val, Vals...)> {
-    constexpr static unsigned value()
-    {
-        return unsigned(Val) << (Idx - 1) | seq_to_bitset<Idx - 1, SEQ_WITH_TYPE(bool, Vals...)>::value();
-    }
+    constexpr static unsigned value =
+        unsigned(Val) << (Idx - 1) | seq_to_bitset<Idx - 1, SEQ_WITH_TYPE(bool, Vals...)>::value;
 };
 
 template <>
 struct seq_to_bitset<0, SEQ_WITH_TYPE(bool)> {
-    constexpr static unsigned value()
-    {
-        return 0;
-    }
+    constexpr static unsigned value = 0;
 };
 }
 
@@ -130,11 +124,11 @@ struct bitset_to_seq {
 
 template <typename S>
 struct seq_to_bitset {
-    constexpr static unsigned value()
-    {
-        return detail::seq_to_bitset<SEQ_SIZE(S), S>::value();
-    }
+    constexpr static unsigned value = detail::seq_to_bitset<SEQ_SIZE(S), S>::value;
 };
+
+template <typename S>
+constexpr unsigned seq_to_bitset<S>::value;
 
 template <partition Part, unsigned Dims>
 struct storage_part_helper {
@@ -159,20 +153,18 @@ struct make_dim_order<Dims, cudarrays::layout::custom<Order...>> {
     using seq_type = SEQ(Order...);
 };
 
-template <storage_tag Storage>
-struct select_auto_impl {
-    static constexpr storage_tag impl = Storage;
-};
+static constexpr
+storage_tag
+select_auto_impl(storage_tag given)
+{
+    return (given == storage_tag::AUTO? storage_tag::REPLICATED:
+                                        given);
+}
 
-template <>
-struct select_auto_impl<storage_tag::AUTO> {
-    static constexpr storage_tag impl = storage_tag::REPLICATED;
-};
-
-template <storage_tag Storage, partition Part>
+template <storage_tag Impl, partition Part>
 struct storage_conf {
-    static constexpr storage_tag       impl = Storage;
-    static constexpr storage_tag final_impl = select_auto_impl<Storage>::impl;
+    static constexpr storage_tag impl = Impl;
+
     template <unsigned Dims>
     using part_seq = typename storage_part_helper<Part, Dims>::type;
 };
@@ -180,24 +172,23 @@ struct storage_conf {
 template <storage_tag Impl>
 struct storage_part
 {
-    static constexpr storage_tag       impl = Impl;
-    static constexpr storage_tag final_impl = select_auto_impl<Impl>::impl;
+    static constexpr storage_tag impl = Impl;
 
-    using none = storage_conf<Impl, partition::NONE>;
+    using none = storage_conf<impl, partition::NONE>;
 
-    using x = storage_conf<Impl, partition::X>;
-    using y = storage_conf<Impl, partition::Y>;
-    using z = storage_conf<Impl, partition::Z>;
+    using   x = storage_conf<impl, partition::X>;
+    using   y = storage_conf<impl, partition::Y>;
+    using   z = storage_conf<impl, partition::Z>;
 
-    using xy = storage_conf<Impl, partition::XY>;
-    using xz = storage_conf<Impl, partition::XZ>;
-    using yz = storage_conf<Impl, partition::YZ>;
+    using  xy = storage_conf<impl, partition::XY>;
+    using  xz = storage_conf<impl, partition::XZ>;
+    using  yz = storage_conf<impl, partition::YZ>;
 
-    using xyz = storage_conf<Impl, partition::XYZ>;
+    using xyz = storage_conf<impl, partition::XYZ>;
 
     static std::string name()
     {
-        return enum_to_string(Impl);
+        return enum_to_string(impl);
     }
 };
 
@@ -243,24 +234,24 @@ struct storage_traits {
     // User-provided dimension ordering
     using dim_order_seq = typename make_dim_order<array_traits_type::dimensions, StorageType>::seq_type;
     // Ordered array extents
-    using extents_pre_seq =
+    using extents_noalign_seq =
         SEQ_REORDER(typename array_traits_type::extents_seq,
                     dim_order_seq);
 
-    static constexpr array_size_t aligned_dim = alignment_type::get_aligned(SEQ_AT(extents_pre_seq, dimensions - 1));
+    static constexpr array_size_t aligned_dim = alignment_type::get_aligned(SEQ_AT(extents_noalign_seq, dimensions - 1));
 
     // Ordered and aligned array extents
-    using extents_pre2_seq =
-        SEQ_SET(extents_pre_seq,
+    using extents_align_seq =
+        SEQ_SET(extents_noalign_seq,
                 dimensions - 1,
                 aligned_dim);
     // Nullify static extents if the last physical dimensions are not static
     using extents_seq =
         typename
-        std::conditional<SEQ_FIND_LAST(extents_pre2_seq, 0) == -1 ||
-                             utils::is_equal(SEQ_FIND_LAST(extents_pre2_seq, 0) + 1,
+        std::conditional<SEQ_FIND_LAST(extents_align_seq, 0) == -1 ||
+                             utils::is_equal(SEQ_FIND_LAST(extents_align_seq, 0) + 1,
                                              dynamic_dimensions),
-                         extents_pre2_seq,
+                         extents_align_seq,
                          SEQ_GEN_FILL(array_size_t(0), dimensions)
                         >::type;
 
@@ -273,7 +264,7 @@ struct storage_traits {
             typename PartConf::template part_seq<array_traits_type::dimensions>,
             dim_order_seq);
     static constexpr partition partition_value =
-        partition(seq_to_bitset<partitioning_seq>::value());
+        partition(seq_to_bitset<partitioning_seq>::value);
 
     // Type to order elements at run-time
     using permuter_type = utils::permuter<dim_order_seq>;
@@ -288,7 +279,7 @@ constexpr unsigned storage_traits<T, StorageType, Align, PartConf>::dynamic_dime
 template <typename T, typename StorageType, typename Align, typename PartConf>
 constexpr partition storage_traits<T, StorageType, Align, PartConf>::partition_value;
 
-using automatic            = storage_part<storage_tag::AUTO>;
+using automatic            = storage_part<select_auto_impl(storage_tag::AUTO)>;
 using reshape_block        = storage_part<storage_tag::RESHAPE_BLOCK>;
 using reshape_cyclic       = storage_part<storage_tag::RESHAPE_CYCLIC>;
 using reshape_block_cyclic = storage_part<storage_tag::RESHAPE_BLOCK_CYCLIC>;

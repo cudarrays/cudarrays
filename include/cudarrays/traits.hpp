@@ -44,7 +44,7 @@ struct array_type_helper {
 
 template <typename T, size_t Elems>
 struct array_type_helper<T[Elems]> {
-    static_assert(Elems != 0, "Bounds of a static dimension cannot be zero.");
+    static_assert(Elems != 0, "Extents for a static dimension cannot be zero.");
     using type = typename array_type_helper<T>::type;
 };
 
@@ -53,7 +53,7 @@ struct array_type_helper<T *> {
     using type = typename array_type_helper<T>::type;
 };
 
-namespace detail {
+namespace detail __attribute__ ((visibility ("hidden"))) {
 
 template <typename T, array_size_t... Extents>
 struct array_extents_helper {
@@ -63,13 +63,13 @@ struct array_extents_helper {
 template <typename T, size_t Elems, array_size_t... Extents>
 struct array_extents_helper<T[Elems], Extents...> {
     static_assert(Elems != 0, "Bounds of a static dimension cannot be zero.");
-
-    // Array elements are interpreted differently, pushing dimension size at the end
+    // Array elements are interpreted right-to-left, pushing dimension size at the end
     using seq = typename array_extents_helper<T, Extents..., Elems>::seq;
 };
 
 template <typename T, array_size_t... Extents>
 struct array_extents_helper<T *, Extents...> {
+    // Pointers are interpreted left-to-right, pushing dimension size at the beginning
     using seq = typename array_extents_helper<T, 0, Extents...>::seq;
 };
 
@@ -90,14 +90,9 @@ namespace detail {
 template <typename S, unsigned Dim, array_size_t... Offset>
 struct array_offsets_helper;
 
-template <typename S, array_size_t Offset>
-struct array_offsets_helper<S, 0u, Offset> {
-    using seq = SEQ_WITH_TYPE(array_size_t);
-};
-
 template <typename S, array_size_t Offset, array_size_t... Offsets>
 struct array_offsets_helper<S, 0u, Offset, Offsets...> {
-    using seq = SEQ(Offsets...);
+    using seq = SEQ_WITH_TYPE(array_size_t, Offsets...);
 };
 
 template <typename S, unsigned Dim, array_size_t Offset, array_size_t... Offsets>
@@ -116,7 +111,7 @@ using array_offsets_helper = detail::array_offsets_helper<S, SEQ_SIZE(S) - 1, SE
 
 template <typename T>
 struct array_traits {
-    using  value_type = typename array_type_helper<T>::type;
+    using  value_type = typename    array_type_helper<T>::type;
     using extents_seq = typename array_extents_helper<T>::seq;
     using offsets_seq = typename array_offsets_helper<extents_seq>::seq;
 

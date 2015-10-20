@@ -89,15 +89,17 @@ struct index_block_detail<OffsetsSeq,
     static constexpr unsigned Dims = sizeof...(PartSeq);
 
     template <bool Part>
-    static __host__ __device__ inline
-    array_index_t local_idx(array_index_t idx, const array_size_t &elemsDim)
+    __host__ __device__ inline
+    static constexpr
+    array_index_t local_idx(array_index_t idx, array_size_t elemsDim)
     {
         return Part? idx % elemsDim: idx;
     }
 
     template <bool Part>
-    static __host__ __device__ inline
-    array_index_t proc_off(array_index_t idx, const array_size_t &elemsDim, const array_size_t &elemsChunk)
+    __host__ __device__ inline
+    static constexpr
+    array_index_t proc_off(array_index_t idx, array_size_t elemsDim, array_size_t elemsChunk)
     {
         return Part? (idx / elemsDim) * elemsChunk: 0;
     }
@@ -131,19 +133,20 @@ struct index_cyclic_detail<OffsetsSeq,
     static constexpr unsigned Dims = sizeof...(PartSeq);
 
     template <bool Part>
-    static __host__ __device__ inline
-    array_index_t local_idx(array_index_t idx, const array_size_t &procsDim)
+    __host__ __device__ inline
+    static constexpr
+    array_index_t local_idx(array_index_t idx, array_size_t procsDim)
     {
-        if (Part) return idx / procsDim;
-        else      return idx;
+        return Part? idx / procsDim:
+                     idx;
     }
 
     template <bool Part>
     static __host__ __device__ inline
-    array_index_t proc_off(array_index_t idx, const array_size_t &procsDim, const array_size_t &elemsChunk)
+    array_index_t proc_off(array_index_t idx, array_size_t procsDim, array_size_t elemsChunk)
     {
-        if (Part) return (idx % procsDim) * elemsChunk;
-        else      return 0;
+        return Part? (idx % procsDim) * elemsChunk:
+                     0;
     }
 
     template <typename... Idxs>
@@ -176,27 +179,30 @@ struct index_block_cyclic_detail<OffsetsSeq,
     static constexpr unsigned Dims = sizeof...(PartSeq);
 
     template <bool Part>
-    static __host__ __device__ inline
-    array_index_t local_idx(array_index_t idx, const array_size_t &blockDim)
+    __host__ __device__ inline
+    static constexpr
+    array_index_t local_idx(array_index_t idx, array_size_t blockDim)
     {
-        if (Part) return idx % blockDim;
-        else      return idx;
+        return Part? idx % blockDim:
+                     idx;
     }
 
     template <bool Part>
-    static __host__ __device__ inline
-    array_index_t proc_off(array_index_t idx, const array_size_t &blockDim, const array_size_t &procs, const array_size_t &elemsChunk)
+    __host__ __device__ inline
+    static constexpr
+    array_index_t proc_off(array_index_t idx, array_size_t blockDim, array_size_t procs, array_size_t elemsChunk)
     {
-        if (Part) return ((idx / blockDim) % procs) * elemsChunk;
-        else      return 0;
+        return Part? ((idx / blockDim) % procs) * elemsChunk:
+                     0;
     }
 
     template <bool Part>
-    static __host__ __device__ inline
-    array_index_t block_idx(array_index_t idx, const array_size_t &blockDim, const array_size_t &procs)
+    __host__ __device__ inline
+    static constexpr
+    array_index_t block_idx(array_index_t idx, array_size_t blockDim, array_size_t procs)
     {
-        if (Part) return idx/(blockDim * procs);
-        else      return 0;
+        return Part? idx/(blockDim * procs):
+                     0;
     }
 
     template <typename... Idxs>
