@@ -6,9 +6,26 @@ src="https://scan.coverity.com/projects/4910/badge.svg"/>
 
 ![CUDArrays](https://raw.githubusercontent.com/wiki/cudarrays/cudarrays/images/cudarrays_logo_300x75.png)
 
-C++ programming framework for multi-GPU CUDA applications.
+Programming framework for C++ and multi-GPU CUDA applications.
 
-## Example: vector addition
+CUDArrays is based on multi-dimensional array types that are commonly found in
+scientific HPC applications. Thanks to CUDArrays, C++ programs can now use both
+statically- and dynamically-sized multi-dimensional arrays, a feature which has
+available if Fortran for decades. Thus, programmers are relieved from the task
+of flattening multi-dimensional structures into memory buffers and
+computing dimension offsets by hand.
+
+When used in CUDA programs, arrays are transparently available in the GPU
+memory and the do not need to be explicitly copied between CPU and host
+memories. Moreover, arrays can be partitioned or replicated across GPU memories
+and CUDA kernels' grids are also decomposed so that the computation can be
+performed on all the GPUs in parallel.
+
+CUDArrays also offers an wide range of features such as user-defined array
+dimension layout, user-defined memory alignment and iterators that enable
+compatibility with the algorithms in the STL.
+
+## Example: multi-GPU vector addition using dynamically-sized arrays and CUDA
 ```Cuda
 #include <iostream>
 #include <cudarrays/types.hpp>
