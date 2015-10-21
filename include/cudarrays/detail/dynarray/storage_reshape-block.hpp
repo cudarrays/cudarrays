@@ -172,7 +172,7 @@ public:
     {
         TRACE_FUNCTION();
 
-        hostInfo_.reset(new storage_host_info(mapping.comp.procs));
+        hostInfo_.reset(new storage_host_info{mapping.comp.procs});
 
         compute_distribution_internal(mapping);
     }
@@ -187,7 +187,7 @@ public:
         if (!dataDev_) {
             TRACE_FUNCTION();
 
-            hostInfo_.reset(new storage_host_info(mapping.comp.procs));
+            hostInfo_.reset(new storage_host_info{mapping.comp.procs});
 
             compute_distribution_internal(mapping);
 

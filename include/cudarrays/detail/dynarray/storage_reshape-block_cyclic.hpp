@@ -116,7 +116,7 @@ public:
 
         // Count partitioned dimensions in array and computation
         unsigned arrayPartDims = mapping.get_array_part_dims();
-        unsigned  compPartDims = count(mapping.comp.info, true);
+        unsigned  compPartDims = utils::count(mapping.comp.info, true);
 
         if (arrayPartDims > compPartDims)
             FATAL("Not enough partitioned comp dims: %u, to partition %u array dims", compPartDims, arrayPartDims);
@@ -138,8 +138,8 @@ public:
 
         // Compute the array grid and the local sizes
         for (unsigned i = 0; i < dimensions; ++i) {
-            hostInfo_->localDims_[i] = this->get_dim_manager().sizes_[i];
-            blockDims_[i]            = this->get_dim_manager().sizes_[i];
+            hostInfo_->localDims_[i] = this->get_dim_manager().dims()[i];
+            blockDims_[i]            = this->get_dim_manager().dims()[i];
 
             hostInfo_->arrayPartitionGrid[i] = 1;
             hostInfo_->elemsLocal *= hostInfo_->localDims_[i];
@@ -147,7 +147,7 @@ public:
 
         // Adjust to VM SIZE
         static const array_size_t CUDA_VM_ALIGN_ELEMS = system::CUDA_VM_ALIGN/sizeof(value_type);
-        hostInfo_->elemsLocal = round_next(hostInfo_->elemsLocal, CUDA_VM_ALIGN_ELEMS);
+        hostInfo_->elemsLocal = utils::round_next(hostInfo_->elemsLocal, CUDA_VM_ALIGN_ELEMS);
 
         array_size_t prevLocalOff = 1;
         // Compute the inter-GPU offsets for each dimension
@@ -168,7 +168,7 @@ public:
 
         DEBUG("ALLOC: gpus: %u", mapping.comp.procs);
         DEBUG("ALLOC: comp  part: %s (%u)", mapping.comp.info, compPartDims);
-        DEBUG("ALLOC: comp  grid: %s", hostInfo_->gpuGrid);
+        DEBUG("ALLOC: comp  grid: %s", hostInfo_->gpuGrid.get());
         DEBUG("ALLOC: array grid: %s", hostInfo_->arrayPartitionGrid);
         DEBUG("ALLOC: local elems: %s (%zd)", hostInfo_->localDims_, size_t(hostInfo_->elemsLocal));
         DEBUG("ALLOC: local offs: %s", localOffs_);
@@ -189,20 +189,20 @@ public:
 
         // Count partitioned dimensions in array and computation
         unsigned arrayPartDims = mapping.get_array_part_dims();
-        unsigned  compPartDims = count(mapping.comp.info, true);
+        unsigned  compPartDims = utils::count(mapping.comp.info, true);
 
         if (arrayPartDims > compPartDims)
             FATAL("Not enough partitioned comp dims: %u, to partition %u array dims", compPartDims, arrayPartDims);
 
         // Check the minumum number of partitions
-        if ((1 << compPartDims) > mapping.comp.procs)
+        if ((1u << compPartDims) > mapping.comp.procs)
             FATAL("Not enough GPUs (%u), to partition %u", mapping.comp.procs, arrayPartDims);
 
         // Distribute the partition uniformly across GPUs
         hostInfo_->gpus = mapping.comp.procs;
 
         // Check if we can map the partitions on the GPUs
-        std::vector<unsigned> factorsGPUs = get_factors(hostInfo_->gpus);
+        std::vector<unsigned> factorsGPUs = utils::get_factors(hostInfo_->gpus);
         std::sort(factorsGPUs.begin(), factorsGPUs.end(), std::greater<unsigned>());
 
         if (factorsGPUs.size() < compPartDims)
@@ -239,7 +239,7 @@ public:
                 // TODO: REPLICATION
             }
 
-            hostInfo_->localDims_[i] = div_ceil(this->get_dim_manager().sizes_[i], partition);
+            hostInfo_->localDims_[i] = utils::div_ceil(this->get_dim_manager().dims()[i], partition);
 
             hostInfo_->arrayPartitionGrid[i] = partition;
             hostInfo_->elemsLocal *= hostInfo_->localDims_[i];
@@ -247,7 +247,7 @@ public:
 
         // Adjust to VM SIZE
         array_size_t CUDA_VM_ALIGN_ELEMS = system::CUDA_VM_ALIGN/sizeof(value_type);
-        hostInfo_->elemsLocal = round_next(hostInfo_->elemsLocal, CUDA_VM_ALIGN_ELEMS);
+        hostInfo_->elemsLocal = utils::round_next(hostInfo_->elemsLocal, CUDA_VM_ALIGN_ELEMS);
 
         array_size_t off = 1;
         array_size_t prevLocalOff = 1;
@@ -293,7 +293,7 @@ public:
         // DEBUG("ALLOC: factors: %s", utils::to_string(factorsGPUs));
         DEBUG("ALLOC: gpus: %u", mapping.comp.procs);
         DEBUG("ALLOC: comp  part: %s (%u)", mapping.comp.info, compPartDims);
-        DEBUG("ALLOC: comp  grid: %s", hostInfo_->gpuGrid);
+        DEBUG("ALLOC: comp  grid: %s", hostInfo_->gpuGrid.get());
         DEBUG("ALLOC: array grid: %s", hostInfo_->arrayPartitionGrid);
         DEBUG("ALLOC: local elems: %s (%zd)", hostInfo_->localDims_, size_t(hostInfo_->elemsLocal));
         DEBUG("ALLOC: local offs: %s", localOffs_);
@@ -366,10 +366,12 @@ private:
 
         template <size_t DimsComp>
         __host__
-        storage_host_info(const std::array<bool, DimsComp> &info) :
-            gpuGrid(new unsigned[DimsComp])
+        storage_host_info(const std::array<bool, DimsComp> &) :
+            elemsLocal{0},
+            gpus{0},
+            gpuGrid{new unsigned[DimsComp]},
+            compDims{DimsComp}
         {
-            compDims = DimsComp;
         }
     };
 
@@ -532,20 +534,20 @@ public:
                                                   pY * localY,
                                                   pZ * localZ);
 
-                    if (PartConf::Z && pZ * localZ >= dimMgr.sizesAlign_[dim_manager_type::DimIdxZ])
+                    if (PartConf::Z && pZ * localZ >= dimMgr.dims_align()[dim_manager_type::DimIdxZ])
                         continue;
-                    if (PartConf::Y && pY * localY >= dimMgr.sizesAlign_[dim_manager_type::DimIdxY])
+                    if (PartConf::Y && pY * localY >= dimMgr.dims_align()[dim_manager_type::DimIdxY])
                         continue;
-                    if (PartConf::X && pX * localX >= dimMgr.sizesAlign_[dim_manager_type::DimIdxX])
+                    if (PartConf::X && pX * localX >= dimMgr.dims_align()[dim_manager_type::DimIdxX])
                         continue;
 
                     // Only transfer the remaining elements
                     if (PartConf::Z)
-                    localZ = std::min(localZ, array_index_t(dimMgr.sizesAlign_[dim_manager_type::DimIdxZ] - pZ * localZ));
+                    localZ = std::min(localZ, array_index_t(dimMgr.dims_align()[dim_manager_type::DimIdxZ] - pZ * localZ));
                     if (PartConf::Y)
-                    localY = std::min(localY, array_index_t(dimMgr.sizesAlign_[dim_manager_type::DimIdxY] - pY * localY));
+                    localY = std::min(localY, array_index_t(dimMgr.dims_align()[dim_manager_type::DimIdxY] - pY * localY));
                     if (PartConf::X)
-                    localX = std::min(localX, array_index_t(dimMgr.sizesAlign_[dim_manager_type::DimIdxX] - pX * localX));
+                    localX = std::min(localX, array_index_t(dimMgr.dims_align()[dim_manager_type::DimIdxX] - pX * localX));
 
                     DEBUG("TO_DEVICE: Extent: (%u %u %u)",
                           sizeof(value_type) * localX, localY, localZ);
