@@ -9,7 +9,6 @@ set(CUDARRAYS_BASE_HEADERS
                       ${CMAKE_BINARY_DIR}/include/cudarrays/config.hpp
                       compiler.hpp
                       compute.hpp
-                      dim_manager.hpp
                       dynarray.hpp
                       host.hpp
                       gpu.cuh
@@ -33,6 +32,7 @@ set(CUDARRAYS_DETAIL_DYNARRAY_HEADERS
                       detail/dynarray/helpers.hpp
                       detail/dynarray/indexing.hpp
                       detail/dynarray/dim_iterator.hpp
+                      detail/dynarray/dim_manager.hpp
                       detail/dynarray/iterator.hpp
                       detail/dynarray/storage_reshape-block.hpp
                       detail/dynarray/storage_reshape-cyclic.hpp

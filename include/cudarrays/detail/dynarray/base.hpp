@@ -31,10 +31,10 @@
 #define CUDARRAYS_DETAIL_DYNARRAY_BASE_HPP_
 
 #include "../../common.hpp"
-#include "../../dim_manager.hpp"
 #include "../../host.hpp"
 #include "../../storage.hpp"
 
+#include "dim_manager.hpp"
 #include "indexing.hpp"
 
 namespace cudarrays {

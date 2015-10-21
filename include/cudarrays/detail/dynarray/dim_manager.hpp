@@ -30,8 +30,8 @@
 #ifndef CUDARRAYS_DIM_MANAGER_HPP_
 #define CUDARRAYS_DIM_MANAGER_HPP_
 
-#include "common.hpp"
-#include "utils.hpp"
+#include "../../common.hpp"
+#include "../../utils.hpp"
 
 namespace cudarrays {
 
