@@ -56,7 +56,7 @@ struct compute_part_helper<1> {
     static std::array<bool, 1>
     make_array(cudarrays::compute c)
     {
-        std::array<bool, 1> ret;
+        std::array<bool, 1> ret = {{}};
         if (c == cudarrays::compute::none)   ret = {{ false }};
         else if (c == cudarrays::compute::x) ret = {{ true  }};
         else abort();
@@ -69,7 +69,7 @@ struct compute_part_helper<2> {
     static std::array<bool, 2>
     make_array(cudarrays::compute c)
     {
-        std::array<bool, 2> ret;
+        std::array<bool, 2> ret = {{}};
         if (c == cudarrays::compute::none)    ret = {{ false, false }};
         else if (c == cudarrays::compute::x)  ret = {{ false, true  }};
         else if (c == cudarrays::compute::y)  ret = {{ true, false  }};
@@ -84,7 +84,7 @@ struct compute_part_helper<3> {
     static std::array<bool, 3>
     make_array(cudarrays::compute c)
     {
-        std::array<bool, 3> ret;
+        std::array<bool, 3> ret = {{}};
         if (c == cudarrays::compute::none)     ret = {{ false, false, false }};
         else if (c == cudarrays::compute::x)   ret = {{ false, false, true  }};
         else if (c == cudarrays::compute::y)   ret = {{ false, true,  false }};

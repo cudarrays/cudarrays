@@ -144,7 +144,7 @@ public:
     inline
     sizes_type dims() const
     {
-        sizes_type ret;
+        sizes_type ret = {{}};
         for (auto dim : utils::make_range(Dims)) {
             ret[dim] = this->dim(dim);
         }
@@ -155,7 +155,7 @@ public:
     inline
     sizes_type dims_align() const
     {
-        sizes_type ret;
+        sizes_type ret = {{}};
         for (auto dim : utils::make_range(Dims)) {
             ret[dim] = this->dim_align(dim);
         }
