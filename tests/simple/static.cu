@@ -83,7 +83,7 @@ void test_kernel_shared()
         }
 }
 
-int main(int argc, char *argv[])
+int main()
 {
     static_array<int [3][3], MemorySpace::local, layout::rmo, align<1024, 2>> A;
 

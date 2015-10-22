@@ -32,6 +32,8 @@ set (full_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/lib_storage.cpp
 )
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_HAS_EXCEPTIONS=0")
+
 add_executable(UnitTests_lib ${full_SRC})
 
 target_link_libraries(UnitTests_lib ${CUDARRAYS_LIB} ${CMAKE_THREAD_LIBS_INIT})
