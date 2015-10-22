@@ -45,7 +45,7 @@ template <unsigned DimsComp>
 static std::array<unsigned, DimsComp>
 helper_distribution_get_gpu_grid(const cudarrays::compute_conf<DimsComp> &comp)
 {
-    std::array<unsigned, DimsComp> gpuGrid;
+    std::array<unsigned, DimsComp> gpuGrid = {{}};
 
     // Check if we can map the arrayPartitionGrid on the GPUs
     std::vector<unsigned> factorsGpus = utils::get_factors(comp.procs);
@@ -86,7 +86,7 @@ static std::array<unsigned, Dims>
 helper_distribution_get_array_grid(const std::array<unsigned, DimsComp> &gpuGrid,
                                    const std::array<int, Dims>          &arrayDimToCompDim)
 {
-    std::array<unsigned, Dims> ret;
+    std::array<unsigned, Dims> ret{{}};
 
     // Compute the array grid and the local sizes
     for (unsigned i : utils::make_range(Dims)) {
@@ -110,7 +110,7 @@ static std::array<array_size_t, Dims>
 helper_distribution_get_local_dims(const std::array<array_size_t, Dims> &dims,
                                    const std::array<unsigned, Dims>     &arrayGrid)
 {
-    std::array<array_size_t, Dims> ret;
+    std::array<array_size_t, Dims> ret{{}};
 
     // Compute the array grid and the local sizes
     for (unsigned i : utils::make_range(Dims)) {
@@ -139,7 +139,7 @@ template <size_t Dims>
 static std::array<array_size_t, Dims - 1>
 helper_distribution_get_local_offs(const std::array<array_size_t, Dims> &dims)
 {
-    std::array<array_size_t, Dims - 1> ret;
+    std::array<array_size_t, Dims - 1> ret{{}};
 
     array_size_t off = 1;
     for (ssize_t dim = ssize_t(Dims) - 2; dim >= 0; --dim) {
@@ -156,7 +156,7 @@ helper_distribution_get_intergpu_offs(array_size_t elemsLocal,
                                       const std::array<unsigned, Dims> &arrayGrid,
                                       const std::array<int, Dims>      &arrayDimToCompDim)
 {
-    std::array<array_size_t, Dims> ret;
+    std::array<array_size_t, Dims> ret{{}};
 
     array_size_t off = 1;
     for (ssize_t dim = Dims - 1; dim >= 0; --dim) {
@@ -175,7 +175,7 @@ template <size_t DimsComp>
 static std::array<unsigned, DimsComp>
 helper_distribution_gpu_get_offs(const std::array<unsigned, DimsComp> &gpuGrid)
 {
-    std::array<unsigned, DimsComp> ret;
+    std::array<unsigned, DimsComp> ret{{}};
 
     unsigned gridOff = 1;
     for (ssize_t dim = DimsComp - 1; dim >= 0; --dim) {
@@ -193,7 +193,7 @@ static std::array<unsigned, Dims>
 helper_distribution_get_array_dim_to_gpus(const std::array<unsigned, DimsComp> &gpuGridOffs,
                                           const std::array<int, Dims>          &arrayDimToCompDim)
 {
-    std::array<unsigned, Dims> ret;
+    std::array<unsigned, Dims> ret{{}};
 
     for (unsigned dim : utils::make_range(Dims)) {
         int compDim = arrayDimToCompDim[dim];
