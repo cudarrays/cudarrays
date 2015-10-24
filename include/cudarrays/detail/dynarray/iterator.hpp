@@ -32,9 +32,9 @@
 
 #include <iterator>
 
-#include "../../compiler.hpp"
 #include "../../common.hpp"
-#include "../../utils.hpp"
+#include "../utils/integral_iterator.hpp"
+#include "../utils/stl.hpp"
 
 namespace cudarrays {
 

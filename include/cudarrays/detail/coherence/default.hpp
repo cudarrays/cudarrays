@@ -33,7 +33,6 @@
 #include <cuda_runtime_api.h>
 
 #include "../../coherence.hpp"
-#include "../../utils.hpp"
 
 namespace cudarrays {
 

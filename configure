@@ -8,7 +8,6 @@ BUILD_TYPE="Release"
 
 for i in $@
 do
-    echo $i
     case $i in
     --enable-debug)
         BUILD_TYPE="Debug"

@@ -31,7 +31,6 @@
 #define CUDARRAYS_DETAIL_DYNARRAY_INDEXING_HPP_
 
 #include "../../common.hpp"
-#include "../../traits.hpp"
 #include "../../utils.hpp"
 
 namespace cudarrays {

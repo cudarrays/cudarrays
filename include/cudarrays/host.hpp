@@ -33,7 +33,6 @@
 #include <sys/mman.h>
 
 #include "common.hpp"
-#include "utils.hpp"
 
 namespace cudarrays {
 

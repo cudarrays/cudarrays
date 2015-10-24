@@ -40,6 +40,7 @@ class coherent;
 
 class coherence_policy {
 public:
+    virtual ~coherence_policy() {}
     virtual void release(const std::vector<unsigned> &gpus, bool Const) = 0;
     virtual void acquire() = 0;
 
@@ -50,6 +51,7 @@ public:
 class coherent :
     public base<coherent> {
 public:
+    virtual ~coherent() {}
     virtual coherence_policy &get_coherence_policy() = 0;
     virtual void set_current_gpu(unsigned /*idx*/) = 0;
 

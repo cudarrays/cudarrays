@@ -87,7 +87,11 @@ namespace cudarrays {
     static inline
     std::string replace_id(const coherent &arg)
     {
+#if CUDARRAYS_DEBUG == 1
         return std::to_string(arg.get_id());
+#else
+        return std::to_string(reinterpret_cast<std::ptrdiff_t>(arg.host_addr()));
+#endif
     }
 
     template <typename T>

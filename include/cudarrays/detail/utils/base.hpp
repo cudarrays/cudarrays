@@ -32,6 +32,7 @@
 
 namespace cudarrays {
 
+#if CUDARRAYS_DEBUG == 1
 class base_interface {
 public:
     virtual unsigned get_id() const = 0;
@@ -56,6 +57,13 @@ public:
 
 template <typename T>
 unsigned base<T>::NextId_ = 0;
+
+#else
+
+template <typename T>
+class base {};
+
+#endif
 
 }
 

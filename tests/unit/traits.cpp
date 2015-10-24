@@ -29,7 +29,7 @@
 #include <iostream>
 
 #include "cudarrays/storage.hpp"
-#include "cudarrays/traits.hpp"
+#include "cudarrays/array_traits.hpp"
 
 #include "gtest/gtest.h"
 

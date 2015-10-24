@@ -1,9 +1,16 @@
 set(CUDARRAYS_INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
 set(CUDARRAYS_ROOT_DIR ${CMAKE_SOURCE_DIR})
 
+if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+set(CUDARRAYS_DEBUG "1")
+else(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+set(CUDARRAYS_DEBUG "0")
+endif(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+
 configure_file(config.hpp.in config.hpp)
 
 set(CUDARRAYS_BASE_HEADERS
+                      array_traits.hpp
                       coherence.hpp
                       common.hpp
                       ${CMAKE_BINARY_DIR}/include/cudarrays/config.hpp
@@ -20,7 +27,6 @@ set(CUDARRAYS_BASE_HEADERS
                       storage.hpp
                       storage_impl.hpp
                       system.hpp
-                      traits.hpp
                       trace.hpp
                       types.hpp
                       utils.hpp)

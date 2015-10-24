@@ -31,7 +31,7 @@
 #ifndef CUDARRAYS_STATIC_ARRAY_HPP_
 #define CUDARRAYS_STATIC_ARRAY_HPP_
 
-#include "traits.hpp"
+#include "array_traits.hpp"
 #include "storage.hpp"
 
 #include "detail/dynarray/indexing.hpp"

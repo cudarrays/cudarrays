@@ -30,7 +30,6 @@
 #ifndef CUDARRAYS_DETAIL_DYNARRAY_BASE_HPP_
 #define CUDARRAYS_DETAIL_DYNARRAY_BASE_HPP_
 
-#include "../../common.hpp"
 #include "../../host.hpp"
 #include "../../storage.hpp"
 

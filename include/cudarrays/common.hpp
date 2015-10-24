@@ -40,6 +40,7 @@
 
 #include <cudarrays/config.hpp>
 
+#include "detail/utils/log.hpp"
 #include "compiler.hpp"
 
 namespace cudarrays {

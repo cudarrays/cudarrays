@@ -30,11 +30,8 @@
 #ifndef CUDARRAYS_DETAIL_DYNARRAY_DIM_ITERATOR_HPP_
 #define CUDARRAYS_DETAIL_DYNARRAY_DIM_ITERATOR_HPP_
 
-#include <iterator>
-
-#include "../../compiler.hpp"
 #include "../../common.hpp"
-#include "../../utils.hpp"
+#include "../utils/stl.hpp"
 
 #include "iterator.hpp"
 

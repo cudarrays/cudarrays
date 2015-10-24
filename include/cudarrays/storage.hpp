@@ -38,7 +38,7 @@
 #include <type_traits>
 
 #include "common.hpp"
-#include "traits.hpp"
+#include "array_traits.hpp"
 #include "utils.hpp"
 
 namespace cudarrays {

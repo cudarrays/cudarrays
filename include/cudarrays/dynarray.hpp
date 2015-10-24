@@ -40,7 +40,6 @@
 #include <utility>
 
 #include "compiler.hpp"
-#include "utils.hpp"
 #include "common.hpp"
 #include "memory.hpp"
 #include "storage.hpp"
