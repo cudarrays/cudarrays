@@ -188,19 +188,19 @@ public:
 
     static constexpr auto dimensions = dynarray_type::dimensions;
 
-    coherence_policy_type &get_coherence_policy() override
+    coherence_policy_type &get_coherence_policy() override final
     {
         return get_array().get_coherence_policy();
     }
 
     void
-    set_current_gpu(unsigned idx) override
+    set_current_gpu(unsigned idx) override final
     {
         array_gpu_ = arrays_gpu_.get()[idx];
         get_array().set_current_gpu(idx);
     }
 
-    bool is_distributed() const override
+    bool is_distributed() const override final
     {
         return get_array().is_distributed();
     }
@@ -216,7 +216,7 @@ public:
         return ret;
     }
 
-    bool distribute(const std::vector<unsigned> &gpus) override
+    bool distribute(const std::vector<unsigned> &gpus) override final
     {
         auto ret = get_array().distribute(gpus);
         // Create GPU array copies lazily
@@ -226,27 +226,27 @@ public:
         return ret;
     }
 
-    void to_device() override
+    void to_device() override final
     {
         get_array().to_device();
     }
 
-    void to_host() override
+    void to_host() override final
     {
         get_array().to_host();
     }
 
-    void *host_addr() override
+    void *host_addr() override final
     {
         return get_array().host_addr();
     }
 
-    const void *host_addr() const override
+    const void *host_addr() const override final
     {
         return get_array().host_addr();
     }
 
-    size_t size() const override
+    size_t size() const override final
     {
         return get_array().size();
     }
@@ -443,7 +443,6 @@ private:
 
         // Alloc host memory
         host_.alloc(device_.get_dim_manager().get_elems_align() * sizeof(value_type));
-
         coherencePolicy_.bind(*this);
     }
 
@@ -472,13 +471,13 @@ public:
     }
 
     __host__ bool
-    distribute(const std::vector<unsigned> &gpus) override
+    distribute(const std::vector<unsigned> &gpus) override final
     {
         return device_.distribute(gpus);
     }
 
     __host__ bool
-    is_distributed() const override
+    is_distributed() const override final
     {
         return device_.is_distributed();
     }
@@ -499,12 +498,12 @@ public:
     }
 
     void
-    set_current_gpu(unsigned idx) override
+    set_current_gpu(unsigned idx) override final
     {
         device_.set_current_gpu(idx);
     }
 
-    coherence_policy_type &get_coherence_policy() override
+    coherence_policy_type &get_coherence_policy() override final
     {
         return coherencePolicy_;
     }

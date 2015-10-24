@@ -93,46 +93,9 @@ struct storage_part_dim_helper {
     static constexpr bool Z = bool(partition::Z & Part);
 };
 
-namespace detail __attribute__ ((visibility ("hidden"))) {
-template <unsigned Bits, typename Idxs>
-struct bitset_to_seq;
-
-template <unsigned Bits, unsigned ...Idxs>
-struct bitset_to_seq<Bits, SEQ_WITH_TYPE(unsigned, Idxs...)> {
-    using type = SEQ_REVERSE(SEQ_WITH_TYPE(bool, (0u != (Bits & (1 << Idxs)))...));
-};
-
-template <unsigned Idx, typename Seq>
-struct seq_to_bitset;
-
-template <unsigned Idx, bool Val, bool ...Vals>
-struct seq_to_bitset<Idx, SEQ_WITH_TYPE(bool, Val, Vals...)> {
-    constexpr static unsigned value =
-        unsigned(Val) << (Idx - 1) | seq_to_bitset<Idx - 1, SEQ_WITH_TYPE(bool, Vals...)>::value;
-};
-
-template <>
-struct seq_to_bitset<0, SEQ_WITH_TYPE(bool)> {
-    constexpr static unsigned value = 0;
-};
-}
-
-template <unsigned Bits, unsigned N>
-struct bitset_to_seq {
-    using type = typename detail::bitset_to_seq<Bits, SEQ_GEN_INC(N)>::type;
-};
-
-template <typename S>
-struct seq_to_bitset {
-    constexpr static unsigned value = detail::seq_to_bitset<SEQ_SIZE(S), S>::value;
-};
-
-template <typename S>
-constexpr unsigned seq_to_bitset<S>::value;
-
 template <partition Part, unsigned Dims>
 struct storage_part_helper {
-    using type = typename bitset_to_seq<Part, Dims>::type;
+    using type = typename utils::bitset_to_seq<Part, Dims>::type;
 };
 
 template <unsigned Dims, typename StorageType>
@@ -286,7 +249,7 @@ struct dist_storage_traits :
             typename PartConf::template part_seq<parent_type::array_traits_type::dimensions>,
             typename parent_type::dim_order_seq);
     static constexpr partition partition_value =
-        partition(seq_to_bitset<partitioning_seq>::value);
+        partition(utils::seq_to_bitset<partitioning_seq>::value);
 };
 
 template <typename T, typename StorageType, typename Align, typename PartConf>

@@ -109,36 +109,36 @@ TEST_F(storage_test, reorder)
 
 TEST_F(storage_test, bitseq_seq)
 {
-    using T0 = typename cudarrays::bitset_to_seq<0b0, 1>::type;
-    ASSERT_EQ(cudarrays::seq_to_bitset<T0>::value, 0b0u);
-    using T1 = typename cudarrays::bitset_to_seq<0b1, 1>::type;
-    ASSERT_EQ(cudarrays::seq_to_bitset<T1>::value, 0b1u);
+    using T0 = typename utils::bitset_to_seq<0b0, 1>::type;
+    ASSERT_EQ(utils::seq_to_bitset<T0>::value, 0b0u);
+    using T1 = typename utils::bitset_to_seq<0b1, 1>::type;
+    ASSERT_EQ(utils::seq_to_bitset<T1>::value, 0b1u);
 
-    using T00 = typename cudarrays::bitset_to_seq<0b00, 2>::type;
-    ASSERT_EQ(cudarrays::seq_to_bitset<T00>::value, 0b00u);
-    using T01 = typename cudarrays::bitset_to_seq<0b01, 2>::type;
-    ASSERT_EQ(cudarrays::seq_to_bitset<T01>::value, 0b01u);
-    using T10 = typename cudarrays::bitset_to_seq<0b10, 2>::type;
-    ASSERT_EQ(cudarrays::seq_to_bitset<T10>::value, 0b10u);
-    using T11 = typename cudarrays::bitset_to_seq<0b11, 2>::type;
-    ASSERT_EQ(cudarrays::seq_to_bitset<T11>::value, 0b11u);
+    using T00 = typename utils::bitset_to_seq<0b00, 2>::type;
+    ASSERT_EQ(utils::seq_to_bitset<T00>::value, 0b00u);
+    using T01 = typename utils::bitset_to_seq<0b01, 2>::type;
+    ASSERT_EQ(utils::seq_to_bitset<T01>::value, 0b01u);
+    using T10 = typename utils::bitset_to_seq<0b10, 2>::type;
+    ASSERT_EQ(utils::seq_to_bitset<T10>::value, 0b10u);
+    using T11 = typename utils::bitset_to_seq<0b11, 2>::type;
+    ASSERT_EQ(utils::seq_to_bitset<T11>::value, 0b11u);
 
-    using T000 = typename cudarrays::bitset_to_seq<0b000, 3>::type;
-    ASSERT_EQ(cudarrays::seq_to_bitset<T000>::value, 0b000u);
-    using T001 = typename cudarrays::bitset_to_seq<0b001, 3>::type;
-    ASSERT_EQ(cudarrays::seq_to_bitset<T001>::value, 0b001u);
-    using T010 = typename cudarrays::bitset_to_seq<0b010, 3>::type;
-    ASSERT_EQ(cudarrays::seq_to_bitset<T010>::value, 0b010u);
-    using T011 = typename cudarrays::bitset_to_seq<0b011, 3>::type;
-    ASSERT_EQ(cudarrays::seq_to_bitset<T011>::value, 0b011u);
-    using T100 = typename cudarrays::bitset_to_seq<0b100, 3>::type;
-    ASSERT_EQ(cudarrays::seq_to_bitset<T100>::value, 0b100u);
-    using T101 = typename cudarrays::bitset_to_seq<0b101, 3>::type;
-    ASSERT_EQ(cudarrays::seq_to_bitset<T101>::value, 0b101u);
-    using T110 = typename cudarrays::bitset_to_seq<0b110, 3>::type;
-    ASSERT_EQ(cudarrays::seq_to_bitset<T110>::value, 0b110u);
-    using T111 = typename cudarrays::bitset_to_seq<0b111, 3>::type;
-    ASSERT_EQ(cudarrays::seq_to_bitset<T111>::value, 0b111u);
+    using T000 = typename utils::bitset_to_seq<0b000, 3>::type;
+    ASSERT_EQ(utils::seq_to_bitset<T000>::value, 0b000u);
+    using T001 = typename utils::bitset_to_seq<0b001, 3>::type;
+    ASSERT_EQ(utils::seq_to_bitset<T001>::value, 0b001u);
+    using T010 = typename utils::bitset_to_seq<0b010, 3>::type;
+    ASSERT_EQ(utils::seq_to_bitset<T010>::value, 0b010u);
+    using T011 = typename utils::bitset_to_seq<0b011, 3>::type;
+    ASSERT_EQ(utils::seq_to_bitset<T011>::value, 0b011u);
+    using T100 = typename utils::bitset_to_seq<0b100, 3>::type;
+    ASSERT_EQ(utils::seq_to_bitset<T100>::value, 0b100u);
+    using T101 = typename utils::bitset_to_seq<0b101, 3>::type;
+    ASSERT_EQ(utils::seq_to_bitset<T101>::value, 0b101u);
+    using T110 = typename utils::bitset_to_seq<0b110, 3>::type;
+    ASSERT_EQ(utils::seq_to_bitset<T110>::value, 0b110u);
+    using T111 = typename utils::bitset_to_seq<0b111, 3>::type;
+    ASSERT_EQ(utils::seq_to_bitset<T111>::value, 0b111u);
 }
 
 TEST_F(storage_test, part_helper_none)

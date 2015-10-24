@@ -146,7 +146,7 @@ static T1 getenv(const std::string &name, T1 default_value)
 
     T1 out;
 
-    bool ok = detail::utils::string_to<T1>::convert(val, out);
+    bool ok = ::detail::utils::string_to<T1>::convert(val, out);
     if (ok) return out;
     else return T1(0);
 }

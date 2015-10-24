@@ -42,6 +42,7 @@ set(CUDARRAYS_DETAIL_DYNARRAY_HEADERS
 
 set(CUDARRAYS_DETAIL_UTILS_HEADERS
                       detail/utils/base.hpp
+                      detail/utils/bitset.hpp
                       detail/utils/env.hpp
                       detail/utils/integral_iterator.hpp
                       detail/utils/log.hpp
