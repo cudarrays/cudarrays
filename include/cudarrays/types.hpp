@@ -30,7 +30,7 @@
 #ifndef CUDARRAYS_TYPES_HPP_
 #define CUDARRAYS_TYPES_HPP_
 
-#include "dynarray.hpp"
+#include "dynarray_view.hpp"
 
 namespace cudarrays {
 

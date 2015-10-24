@@ -10,6 +10,7 @@ set(CUDARRAYS_BASE_HEADERS
                       compiler.hpp
                       compute.hpp
                       dynarray.hpp
+                      dynarray_view.hpp
                       host.hpp
                       gpu.cuh
                       launch.hpp

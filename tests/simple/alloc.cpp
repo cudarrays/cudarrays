@@ -28,7 +28,7 @@
 
 #include <iostream>
 
-#include <cudarrays/dynarray.hpp>
+#include <cudarrays/dynarray_view.hpp>
 #include <cudarrays/launch.hpp>
 
 #include "common.hpp"
