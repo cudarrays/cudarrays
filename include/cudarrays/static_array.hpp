@@ -38,16 +38,16 @@
 
 namespace cudarrays {
 
-enum MemorySpace {
+enum memory_space {
     local     = 1,
     shared    = 2,
 };
 
-template <typename T, size_t Elems, typename Align, MemorySpace Space>
+template <typename T, size_t Elems, typename Align, memory_space Space>
 class static_array_storage;
 
 template <typename T, size_t Elems, typename Align>
-class static_array_storage<T, Elems, Align, MemorySpace::local> {
+class static_array_storage<T, Elems, Align, memory_space::local> {
 public:
     __host__ __device__
     inline
@@ -61,7 +61,7 @@ public:
 };
 
 template <typename T, size_t Elems, typename Align>
-class static_array_storage<T, Elems, Align, MemorySpace::shared> {
+class static_array_storage<T, Elems, Align, memory_space::shared> {
 public:
     __host__ __device__
     inline
@@ -77,7 +77,7 @@ public:
 };
 
 template <typename T,
-          MemorySpace Space    = MemorySpace::local,
+          memory_space Space   = memory_space::local,
           typename StorageType = layout::rmo,
           typename Align       = noalign>
 class static_array {
@@ -108,6 +108,8 @@ public:
     __host__ __device__
     array_size_t dim() const
     {
+        static_assert(Orig < dimensions, "Wrong dimension id");
+
         constexpr auto new_dim = permuter_type::template dim_index<Orig>();
         return SEQ_AT(typename storage_traits_type::extents_noalign_seq, new_dim);
     }
@@ -116,6 +118,8 @@ public:
     __host__ __device__
     array_size_t dim_align() const
     {
+        static_assert(Orig < dimensions, "Wrong dimension id");
+
         constexpr auto new_dim = permuter_type::template dim_index<Orig>();
         return SEQ_AT(typename storage_traits_type::extents_seq, new_dim);
     }

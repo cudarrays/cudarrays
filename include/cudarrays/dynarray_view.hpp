@@ -385,10 +385,9 @@ template <typename T,
           unsigned Dims            = array_traits<T>::dimensions,
           unsigned DynDims         = array_traits<T>::dynamic_dimensions>
 inline
-utils::enable_if_t<
-utils::is_greater(Dims, 1u) &&
-utils::is_greater(DynDims, 0u),
-dynarray_view<dynarray<T, StorageType, Align, PartConf, CoherencePolicy>>>
+utils::enable_if_t<utils::is_greater(Dims, 1u) &&
+                   utils::is_greater(DynDims, 0u),
+                   dynarray_view<dynarray<T, StorageType, Align, PartConf, CoherencePolicy>>>
 make_array(const extents<DynDims> &ext,
            const CoherencePolicy &coherence = CoherencePolicy{})
 {
@@ -398,17 +397,16 @@ make_array(const extents<DynDims> &ext,
 }
 
 template <typename T,
-typename StorageType     = layout::rmo,
-typename Align           = noalign,
-typename PartConf        = automatic::none,
-typename CoherencePolicy = default_coherence,
-unsigned Dims            = array_traits<T>::dimensions,
-unsigned DynDims         = array_traits<T>::dynamic_dimensions>
-        inline
-        utils::enable_if_t<
-        utils::is_greater(Dims, 1u) &&
-        utils::is_equal(DynDims, 0u),
-dynarray_view<dynarray<T, StorageType, Align, PartConf, CoherencePolicy>>>
+          typename StorageType     = layout::rmo,
+          typename Align           = noalign,
+          typename PartConf        = automatic::none,
+          typename CoherencePolicy = default_coherence,
+          unsigned Dims            = array_traits<T>::dimensions,
+          unsigned DynDims         = array_traits<T>::dynamic_dimensions>
+inline
+utils::enable_if_t<utils::is_greater(Dims, 1u) &&
+                   utils::is_equal(DynDims, 0u),
+                   dynarray_view<dynarray<T, StorageType, Align, PartConf, CoherencePolicy>>>
 make_array(const CoherencePolicy &coherence = CoherencePolicy{})
 {
     using dynarray_type = dynarray<T, StorageType, Align, PartConf, CoherencePolicy>;
@@ -418,16 +416,15 @@ make_array(const CoherencePolicy &coherence = CoherencePolicy{})
 }
 
 template <typename T,
-typename Align           = noalign,
-typename PartConf        = automatic::none,
-typename CoherencePolicy = default_coherence,
-unsigned Dims            = array_traits<T>::dimensions,
-unsigned DynDims         = array_traits<T>::dynamic_dimensions>
-        inline
-        utils::enable_if_t<
-        utils::is_equal(Dims, 1u) &&
-        utils::is_greater(DynDims, 0u),
-dynarray_view<dynarray<T, layout::rmo, Align, PartConf, CoherencePolicy>>>
+          typename Align           = noalign,
+          typename PartConf        = automatic::none,
+          typename CoherencePolicy = default_coherence,
+          unsigned Dims            = array_traits<T>::dimensions,
+          unsigned DynDims         = array_traits<T>::dynamic_dimensions>
+inline
+utils::enable_if_t<utils::is_equal(Dims, 1u) &&
+                   utils::is_greater(DynDims, 0u),
+                   dynarray_view<dynarray<T, layout::rmo, Align, PartConf, CoherencePolicy>>>
 make_array(const extents<DynDims> &ext,
            const CoherencePolicy &coherence = CoherencePolicy{})
 {
@@ -436,17 +433,16 @@ make_array(const extents<DynDims> &ext,
     return dynarray_view<dynarray_type>{ret};
 }
 
-                                                                          template <typename T,
-typename Align           = noalign,
-typename PartConf        = automatic::none,
-typename CoherencePolicy = default_coherence,
-unsigned Dims            = array_traits<T>::dimensions,
-unsigned DynDims         = array_traits<T>::dynamic_dimensions>
-        inline
-        utils::enable_if_t<
-        utils::is_equal(Dims, 1u) &&
-        utils::is_equal(DynDims, 0u),
-dynarray_view<dynarray<T, layout::rmo, Align, PartConf, CoherencePolicy>>>
+template <typename T,
+          typename Align           = noalign,
+          typename PartConf        = automatic::none,
+          typename CoherencePolicy = default_coherence,
+          unsigned Dims            = array_traits<T>::dimensions,
+          unsigned DynDims         = array_traits<T>::dynamic_dimensions>
+inline
+utils::enable_if_t<utils::is_equal(Dims, 1u) &&
+                   utils::is_equal(DynDims, 0u),
+                   dynarray_view<dynarray<T, layout::rmo, Align, PartConf, CoherencePolicy>>>
 make_array(const CoherencePolicy &coherence = CoherencePolicy{})
 {
      using dynarray_type = dynarray<T, layout::rmo, Align, PartConf, CoherencePolicy>;

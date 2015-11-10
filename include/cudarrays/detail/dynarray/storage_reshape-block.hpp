@@ -39,7 +39,7 @@
 namespace cudarrays {
 
 template <typename StorageTraits>
-class dynarray_storage<storage_tag::RESHAPE_BLOCK, StorageTraits> :
+class dynarray_storage<detail::storage_tag::RESHAPE_BLOCK, StorageTraits> :
     public dynarray_base<StorageTraits>
 {
     using base_storage_type = dynarray_base<StorageTraits>;

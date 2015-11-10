@@ -25,6 +25,7 @@ set(CUDARRAYS_BASE_HEADERS
                       memory.hpp
                       static_array.hpp
                       storage.hpp
+                      storage_traits.hpp
                       storage_impl.hpp
                       system.hpp
                       trace.hpp

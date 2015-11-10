@@ -40,7 +40,7 @@
 namespace cudarrays {
 
 template <typename StorageTraits>
-class dynarray_storage<storage_tag::REPLICATED, StorageTraits> :
+class dynarray_storage<detail::storage_tag::REPLICATED, StorageTraits> :
     public dynarray_base<StorageTraits>
 {
     using base_storage_type = dynarray_base<StorageTraits>;

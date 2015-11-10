@@ -670,7 +670,7 @@ launch_async_(const char *name,
 #define launch(f,...)       launch_(#f, f,##__VA_ARGS__)
 #define launch_async(f,...) launch_async_(#f, f,##__VA_ARGS__)
 
-template <typename Array, typename F, unsigned Dim = std::remove_reference<Array>::type::dimensions>
+template <typename Array, typename F, unsigned Dim = Array::dimensions>
 struct unwrap_extents {
     template <typename... Idx>
     inline static

@@ -30,6 +30,8 @@
 #ifndef CUDARRAYS_UTIL_HPP_
 #define CUDARRAYS_UTIL_HPP_
 
+#include <cudarrays/config.hpp>
+
 #include "detail/utils/base.hpp"
 #include "detail/utils/bitset.hpp"
 #include "detail/utils/env.hpp"

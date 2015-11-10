@@ -50,7 +50,9 @@ public:
     virtual ~host_storage()
     {
         if (data_ != nullptr) {
-            free_data();
+            int ret = munmap(this->base_addr(), hostSize_);
+            ASSERT(ret == 0);
+            data_ = nullptr;
         }
     }
 
@@ -64,7 +66,7 @@ public:
                                     flags, -1, 0);
 
         if (addr != nullptr && data_ != addr) {
-            FATAL("%p vs %p", data_, addr);
+            FATAL("Unable to map memory at %p", addr);
         }
         DEBUG("host> mmapped: %p (%zd)", data_, hostSize_);
 
@@ -102,13 +104,6 @@ public:
     }
 
 private:
-    void free_data()
-    {
-        int ret = munmap(this->base_addr(), hostSize_);
-        ASSERT(ret == 0);
-        data_ = nullptr;
-    }
-
     value_type *data_ = nullptr;
     size_t hostSize_  = 0;
 

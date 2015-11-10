@@ -63,7 +63,7 @@ void test_kernel()
 __global__
 void test_kernel_shared()
 {
-    static_array<int [3][3], MemorySpace::shared, layout::rmo, align<4>> A;
+    static_array<int [3][3], memory_space::shared, layout::rmo, align<4>> A;
 
     bool first = threadIdx.y == 0 && threadIdx.x == 0;
 
@@ -85,7 +85,7 @@ void test_kernel_shared()
 
 int main()
 {
-    static_array<int [3][3], MemorySpace::local, layout::rmo, align<1024, 2>> A;
+    static_array<int [3][3], memory_space::local, layout::rmo, align<1024, 2>> A;
 
     printf("Host\n");
     test(A);

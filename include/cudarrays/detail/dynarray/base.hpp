@@ -73,7 +73,7 @@ private:
     dim_manager_type dimManager_;
 };
 
-template <storage_tag StorageImpl, typename StorageTraits>
+template <detail::storage_tag StorageImpl, typename StorageTraits>
 class dynarray_storage;
 
 }

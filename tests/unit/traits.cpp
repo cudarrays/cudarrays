@@ -144,8 +144,8 @@ TEST_F(traits_test, array_dim_reorder_helper)
 {
     using traits = cudarrays::array_traits<int[1][2][3]>;
 
-    using rmo_type = typename cudarrays::make_dim_order<traits::dimensions, cudarrays::layout::rmo>::seq_type;
-    using cmo_type = typename cudarrays::make_dim_order<traits::dimensions, cudarrays::layout::cmo>::seq_type;
+    using rmo_type = typename cudarrays::detail::make_dim_order<traits::dimensions, cudarrays::layout::rmo>::seq_type;
+    using cmo_type = typename cudarrays::detail::make_dim_order<traits::dimensions, cudarrays::layout::cmo>::seq_type;
 
     using reorder_rmo_type =
         SEQ_REORDER( // User-provided dimension ordering
@@ -325,23 +325,23 @@ TEST_F(traits_test, dist_storage_traits_partition)
     using rmo_traits1 = cudarrays::dist_storage_traits<int[1][2][3],
                                                        cudarrays::layout::rmo,
                                                        cudarrays::noalign,
-                                                       cudarrays::storage_conf<cudarrays::storage_tag::VM,
+                                                       cudarrays::storage_conf<cudarrays::detail::storage_tag::VM,
                                                                                cudarrays::partition(0b100)>>;
     using rmo_traits2 = cudarrays::dist_storage_traits<int[1][2][3],
                                                        cudarrays::layout::rmo,
                                                        cudarrays::noalign,
-                                                       cudarrays::storage_conf<cudarrays::storage_tag::VM,
+                                                       cudarrays::storage_conf<cudarrays::detail::storage_tag::VM,
                                                                                cudarrays::partition(0b001)>>;
 
     using cmo_traits1 = cudarrays::dist_storage_traits<int[1][2][3],
                                                        cudarrays::layout::cmo,
                                                        cudarrays::noalign,
-                                                       cudarrays::storage_conf<cudarrays::storage_tag::VM,
+                                                       cudarrays::storage_conf<cudarrays::detail::storage_tag::VM,
                                                                                cudarrays::partition(0b100)>>;
     using cmo_traits2 = cudarrays::dist_storage_traits<int[1][2][3],
                                                        cudarrays::layout::cmo,
                                                        cudarrays::noalign,
-                                                       cudarrays::storage_conf<cudarrays::storage_tag::VM,
+                                                       cudarrays::storage_conf<cudarrays::detail::storage_tag::VM,
                                                                                cudarrays::partition(0b001)>>;
 
     ASSERT_EQ(rmo_traits1::partition_value, cudarrays::partition(0b100));

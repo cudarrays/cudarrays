@@ -38,7 +38,7 @@
 namespace cudarrays {
 
 template <typename StorageTraits>
-class dynarray_storage<storage_tag::RESHAPE_BLOCK_CYCLIC, StorageTraits> :
+class dynarray_storage<detail::storage_tag::RESHAPE_BLOCK_CYCLIC, StorageTraits> :
     public dynarray_base<StorageTraits>
 {
     static constexpr array_size_t BlockSize = 1;

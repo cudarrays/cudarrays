@@ -65,8 +65,8 @@ TEST_F(storage_test, permute_indices1)
 
 TEST_F(storage_test, permute_indices2)
 {
-    using conf_rmo = typename cudarrays::make_dim_order<3, cudarrays::layout::rmo>::seq_type;
-    using conf_cmo = typename cudarrays::make_dim_order<3, cudarrays::layout::cmo>::seq_type;
+    using conf_rmo = typename cudarrays::detail::make_dim_order<3, cudarrays::layout::rmo>::seq_type;
+    using conf_cmo = typename cudarrays::detail::make_dim_order<3, cudarrays::layout::cmo>::seq_type;
 
     using permuter_rmo = utils::permuter<conf_rmo>;
     using permuter_cmo = utils::permuter<conf_cmo>;
