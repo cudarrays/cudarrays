@@ -16,6 +16,6 @@ rm -f $CUDA_FILE
 echo "Installing CMake"
 CMAKE_URL=https://www.cmake.org/files/v3.1/cmake-3.1.3-Linux-x86_64.tar.gz
 CMAKE_FILE=/tmp/cmake.tar.gz
-wget $CMAKE_URL -O $CMAKE_FILE
+wget --no-check-certificate $CMAKE_URL -O $CMAKE_FILE
 tar -xvf $CMAKE_FILE -C $HOME
 rm -f $CMAKE_FILE
