@@ -34,7 +34,7 @@ using namespace cudarrays;
 
 template <typename T>
 __host__ __device__
-void test(T &A)
+void test_single(T &A)
 {
     for (unsigned i = 0; i < A.template dim<0>(); ++i) {
         for (unsigned j = 0; j < A.template dim<1>(); ++j) {
@@ -53,24 +53,27 @@ void test(T &A)
 }
 
 __global__
-void test_kernel()
+void test_kernel_single()
 {
     static_array<int [3][3]> A;
 
-    test(A);
+    test_single(A);
 }
+
+static constexpr size_t BLOCK_X = 3;
+static constexpr size_t BLOCK_Y = 3;
 
 __global__
 void test_kernel_shared()
 {
-    static_array<int [3][3], memory_space::shared, layout::rmo, align<4>> A;
+    static_array<int [BLOCK_Y][BLOCK_X], memory_space::shared, layout::rmo, align<4>> A;
 
     bool first = threadIdx.y == 0 && threadIdx.x == 0;
+    bool central = threadIdx.y == 1 && threadIdx.x == 1;
 
-    if (threadIdx.y == 1 && threadIdx.x == 1)
-        A(1, 1) = 3;
-    else
-        A(threadIdx.y, threadIdx.x) = 1;
+    int value = central? 3: 1;
+
+    A(threadIdx.y, threadIdx.x) = value;
 
     __syncthreads();
 
@@ -88,14 +91,14 @@ int main()
     static_array<int [3][3], memory_space::local, layout::rmo, align<1024, 2>> A;
 
     printf("Host\n");
-    test(A);
+    test_single(A);
 
     printf("Device\n");
-    test_kernel<<<1, 1>>>();
+    test_kernel_single<<<1, 1>>>();
     cudaDeviceSynchronize();
 
     printf("Device __shared__\n");
-    test_kernel_shared<<<1, dim3(3, 3)>>>();
+    test_kernel_shared<<<1, dim3(BLOCK_X, BLOCK_Y)>>>();
     cudaDeviceSynchronize();
 
     return 0;
