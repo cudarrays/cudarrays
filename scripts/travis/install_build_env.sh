@@ -7,7 +7,7 @@ set -e
 echo "Installing CUDA"
 CUDA_URL=http://developer.download.nvidia.com/compute/cuda/7.5/Prod/local_installers/cuda_7.5.18_linux.run
 CUDA_FILE=/tmp/cuda_install.run
-wget --show-progress $CUDA_URL -O $CUDA_FILE
+wget $CUDA_URL -O $CUDA_FILE
 chmod a+x $CUDA_FILE
 $CUDA_FILE --toolkit --toolkitpath=$HOME/cuda -silent
 rm -f $CUDA_FILE
@@ -16,6 +16,6 @@ rm -f $CUDA_FILE
 echo "Installing CMake"
 CMAKE_URL=http://www.cmake.org/files/v3.1/cmake-3.1.3-Linux-x86_64.tar.gz
 CMAKE_FILE=/tmp/cmake.tar.gz
-wget --show-progress $CMAKE_URL -O $CMAKE_FILE
+wget $CMAKE_URL -O $CMAKE_FILE
 tar -xvf $CMAKE_FILE -C $HOME
 rm -f $CMAKE_FILE
