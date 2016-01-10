@@ -49,36 +49,36 @@ struct fake_shared_ptr {
     char bytes[sizeof(std::shared_ptr<T>)];
 
     __host__ __device__
-    fake_shared_ptr()
+    fake_shared_ptr() noexcept
     {
     }
 
     __host__
-    fake_shared_ptr(T *)
+    fake_shared_ptr(T *) noexcept
     {
     }
 
-    T *get()
+    T *get() noexcept
     {
         return nullptr;
     }
 
     template <typename Deleter>
-    void reset(T *, Deleter )
+    void reset(T *, Deleter ) noexcept
     {
     }
 
-    operator bool() const
+    operator bool() const noexcept
     {
         return false;
     }
 
-    T *operator->()
+    T *operator->() noexcept
     {
         return nullptr;
     }
 
-    const T *operator->() const
+    const T *operator->() const noexcept
     {
         return nullptr;
     }
@@ -107,7 +107,7 @@ private:
 public:
     __host__ __device__
     inline
-    dynarray_type &get_array()
+    dynarray_type &get_array() noexcept
     {
         // Select the proper pointer for host and device code
 #ifdef __CUDA_ARCH__
@@ -119,7 +119,7 @@ public:
 
     __host__ __device__
     inline
-    const dynarray_type &get_array() const
+    const dynarray_type &get_array() const noexcept
     {
         // Select the proper pointer for host and device code
 #ifdef __CUDA_ARCH__
@@ -153,13 +153,13 @@ public:
         }
     }
 
-    dynarray_view_common(dynarray_type *a) :
+    dynarray_view_common(dynarray_type *a) noexcept :
         array_{a},
         array_gpu_{nullptr}
     {}
 
     __host__ __device__
-    dynarray_view_common(const dynarray_view_common &a) :
+    dynarray_view_common(const dynarray_view_common &a) noexcept :
     #ifdef __CUDA_ARCH__
         array_gpu_{a.array_gpu_}
   #else
@@ -177,19 +177,18 @@ public:
 
     static constexpr auto dimensions = dynarray_type::dimensions;
 
-    coherence_policy_type &get_coherence_policy() override final
+    coherence_policy_type &get_coherence_policy() noexcept override final
     {
         return get_array().get_coherence_policy();
     }
 
-    void
-    set_current_gpu(unsigned idx) override final
+    void set_current_gpu(unsigned idx) noexcept override final
     {
         array_gpu_ = arrays_gpu_.get()[idx];
         get_array().set_current_gpu(idx);
     }
 
-    bool is_distributed() const override final
+    bool is_distributed() const noexcept override final
     {
         return get_array().is_distributed();
     }
@@ -225,19 +224,32 @@ public:
         get_array().to_host();
     }
 
-    void *host_addr() override final
+    void *host_addr() noexcept override final
     {
         return get_array().host_addr();
     }
 
-    const void *host_addr() const override final
+    const void *host_addr() const noexcept override final
     {
         return get_array().host_addr();
     }
 
-    size_t size() const override final
+    size_t size() const noexcept override final
     {
         return get_array().size();
+    }
+
+    template <unsigned Dim>
+    __array_bounds__
+    array_size_t dim() const noexcept
+    {
+        return get_array().template dim<Dim>();
+    }
+
+    __array_bounds__
+    array_size_t dim(unsigned dim) const
+    {
+        return get_array().dim(dim);
     }
 
     //
@@ -268,7 +280,7 @@ class dynarray_view :
     dynarray_view() = delete;
 public:
     __host__
-    explicit dynarray_view(dynarray_type *a) :
+    explicit dynarray_view(dynarray_type *a) noexcept :
         dynarray_view_common<Array>{a}
     {}
 
@@ -293,19 +305,6 @@ public:
     const value_type &operator()(T &&... indices) const
     {
         return this->get_array()(std::forward<T>(indices)...);
-    }
-
-    template <unsigned Dim>
-    __array_bounds__
-    array_size_t dim() const
-    {
-        return this->get_array().template dim<Dim>();
-    }
-
-    __array_bounds__
-    array_size_t dim(unsigned dim) const
-    {
-        return this->get_array().dim(dim);
     }
 
     //
@@ -333,18 +332,18 @@ class dynarray_cview :
     dynarray_cview() = delete;
 public:
     __host__
-    explicit dynarray_cview(dynarray_type *a) :
+    explicit dynarray_cview(dynarray_type *a) noexcept :
         dynarray_view_common<Array>{a}
     {}
 
     __host__ __device__
-    dynarray_cview(const dynarray_cview &a) :
+    dynarray_cview(const dynarray_cview &a) noexcept :
         dynarray_view_common_type{a}
     {
     }
 
     __host__ __device__
-    dynarray_cview(const dynarray_view_type &a) :
+    dynarray_cview(const dynarray_view_type &a) noexcept :
         dynarray_view_common_type{a}
     {
     }
@@ -362,19 +361,6 @@ public:
         return this->get_array()(std::forward<T>(indices)...);
     }
 
-    template <unsigned Dim>
-    __array_bounds__
-    array_size_t dim() const
-    {
-        return this->get_array().template dim<Dim>();
-    }
-
-    __array_bounds__
-    array_size_t dim(unsigned dim) const
-    {
-        return this->get_array().dim(dim);
-    }
-
 };
 
 template <typename T,
@@ -387,7 +373,8 @@ template <typename T,
 inline
 utils::enable_if_t<utils::is_greater(Dims, 1u) &&
                    utils::is_greater(DynDims, 0u),
-                   dynarray_view<dynarray<T, StorageType, Align, PartConf, CoherencePolicy>>>
+                   dynarray_view<dynarray<T,
+                                          StorageType, Align, PartConf, CoherencePolicy>>>
 make_array(const extents<DynDims> &ext,
            const CoherencePolicy &coherence = CoherencePolicy{})
 {
@@ -463,7 +450,7 @@ is_const<cudarrays::dynarray_view<Array>> {
     using value_type = bool;
     using       type = std::integral_constant<bool, value>;
 
-    operator bool()
+    operator bool() noexcept
     {
         return value;
     }
@@ -477,7 +464,7 @@ is_const<cudarrays::dynarray_cview<Array>> {
     using value_type = bool;
     using       type = std::integral_constant<bool, value>;
 
-    operator bool()
+    operator bool() noexcept
     {
         return value;
     }

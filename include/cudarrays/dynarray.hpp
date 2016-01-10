@@ -175,24 +175,24 @@ public:
         device_.set_current_gpu(idx);
     }
 
-    coherence_policy_type &get_coherence_policy() override final
+    coherence_policy_type &get_coherence_policy() noexcept override final
     {
         return coherencePolicy_;
     }
 
     inline
-    void *host_addr() override final
+    void *host_addr() noexcept override final
     {
         return host_.addr();
     }
 
     inline
-    const void *host_addr() const override final
+    const void *host_addr() const noexcept override final
     {
         return host_.addr();
     }
 
-    size_t size() const override final
+    size_t size() const noexcept override final
     {
         return host_.size();
     }

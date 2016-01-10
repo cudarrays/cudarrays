@@ -40,7 +40,7 @@ class coherent;
 
 class coherence_policy {
 public:
-    virtual ~coherence_policy() {}
+    virtual ~coherence_policy() noexcept {}
     virtual void release(const std::vector<unsigned> &gpus, bool Const) = 0;
     virtual void acquire() = 0;
 
@@ -51,8 +51,8 @@ public:
 class coherent :
     public base<coherent> {
 public:
-    virtual ~coherent() {}
-    virtual coherence_policy &get_coherence_policy() = 0;
+    virtual ~coherent() noexcept {}
+    virtual coherence_policy &get_coherence_policy() noexcept = 0;
     virtual void set_current_gpu(unsigned /*idx*/) = 0;
 
     virtual bool is_distributed() const = 0;
@@ -61,10 +61,10 @@ public:
     virtual void to_device() = 0;
     virtual void to_host() = 0;
 
-    virtual void *host_addr() = 0;
-    virtual const void *host_addr() const = 0;
+    virtual void *host_addr() noexcept = 0;
+    virtual const void *host_addr() const noexcept = 0;
 
-    virtual size_t size() const = 0;
+    virtual size_t size() const noexcept = 0;
 };
 
 }

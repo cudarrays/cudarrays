@@ -43,7 +43,7 @@ class base:
     public base_interface {
 public:
 #ifndef __CUDA_ARCH__
-    base() :
+    base() noexcept :
         id_(++NextId_)
     {
     }
@@ -52,7 +52,7 @@ public:
     static unsigned NextId_;
     unsigned id_;
 
-    unsigned get_id() const { return id_; }
+    unsigned get_id() const noexcept { return id_; }
 };
 
 template <typename T>
