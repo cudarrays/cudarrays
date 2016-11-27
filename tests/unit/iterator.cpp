@@ -230,7 +230,6 @@ TEST_F(iterator_test, iterator1d)
 
     val = a.get_nelems();
     for (auto it = a.rbegin(); it != a.rend(); ++it) {
-        printf("MIERDA\n");
         ASSERT_EQ(*it, --val);
     }
 
