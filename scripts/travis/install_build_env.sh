@@ -5,7 +5,7 @@ set -e
 
 # Install CUDA
 echo "Installing CUDA"
-CUDA_URL=http://developer.download.nvidia.com/compute/cuda/7.5/Prod/local_installers/cuda_7.5.18_linux.run
+CUDA_URL=https://developer.nvidia.com/compute/cuda/8.0/prod/local_installers/cuda_8.0.44_linux-run
 CUDA_FILE=/tmp/cuda_install.run
 wget $CUDA_URL -O $CUDA_FILE
 chmod a+x $CUDA_FILE
