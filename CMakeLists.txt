@@ -1,5 +1,5 @@
-project(cudarrays2)
-cmake_minimum_required(VERSION 2.8)
+project(cudatiles)
+cmake_minimum_required(VERSION 3.0)
 
 set(CUDA_PATH "/usr/local/cuda" CACHE PATH "CUDA directory")
 set(CUDA_TOOLKIT_ROOT_DIR "${CUDA_PATH}")
@@ -25,11 +25,9 @@ else(CUDA_FOUND)
     message(FATAL_ERROR "NVIDIA CUDA Compiler is required")
 endif(CUDA_FOUND)
 
-if((CUDA_VERSION_MAJOR LESS "7") OR 
-   (CUDA_VERSION_MAJOR EQUAL "7" AND CUDA_VERSION_MINOR LESS "5"))
-    message(FATAL_ERROR "NVIDIA CUDA Compiler 7.5 or newer is required")
-endif((CUDA_VERSION_MAJOR LESS "7") OR 
-      (CUDA_VERSION_MAJOR EQUAL "7" AND CUDA_VERSION_MINOR LESS "5"))
+if(CUDA_VERSION_MAJOR LESS "8")
+    message(FATAL_ERROR "NVIDIA CUDA Compiler 8.0 or newer is required")
+endif(CUDA_VERSION_MAJOR LESS "8")
 
 set(COMMON_CXX_FLAGS "-Wall -Wextra -Wformat -Wformat-security -std=c++11 -I${CMAKE_BINARY_DIR}/include")
 
@@ -54,16 +52,9 @@ if(("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang") OR ("${CMAKE_CXX_COMPILER_ID}" 
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-omit-frame-pointer")
     endif(PROFILE)
 
-    set(CUDA_PROPAGATE_HOST_FLAGS OFF)
+    set(CUDA_PROPAGATE_HOST_FLAGS ON)
 
-    string(REPLACE "-std=c++11" "" CMAKE_CXX_FLAGS_FOR_NVCC ${CMAKE_CXX_FLAGS})
-    string(REPLACE " -" ",-" CMAKE_CXX_FLAGS_FOR_NVCC ${CMAKE_CXX_FLAGS_FOR_NVCC})
-    string(REPLACE " ," "," CMAKE_CXX_FLAGS_FOR_NVCC ${CMAKE_CXX_FLAGS_FOR_NVCC})
-
-    list(APPEND CUDA_NVCC_FLAGS "-std=c++11" "-Xcompiler" "${CMAKE_CXX_FLAGS_FOR_NVCC}" "-keep" "--source-in-ptx" "--expt-relaxed-constexpr")
-
-    list(APPEND CUDA_NVCC_FLAGS_DEBUG "-O0" "-g")
-    list(APPEND CUDA_NVCC_FLAGS_RELEASE "-O3" "-g" "-Xcompiler" "-march=native")
+    list(APPEND CUDA_NVCC_FLAGS "-keep" "--source-in-ptx" "--expt-relaxed-constexpr")
 
     set(CMAKE_EXE_LINKER_FLAGS_DEBUG   "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -g -O0")
     set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -g -O3 -march=native")

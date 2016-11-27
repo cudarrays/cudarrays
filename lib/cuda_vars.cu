@@ -47,19 +47,19 @@ void update_gpu_global_grid(dim3 total_grid)
 {
     cudaError_t err;
 #ifndef __NVCC__
-    err = cudaMemcpyToSymbol(global_grid_x, &total_grid.x, sizeof(total_grid.x), 0);
+    err = cudaMemcpyToSymbol(&global_grid_x, &total_grid.x, sizeof(total_grid.x), 0);
     assert(err == cudaSuccess);
-    err = cudaMemcpyToSymbol(global_grid_y, &total_grid.y, sizeof(total_grid.y), 0);
+    err = cudaMemcpyToSymbol(&global_grid_y, &total_grid.y, sizeof(total_grid.y), 0);
     assert(err == cudaSuccess);
-    err = cudaMemcpyToSymbol(global_grid_z, &total_grid.z, sizeof(total_grid.z), 0);
+    err = cudaMemcpyToSymbol(&global_grid_z, &total_grid.z, sizeof(total_grid.z), 0);
     assert(err == cudaSuccess);
 
 #else
-    err = ::cudaMemcpyToSymbol(global_grid_x, &total_grid.x, sizeof(total_grid.x), 0);
+    err = ::cudaMemcpyToSymbol(&global_grid_x, &total_grid.x, sizeof(total_grid.x), 0);
     assert(err == cudaSuccess);
-    err = ::cudaMemcpyToSymbol(global_grid_y, &total_grid.y, sizeof(total_grid.y), 0);
+    err = ::cudaMemcpyToSymbol(&global_grid_y, &total_grid.y, sizeof(total_grid.y), 0);
     assert(err == cudaSuccess);
-    err = ::cudaMemcpyToSymbol(global_grid_z, &total_grid.z, sizeof(total_grid.z), 0);
+    err = ::cudaMemcpyToSymbol(&global_grid_z, &total_grid.z, sizeof(total_grid.z), 0);
     assert(err == cudaSuccess);
 #endif
 }
@@ -68,18 +68,18 @@ void update_gpu_offset(dim3 off)
 {
     cudaError_t err;
 #ifndef __NVCC__
-    err = cudaMemcpyToSymbol(global_offset_x, &off.x, sizeof(off.x), 0);
+    err = cudaMemcpyToSymbol(&global_offset_x, &off.x, sizeof(off.x), 0);
     assert(err == cudaSuccess);
-    err = cudaMemcpyToSymbol(global_offset_y, &off.y, sizeof(off.y), 0);
+    err = cudaMemcpyToSymbol(&global_offset_y, &off.y, sizeof(off.y), 0);
     assert(err == cudaSuccess);
-    err = cudaMemcpyToSymbol(global_offset_z, &off.z, sizeof(off.z), 0);
+    err = cudaMemcpyToSymbol(&global_offset_z, &off.z, sizeof(off.z), 0);
     assert(err == cudaSuccess);
 #else
-    err = ::cudaMemcpyToSymbol(global_offset_x, &off.x, sizeof(off.x), 0);
+    err = ::cudaMemcpyToSymbol(&global_offset_x, &off.x, sizeof(off.x), 0);
     assert(err == cudaSuccess);
-    err = ::cudaMemcpyToSymbol(global_offset_y, &off.y, sizeof(off.y), 0);
+    err = ::cudaMemcpyToSymbol(&global_offset_y, &off.y, sizeof(off.y), 0);
     assert(err == cudaSuccess);
-    err = ::cudaMemcpyToSymbol(global_offset_z, &off.z, sizeof(off.z), 0);
+    err = ::cudaMemcpyToSymbol(&global_offset_z, &off.z, sizeof(off.z), 0);
     assert(err == cudaSuccess);
 #endif
 }
